@@ -9,6 +9,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<Content Remove="appsettings.Development.json" />
 		<Content Remove="appsettings.json" />
 	</ItemGroup>
 
@@ -39,6 +40,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Include="appsettings.Development.json" />
 	  <None Include="wwwroot\favicon\safari-pinned-tab.svg" />
 	  <None Include="wwwroot\favicon\site.webmanifest" />
 	</ItemGroup>

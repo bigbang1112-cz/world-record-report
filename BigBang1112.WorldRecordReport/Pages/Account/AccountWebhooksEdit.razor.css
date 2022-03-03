@@ -9,16 +9,6 @@ td {
 
 .textbox {
     width: 18rem;
-    padding: 5px;
-    font-size: 17px;
-    border-width: 1px;
-    border-color: #959595;
-    background-color: #353439;
-    color: #eeeeee;
-    border-style: solid;
-    border-radius: 3px;
-    box-shadow: 0px 0px 5px rgba(66,66,66,.75);
-    text-shadow: 0px 0px 5px rgba(66,66,66,.75);
 }
 
 .button-small {

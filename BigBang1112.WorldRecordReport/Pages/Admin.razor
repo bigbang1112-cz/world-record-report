@@ -1,0 +1,106 @@
+﻿@page "/admin"
+@using System.Collections
+
+@attribute [Authorize(Roles = "SuperAdmin")]
+
+@inject IWrRepo _repo
+@inject IDiscordWebhookService _discordWebhookService
+
+
+<h3>Admin</h3>
+
+<input type="text" class="textbox" style="width:50rem" @bind="command" />
+
+<button @onclick="SendAsync">Send</button>
+
+@code {
+    private string? command;
+    private bool sending;
+
+    private async Task SendAsync()
+    {
+        if (sending)
+        {
+            return;
+        }
+
+        sending = true;
+
+        if (command is null)
+        {
+            return;
+        }
+
+        var parts = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        var partsEnumerator = parts.GetEnumerator();
+
+        if (!partsEnumerator.MoveNext())
+        {
+            return;
+        }
+
+        switch (partsEnumerator.Current)
+        {
+            case "report":
+                await ReportAsync(partsEnumerator);
+                break;
+        }
+    }
+
+    private async Task ReportAsync(IEnumerator partsEnumerator)
+    {
+         if (!partsEnumerator.MoveNext())
+        {
+            return;
+        }
+
+        var wrGuid = new Guid((string)partsEnumerator.Current);
+
+        var wrModel = await _repo.GetWorldRecordAsync(wrGuid);
+
+        if (wrModel is null)
+        {
+            return;
+        }
+
+        var report = new ReportModel
+        {
+            Guid = Guid.NewGuid(),
+            Type = ReportModel.EType.NewWorldRecord,
+            HappenedOn = DateTime.UtcNow,
+            WorldRecord = wrModel
+        };
+
+        await _repo.AddReportAsync(report);
+
+        Discord.Embed embed;
+        if (wrModel.Map.Mode?.Name == NameConsts.MapModeStunts)
+            embed = _discordWebhookService.GetDefaultEmbed_NewStuntsWorldRecord(wrModel);
+        else
+            embed = _discordWebhookService.GetDefaultEmbed_NewWorldRecord(wrModel);
+
+        while (partsEnumerator.MoveNext())
+        {
+            var webhookGuid = new Guid((string)partsEnumerator.Current);
+
+            var webhookModel = await _repo.GetDiscordWebhookByGuidAsync(webhookGuid);
+
+            if (webhookModel is null)
+            {
+                return;
+            }
+
+            await _discordWebhookService.SendMessageAsync(webhookModel, snowflake => new DiscordWebhookMessageModel
+            {
+                MessageId = snowflake,
+                Report = report,
+                SentOn = DateTime.UtcNow,
+                ModifiedOn = DateTime.UtcNow,
+                Webhook = webhookModel
+            }, embeds: Enumerable.Repeat(embed, 1));
+
+            await _repo.SaveAsync();
+        }
+    }
+}
