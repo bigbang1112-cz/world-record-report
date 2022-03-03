@@ -165,7 +165,7 @@ public class TmxService
                     freshUpdate = true;
                 }
 
-                map.LastActivityOn = DateTime.UtcNow;
+                map.LastActivityOn = tmxTrack.ActivityAt.UtcDateTime;
 
                 await _repo.SaveAsync();
 
@@ -192,7 +192,7 @@ public class TmxService
                 // If its a worse/equal time or score
                 if (currentWr is not null)
                 {
-                    if (isStunts && wrOnTmx.ReplayTime <= currentWr.Time)
+                    if (isStunts && wrOnTmx.ReplayScore <= currentWr.Time)
                     {
                         continue;
                     }
@@ -203,7 +203,10 @@ public class TmxService
                     }
                 }
 
-                var newWrsOnTmx = currentWr is null ? wrsOnTmx : wrsOnTmx.Where(x => x.ReplayTime < currentWr.Time);
+                var newWrsOnTmx = currentWr is null ? wrsOnTmx
+                    : wrsOnTmx.Where(x => isStunts
+                        ? x.ReplayScore > currentWr.Time
+                        : x.ReplayTime < currentWr.Time);
 
                 _logger.LogInformation("{count} new world record/s found.", newWrsOnTmx.Count());
 
@@ -364,9 +367,9 @@ public class TmxService
 
         foreach (var replay in replays.Results.OrderBy(x => x.ReplayAt))
         {
-            if (!tempTime.HasValue)
+            if (tempTime is null)
             {
-                tempTime = replay.ReplayTime;
+                tempTime = isStunts ? replay.ReplayScore : replay.ReplayTime;
                 yield return replay;
             }
 
