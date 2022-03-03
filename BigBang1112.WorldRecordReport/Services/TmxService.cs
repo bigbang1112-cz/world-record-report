@@ -190,9 +190,17 @@ public class TmxService
                 var wrOnTmx = wrsOnTmx[^1];
 
                 // If its a worse/equal time or score
-                if (currentWr is not null && !(isStunts ? wrOnTmx.ReplayTime > currentWr.Time : wrOnTmx.ReplayTime < currentWr.Time))
+                if (currentWr is not null)
                 {
-                    continue;
+                    if (isStunts && wrOnTmx.ReplayTime <= currentWr.Time)
+                    {
+                        continue;
+                    }
+
+                    if (!isStunts && wrOnTmx.ReplayTime >= currentWr.Time)
+                    {
+                        continue;
+                    }
                 }
 
                 var newWrsOnTmx = currentWr is null ? wrsOnTmx : wrsOnTmx.Where(x => x.ReplayTime < currentWr.Time);
@@ -203,17 +211,17 @@ public class TmxService
 
                 foreach (var newWr in newWrsOnTmx)
                 {
-                    var time = newWr.ReplayTime;
+                    var timeOrScore = isStunts ? newWr.ReplayScore : newWr.ReplayTime;
 
                     // If this is the old world record time
-                    if (currentWr is not null && (isStunts ? time <= currentWr.Time : time >= currentWr.Time))
+                    if (currentWr is not null && (isStunts ? timeOrScore <= currentWr.Time : timeOrScore >= currentWr.Time))
                     {
                         _logger.LogInformation("Reached the end of new world records.");
                         break;
                     }
 
                     // If time is not legit
-                    if (time < 0 || (!isStunts && time == 0))
+                    if (timeOrScore < 0 || (!isStunts && timeOrScore == 0))
                     {
                         _logger.LogInformation("Time is not legit!");
                         continue;
@@ -225,7 +233,7 @@ public class TmxService
 
                     if (currentWr is not null)
                     {
-                        difference = time - currentWr.Time;
+                        difference = timeOrScore - currentWr.Time;
                     }
 
                     /*var wrModel = await AddNewWorldRecordAsync(db, tmxSite, map, newWr, previousWr,
@@ -244,7 +252,7 @@ public class TmxService
                         DrivenOn = newWr.ReplayAt.DateTime,
                         PublishedOn = newWr.ReplayAt.DateTime,
                         ReplayUrl = null,
-                        Time = time,
+                        Time = timeOrScore,
                         PreviousWorldRecord = previousWr,
                         ReplayId = newWr.ReplayId
                     };
@@ -356,7 +364,19 @@ public class TmxService
 
         foreach (var replay in replays.Results.OrderBy(x => x.ReplayAt))
         {
-            if (!tempTime.HasValue || (isStunts ? replay.ReplayTime > tempTime : replay.ReplayTime < tempTime))
+            if (!tempTime.HasValue)
+            {
+                tempTime = replay.ReplayTime;
+                yield return replay;
+            }
+
+            if (isStunts && replay.ReplayScore > tempTime)
+            {
+                tempTime = replay.ReplayScore;
+                yield return replay;
+            }
+
+            if (!isStunts && replay.ReplayTime < tempTime)
             {
                 tempTime = replay.ReplayTime;
                 yield return replay;
