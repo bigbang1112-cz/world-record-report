@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<manialink version="3">
+	<script>
+		<![CDATA[
+		declare Boolean Leaderboards_Authorized for LocalUser;
+		declare Text Leaderboards_AccessToken for LocalUser;
+		declare Text Leaderboards_SecretKey for LocalUser;
+
+		Leaderboards_Authorized = True;
+		Leaderboards_AccessToken = "{AccessToken}";
+		Leaderboards_SecretKey = "{SecretKey}";
+
+		OpenLink("leaderboards", ::LinkType::ManialinkBrowser);
+		]]>
+	</script>
+</manialink>

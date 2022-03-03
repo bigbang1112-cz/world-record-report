@@ -1,0 +1,14 @@
+﻿#RequireContext CManiaAppBrowser
+
+Void Kek() {
+
+}
+
+main() {
+	declare Layer = UILayerCreate();
+	Layer.ManialinkPage = """{0}""";
+
+	while(True) {
+		yield;
+	}
+}

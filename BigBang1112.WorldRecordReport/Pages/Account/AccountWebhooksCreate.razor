@@ -1,0 +1,208 @@
+﻿@page "/account/webhooks/create"
+@attribute [Authorize]
+
+@inject AccountService _accountService
+@inject IAccountsRepo _accountsRepo
+@inject IWrRepo _wrRepo
+@inject WrAuthService _wrAuthService
+@inject IDiscordWebhookService _discordWebhookService
+@inject NavigationManager NavigationManager
+@inject ILogger<AccountWebhooksCreate> _logger
+
+<div class="main-center">
+	<div>
+		<div class="section">
+			<div class="inner">
+				<span>Account UUID: <b>@account?.Guid</b></span>
+			</div>
+		</div>
+		<div class="section">
+			<div class="inner">
+				<table>
+					<colgroup>
+						<col style="width:45%"/>
+						<col style="width:55%"/>
+					</colgroup>
+					<tbody>
+						<tr>
+							<td>Display name:</td>
+							<td><input type="text" class="textbox" @bind="DisplayName" style="@(string.IsNullOrWhiteSpace(DisplayName) ? "background-color: indianred" : "")" /></td>
+						</tr>
+						<tr>
+							<td>Webhook URL:</td>
+							<td><input type="password" class="textbox" @bind="WebhookUrl" style="@(string.IsNullOrWhiteSpace(WebhookUrl) ? "background-color: indianred" : "")" /></td>
+						</tr>
+						<tr>
+							<td>Notify when added:</td>
+							<td>
+								<Checkbox @bind-Checked="NotifyWhenAdded" VerySmall></Checkbox>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+
+                <table>
+					<caption>Filters</caption>
+                    <thead>
+                        <tr>
+                            <th>TM2</th>
+                            <th>TMUF</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <Checkbox @bind-Checked="ReportTMCanyon" Label="TMCanyon" VerySmall></Checkbox>
+                            </td>
+                            <td>
+                                <Checkbox @bind-Checked="ReportNadeoTMUF" Label="Nadeo TMUF" VerySmall></Checkbox>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <Checkbox @bind-Checked="ReportTMStadium" Label="TMStadium" VerySmall></Checkbox>
+                            </td>
+                            <td>
+                                <Checkbox @bind-Checked="ReportNadeoTMNF" Label="Nadeo TMNF" VerySmall></Checkbox>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <Checkbox @bind-Checked="ReportTMValley" Label="TMValley" VerySmall></Checkbox>
+                            </td>
+                            <td>
+                                <Checkbox @bind-Checked="ReportStarTrack" Label="StarTrack" VerySmall></Checkbox>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <Checkbox @bind-Checked="ReportTMLagoon" Label="TMLagoon" VerySmall></Checkbox>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+				<button class="button" style="width: 100%; padding: 0.5rem 3rem" @onclick="CreateAsync">Create</button>
+			</div>
+		</div>
+		<Footer></Footer>
+	</div>
+</div>
+
+@code {
+    private AccountModel? account;
+    private AssociatedAccountModel? associatedAccount;
+
+    public string? DisplayName { get; set; } = "Webhook";
+    public string? WebhookUrl { get; set; }
+
+    public bool NotifyWhenAdded { get; set; }
+
+    public bool ReportTMCanyon { get; set; }
+    public bool ReportTMStadium { get; set; }
+    public bool ReportTMValley { get; set; }
+    public bool ReportTMLagoon { get; set; }
+    public bool ReportNadeoTMUF { get; set; }
+    public bool ReportNadeoTMNF { get; set; }
+    public bool ReportStarTrack { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        account = await _accountService.GetAccountAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        (account, associatedAccount) = await _wrAuthService.GetOrCreateAssociatedAccountAsync();
+
+        if (associatedAccount is null)
+        {
+            return;
+        }
+
+        var webhookLimitReached = await _wrRepo.HasReachedWebhookLimitAsync(associatedAccount);
+
+        if (webhookLimitReached)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(DisplayName) || string.IsNullOrWhiteSpace(WebhookUrl))
+        {
+            return;
+        }
+
+        var tm2Filters = default(List<DiscordWebhookFilter.TM2>);
+
+        if (ReportTMCanyon || ReportTMStadium || ReportTMValley || ReportTMLagoon)
+        {
+            tm2Filters = new List<DiscordWebhookFilter.TM2>();
+
+            if (ReportTMCanyon) tm2Filters.Add(new DiscordWebhookFilter.TM2("TMCanyon@nadeo"));
+            if (ReportTMStadium) tm2Filters.Add(new DiscordWebhookFilter.TM2("TMStadium@nadeo"));
+            if (ReportTMValley) tm2Filters.Add(new DiscordWebhookFilter.TM2("TMValley@nadeo"));
+            if (ReportTMLagoon) tm2Filters.Add(new DiscordWebhookFilter.TM2("TMLagoon@nadeo"));
+        }
+
+        var tmufFilters = default(List<DiscordWebhookFilter.TMUF>);
+
+        if (ReportNadeoTMUF || ReportStarTrack || ReportNadeoTMNF)
+        {
+            tmufFilters = new List<DiscordWebhookFilter.TMUF>();
+
+            if (ReportNadeoTMUF) tmufFilters.Add(new DiscordWebhookFilter.TMUF("united", LeaderboardType: TmExchangeApi.LeaderboardType.Nadeo));
+            if (ReportStarTrack) tmufFilters.Add(new DiscordWebhookFilter.TMUF("united", LeaderboardType: TmExchangeApi.LeaderboardType.Star));
+            if (ReportNadeoTMNF) tmufFilters.Add(new DiscordWebhookFilter.TMUF("tmnf", LeaderboardType: TmExchangeApi.LeaderboardType.Nadeo));
+        }
+
+        if (tm2Filters is null && tmufFilters is null)
+        {
+            return;
+        }
+
+        var filter = new DiscordWebhookFilter(tm2Filters, tmufFilters);
+
+        var filterJson = JsonSerializer.Serialize(filter);
+
+        var webhook = new DiscordWebhookModel
+        {
+            Guid = Guid.NewGuid(),
+            Account = associatedAccount,
+            DisplayName = DisplayName,
+            Url = WebhookUrl,
+            Filter = filterJson
+        };
+
+        using var client = _discordWebhookService.ValidateWebhookUrl(webhook.Url);
+
+        if (client is null)
+        {
+            return;
+        }
+
+        if (NotifyWhenAdded)
+        {
+            var embed = new Discord.EmbedBuilder()
+                .WithTitle("Connected!")
+                .WithFooter("Powered by wr.bigbang1112.cz", DiscordWebhookService.LogoIconUrl)
+                .Build();
+
+            var msgId = await client.SendMessageAsync(embeds: Enumerable.Repeat(embed, 1));
+
+            var message = new DiscordWebhookMessageModel
+            {
+                MessageId = msgId,
+                SentOn = DateTime.UtcNow,
+                ModifiedOn = DateTime.UtcNow,
+                Webhook = webhook
+            };
+
+            await _wrRepo.AddDiscordWebhookMessageAsync(message);
+        }
+
+        await _wrRepo.AddDiscordWebhookAsync(webhook);
+        await _wrRepo.SaveAsync();
+
+        NavigationManager.NavigateTo("/");
+    }
+}
