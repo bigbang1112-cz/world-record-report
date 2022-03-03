@@ -254,4 +254,9 @@ public class WrRepo : IWrRepo
     {
         await _db.DiscordWebhooks.AddAsync(webhook, cancellationToken);
     }
+
+    public async Task<WorldRecordModel?> GetWorldRecordAsync(Guid wrGuid, CancellationToken cancellationToken = default)
+    {
+        return await _db.WorldRecords.FirstOrDefaultAsync(x => x.Guid == wrGuid, cancellationToken);
+    }
 }

@@ -42,4 +42,5 @@ public interface IWrRepo
     Task<DiscordWebhookModel?> GetDiscordWebhookByGuidAsync(Guid webhookGuid, CancellationToken cancellationToken = default);
     Task<bool> HasReachedWebhookLimitAsync(AssociatedAccountModel associatedAccount, CancellationToken cancellationToken = default);
     Task AddDiscordWebhookAsync(DiscordWebhookModel webhook, CancellationToken cancellationToken = default);
+    Task<WorldRecordModel?> GetWorldRecordAsync(Guid wrGuid, CancellationToken cancellationToken = default);
 }
