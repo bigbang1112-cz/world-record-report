@@ -34,6 +34,8 @@ builder.Services.AddScoped<TmxService>();
 
 builder.Services.AddSingleton<WeatherForecastService>();
 
+builder.Services.AddHostedService<DiscordBotService>();
+
 builder.Services.AddQuartz(q =>
 {
     q.UseMicrosoftDependencyInjectionJobFactory();
