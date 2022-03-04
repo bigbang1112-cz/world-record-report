@@ -151,7 +151,7 @@ public class TmxService
                     continue;
                 }
 
-                if (map.LastActivityOn is not null && tmxTrack.ActivityAt <= map.LastActivityOn)
+                if (map.LastActivityOn is not null && tmxTrack.ActivityAt.UtcTicks - (tmxTrack.ActivityAt.UtcTicks % TimeSpan.TicksPerSecond) <= map.LastActivityOn.Value.Ticks)
                 {
                     endOfNewActivities = true;
                     break;
