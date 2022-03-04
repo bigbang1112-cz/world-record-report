@@ -6,9 +6,9 @@ namespace BigBang1112.WorldRecordReport.Jobs;
 [DisallowConcurrentExecution]
 public class RefreshTmxOfficialJob : IJob
 {
-    private readonly TmxService _tmx;
+    private readonly TmxReportService _tmx;
 
-    public RefreshTmxOfficialJob(TmxService tmx)
+    public RefreshTmxOfficialJob(TmxReportService tmx)
     {
         _tmx = tmx;
     }

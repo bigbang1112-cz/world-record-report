@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using BigBang1112.WorldRecordReport.Data;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BigBang1112.WorldRecordReport.Models.Db;
@@ -57,4 +58,9 @@ public class MapModel
     public virtual ICollection<RecordSetChangeModel> RecordSetChanges { get; set; } = default!;
     public virtual ICollection<RecordSetDetailedChangeModel> RecordSetDetailedChanges { get; set; } = default!;
     public virtual ICollection<RecordCountModel> RecordCounts { get; set; } = default!;
+
+    public bool IsStuntsMode()
+    {
+        return Mode?.Name == NameConsts.MapModeStunts;
+    }
 }

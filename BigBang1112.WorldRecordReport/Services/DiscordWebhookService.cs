@@ -222,4 +222,23 @@ public class DiscordWebhookService : IDiscordWebhookService
                 return $"{nickname} ({loginIfFilteredOut})";
         return nickname;
     }
+
+    public async Task DeleteMessageAsync(DiscordWebhookMessageModel msg)
+    {
+        using var webhookClient = new DiscordWebhookClient(msg.Webhook.Url);
+
+        try
+        {
+            await webhookClient.DeleteMessageAsync(msg.MessageId);
+            msg.RemovedOfficially = true;
+        }
+        catch (Discord.Net.HttpException httpEx)
+        {
+            if (httpEx.HttpCode == System.Net.HttpStatusCode.NotFound
+            && !msg.RemovedOfficially)
+            {
+                msg.RemovedByUser = true;
+            }
+        }
+    }
 }
