@@ -1,4 +1,4 @@
-﻿using BigBang1112.WorldRecordReport.Services;
+﻿using BigBang1112.WorldRecordReportLib.Services;
 using Quartz;
 
 namespace BigBang1112.WorldRecordReport.Jobs;

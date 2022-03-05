@@ -1,4 +1,4 @@
-﻿using BigBang1112.WorldRecordReport.Services;
+﻿using BigBang1112.WorldRecordReportLib.Services;
 using Quartz;
 
 namespace BigBang1112.WorldRecordReport.Jobs;
@@ -6,9 +6,9 @@ namespace BigBang1112.WorldRecordReport.Jobs;
 [DisallowConcurrentExecution]
 public class RefreshTM2OfficialJob : IJob
 {
-    private readonly IWorldRecordTM2Service _worldRecordTM2Service;
+    private readonly ITM2ReportService _worldRecordTM2Service;
 
-    public RefreshTM2OfficialJob(IWorldRecordTM2Service worldRecordTM2Service)
+    public RefreshTM2OfficialJob(ITM2ReportService worldRecordTM2Service)
     {
         _worldRecordTM2Service = worldRecordTM2Service;
     }

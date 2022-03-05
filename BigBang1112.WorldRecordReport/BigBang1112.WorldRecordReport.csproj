@@ -15,24 +15,10 @@
 
 	<ItemGroup>
 		<Folder Include="Controllers\Api\" />
-		<Folder Include="Migrations\" />
-		<Folder Include="Models\DbEnums\" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Content Remove="wwwroot\api\**\*" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Data\LbManialink\Leaderboards.Script.txt">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Data\LbManialink\Leaderboards.xml">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Data\LbManialink\LeaderboardsAuth.xml">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -50,19 +36,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Humanizer.Core" Version="2.14.1" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.2">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-		<PackageReference Include="Quartz.AspNetCore" Version="3.3.3" />
-		<PackageReference Include="TmExchangeApi.NET" Version="0.1.2" />
-		<PackageReference Include="TmXmlRpc" Version="1.1.0" />
 		<PackageReference Include="LibSassBuilder" Version="2.0.1" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\BigBang1112.Essentials\BigBang1112.Essentials.Razor\BigBang1112.Essentials.Razor.csproj" />
 		<ProjectReference Include="..\BigBang1112.Essentials\BigBang1112.Essentials\BigBang1112.Essentials.csproj" />
+		<ProjectReference Include="..\BigBang1112.TMWR\BigBang1112.TMWR.csproj" />
+		<ProjectReference Include="..\BigBang1112.WorldRecordReportLib\BigBang1112.WorldRecordReportLib.csproj" />
 	</ItemGroup>
 </Project>

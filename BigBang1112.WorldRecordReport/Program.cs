@@ -1,10 +1,11 @@
 using BigBang1112;
-using BigBang1112.Extensions;
-using BigBang1112.WorldRecordReport.Data;
-using BigBang1112.WorldRecordReport.Extensions;
+using BigBang1112.TMWR;
+using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Extensions;
 using BigBang1112.WorldRecordReport.Jobs;
-using BigBang1112.WorldRecordReport.Services;
+using BigBang1112.WorldRecordReportLib.Services;
 using Quartz;
+using BigBang1112.WorldRecordReportLib.Repos;
 
 var assembly = typeof(Program).Assembly;
 
@@ -28,13 +29,13 @@ builder.Services.AddScoped<IWrRepo, WrRepo>();
 builder.Services.AddScoped<IRecordSetService, RecordSetService>();
 builder.Services.AddScoped<IDiscordWebhookService, DiscordWebhookService>();
 builder.Services.AddScoped<ILeaderboardsManialinkService, LeaderboardsManialinkService>();
-builder.Services.AddScoped<IWorldRecordTM2Service, WorldRecordTM2Service>();
+builder.Services.AddScoped<ITM2ReportService, TM2ReportService>();
+
 builder.Services.AddScoped<WrAuthService>();
-builder.Services.AddScoped<TmxService>();
+builder.Services.AddScoped<ITmxService, TmxService>();
+builder.Services.AddScoped<TmxReportService>();
 
-builder.Services.AddSingleton<WeatherForecastService>();
-
-builder.Services.AddHostedService<DiscordBotService>();
+builder.Services.AddHostedService<TmwrDiscordBotService>();
 
 builder.Services.AddQuartz(q =>
 {

@@ -1,5 +1,5 @@
-﻿using BigBang1112.WorldRecordReport.Models;
-using BigBang1112.WorldRecordReport.Services;
+﻿using BigBang1112.WorldRecordReportLib.Models;
+using BigBang1112.WorldRecordReportLib.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
