@@ -16,9 +16,19 @@ public abstract class MapRelatedCommand : IDiscordBotCommand
 
     private readonly IWrRepo _repo;
 
+    protected Dictionary<string, Func<string, int, CancellationToken, Task<List<string>>>> AutocompleteOptions { get; }
+
     public MapRelatedCommand(IWrRepo repo)
     {
         _repo = repo;
+
+        AutocompleteOptions = new()
+        {
+            { OptionMapName, _repo.GetMapNamesAsync },
+            { OptionEnv, _repo.GetEnvNamesAsync },
+            { OptionMapUid, _repo.GetMapUidsAsync },
+            { OptionTitle, _repo.GetTitlePacksAsync }
+        };
     }
 
     public IEnumerable<SlashCommandOptionBuilder> YieldOptions()
@@ -118,24 +128,13 @@ public abstract class MapRelatedCommand : IDiscordBotCommand
 
     public async Task AutocompleteAsync(SocketAutocompleteInteraction interaction, AutocompleteOption option)
     {
-        switch (option.Name)
+        if (AutocompleteOptions.TryGetValue(option.Name, out var stringListFunc))
         {
-            case OptionMapName:
-                await interaction.RespondAsync(await AutocompleteAsync(_repo.GetMapNamesAsync, option.Value));
-                break;
-            case OptionEnv:
-                await interaction.RespondAsync(await AutocompleteAsync(_repo.GetEnvNamesAsync, option.Value));
-                break;
-            case OptionMapUid:
-                await interaction.RespondAsync(await AutocompleteAsync(_repo.GetMapUidsAsync, option.Value));
-                break;
-            case OptionTitle:
-                await interaction.RespondAsync(await AutocompleteAsync(_repo.GetTitlePacksAsync, option.Value));
-                break;
+            await interaction.RespondAsync(await AutocompleteOptionAsync(stringListFunc, option.Value));
         }
     }
 
-    private static async Task<IEnumerable<AutocompleteResult>> AutocompleteAsync(Func<string, int, CancellationToken, Task<List<string>>> func, object value)
+    private static async Task<IEnumerable<AutocompleteResult>> AutocompleteOptionAsync(Func<string, int, CancellationToken, Task<List<string>>> func, object value)
     {
         return (await func.Invoke(value.ToString() ?? "", DiscordConsts.OptionLimit, default))
             .Select(x => new AutocompleteResult(x, x));
