@@ -275,9 +275,10 @@ public class WrRepo : IWrRepo
 
     public async Task<List<string>> GetEnvNamesAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
     {
-        return await _db.Environments.Select(x => x.Name)
-            .Where(x => x.Contains(value))
-            .OrderBy(x => x)
+        return await _db.Environments
+            .Where(x => x.Name.Contains(value))
+            .OrderBy(x => x.Id)
+            .Select(x => x.Name)
             .Take(limit)
             .ToListAsync(cancellationToken);
     }
