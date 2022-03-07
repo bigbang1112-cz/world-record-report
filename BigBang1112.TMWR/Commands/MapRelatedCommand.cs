@@ -121,11 +121,6 @@ public abstract class MapRelatedCommand : IDiscordBotCommand
         await slashCommand.RespondAsync(embed: embed);
     }
 
-    public virtual Task ExecuteWithMapsAsync(SocketSlashCommand slashCommand, List<MapModel> maps)
-    {
-        return Task.CompletedTask;
-    }
-
     public async Task AutocompleteAsync(SocketAutocompleteInteraction interaction, AutocompleteOption option)
     {
         if (AutocompleteOptions.TryGetValue(option.Name, out var stringListFunc))
@@ -140,41 +135,73 @@ public abstract class MapRelatedCommand : IDiscordBotCommand
             .Select(x => new AutocompleteResult(x, x));
     }
 
-    public static IEnumerable<(string mapName, MapModel map)> GetUniqueMapNames(IEnumerable<MapModel> maps)
+    public virtual async Task ExecuteWithMapsAsync(SocketSlashCommand slashCommand, List<MapModel> mapsForMenu)
     {
-        var set = new HashSet<string>();
+        var map = mapsForMenu.First();
 
-        foreach (var map in maps)
+        var lookup = mapsForMenu.ToLookup(x => x.DeformattedName);
+
+        var firstMapHasMultipleSameNames = lookup[map.DeformattedName].Count() > 1;
+
+        var embed = await CreateEmbedAsync(map, firstMapHasMultipleSameNames);
+
+        var component = default(MessageComponent);
+
+        if (mapsForMenu.Count > 1)
         {
-            var counter = 0;
-            var hasDupe = set.Contains(map.Name);
-
-            if (!hasDupe)
-            {
-                foreach (var otherMap in maps)
-                {
-                    if (map.Name == otherMap.Name)
-                    {
-                        counter++;
-                    }
-
-                    if (counter >= 2)
-                    {
-                        hasDupe = true;
-                        set.Add(map.Name);
-                        break;
-                    }
-                }
-            }
-
-            yield return hasDupe
-                ? ($"{map.DeformattedName ?? map.Name} ({map.Environment})", map)
-                : (map.DeformattedName ?? map.Name, map);
+            component = CreateSelectMenu(slashCommand, mapsForMenu, lookup);
         }
+
+        await slashCommand.RespondAsync("Execution result:", embed: embed, components: component);
     }
 
-    public virtual Task SelectMenuAsync(SocketMessageComponent messageComponent, IReadOnlyCollection<string> values)
+    protected virtual Task<Embed> CreateEmbedAsync(MapModel map, bool firstMapHasMultipleSameNames)
     {
-        return Task.CompletedTask;
+        return Task.FromResult(new EmbedBuilder().WithTitle("Map-related command not implemented").Build());
+    }
+
+    private static MessageComponent CreateSelectMenu(SocketSlashCommand slashCommand, List<MapModel> mapsForMenu, ILookup<string, MapModel> lookup)
+    {
+        var menuBuilder = new SelectMenuBuilder()
+            .WithPlaceholder("Select other map...")
+            .WithCustomId(slashCommand.CommandName);
+
+        foreach (var m in mapsForMenu)
+        {
+            var deformattedName = m.GetHumanizedDeformattedName();
+
+            var hasMultipleSameNames = lookup[deformattedName].Count() > 1;
+
+            var label = hasMultipleSameNames
+                ? $"{deformattedName} [{m.GetTitleUidOrEnvironment()}]"
+                : deformattedName;
+
+            menuBuilder.AddOption(label, m.MapUid, description: $"by {m.Author.GetDeformattedNickname()}");
+        }
+
+        return new ComponentBuilder()
+            .WithSelectMenu(menuBuilder)
+            .Build();
+    }
+
+    public virtual async Task SelectMenuAsync(SocketMessageComponent messageComponent, IReadOnlyCollection<string> values)
+    {
+        var mapUid = values.First();
+
+        var map = await _repo.GetMapByUidAsync(mapUid);
+
+        if (map is null)
+        {
+            return;
+        }
+
+        var mapNames = await _repo.GetMapNamesAsync(map.DeformattedName);
+
+        var embed = await CreateEmbedAsync(map, mapNames.Count > 1);
+
+        await messageComponent.UpdateAsync(x =>
+        {
+            x.Embed = embed;
+        });
     }
 }
