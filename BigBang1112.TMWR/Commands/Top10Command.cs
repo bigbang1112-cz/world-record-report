@@ -92,9 +92,9 @@ public class Top10Command : MapRelatedCommand
 
         var lookup = mapsForMenu.ToLookup(x => x.DeformattedName);
 
-        var hasMultipleSameNames = lookup[map.DeformattedName].Count() > 1;
+        var firstMapHasMultipleSameNames = lookup[map.DeformattedName].Count() > 1;
 
-        var embed = await CreateEmbedAsync(map, hasMultipleSameNames);
+        var embed = await CreateEmbedAsync(map, firstMapHasMultipleSameNames);
 
         var component = default(MessageComponent);
 
@@ -106,6 +106,8 @@ public class Top10Command : MapRelatedCommand
 
             foreach (var m in mapsForMenu)
             {
+                var hasMultipleSameNames = lookup[m.DeformattedName].Count() > 1;
+
                 var label = hasMultipleSameNames
                     ? $"{m.DeformattedName} [{m.GetTitleUidOrEnvironment()}]"
                     : m.DeformattedName;
