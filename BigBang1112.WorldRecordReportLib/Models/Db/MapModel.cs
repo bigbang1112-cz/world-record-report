@@ -23,7 +23,7 @@ public class MapModel
     public string Name { get; set; } = default!;
 
     [StringLength(255)]
-    public string? DeformattedName { get; set; }
+    public string DeformattedName { get; set; } = default!;
 
     public virtual LoginModel Author { get; set; } = default!;
 
@@ -62,5 +62,10 @@ public class MapModel
     public bool IsStuntsMode()
     {
         return Mode?.Name == NameConsts.MapModeStunts;
+    }
+
+    public string GetTitleUidOrEnvironment()
+    {
+        return TitlePack?.GetTitleUid() ?? Environment.DisplayName ?? Environment.Name;
     }
 }

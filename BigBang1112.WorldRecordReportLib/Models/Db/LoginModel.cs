@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
@@ -26,5 +27,10 @@ public class LoginModel
     public override string ToString()
     {
         return string.IsNullOrWhiteSpace(Nickname) ? Name : Nickname;
+    }
+
+    public string GetDeformattedNickname()
+    {
+        return string.IsNullOrWhiteSpace(Nickname) ? Name : TextFormatter.Deformat(Nickname);
     }
 }

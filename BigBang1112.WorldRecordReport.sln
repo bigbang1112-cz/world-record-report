@@ -11,11 +11,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BigBang1112.Essentials", "B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BigBang1112.Essentials.Razor", "BigBang1112.Essentials\BigBang1112.Essentials.Razor\BigBang1112.Essentials.Razor.csproj", "{2C890B8E-444E-4F5E-96DB-CA5D309E3900}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigBang1112.TMWR", "BigBang1112.TMWR\BigBang1112.TMWR.csproj", "{4B8D9907-1276-4D1B-997B-C0801D4458C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BigBang1112.TMWR", "BigBang1112.TMWR\BigBang1112.TMWR.csproj", "{4B8D9907-1276-4D1B-997B-C0801D4458C2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigBang1112.WorldRecordReportLib", "BigBang1112.WorldRecordReportLib\BigBang1112.WorldRecordReportLib.csproj", "{48D1529D-F0F5-46E9-82EF-26F30152C758}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BigBang1112.WorldRecordReportLib", "BigBang1112.WorldRecordReportLib\BigBang1112.WorldRecordReportLib.csproj", "{48D1529D-F0F5-46E9-82EF-26F30152C758}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigBang1112.WorldRecordReportLib.Tests", "BigBang1112.WorldRecordReportLib.Tests\BigBang1112.WorldRecordReportLib.Tests.csproj", "{477F8AC9-6883-4F40-A72C-F9010434C2FA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BigBang1112.WorldRecordReportLib.Tests", "BigBang1112.WorldRecordReportLib.Tests\BigBang1112.WorldRecordReportLib.Tests.csproj", "{477F8AC9-6883-4F40-A72C-F9010434C2FA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

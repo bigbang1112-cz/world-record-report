@@ -1,4 +1,5 @@
-﻿using BigBang1112.Models.Db;
+﻿using BigBang1112.Data;
+using BigBang1112.Models.Db;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 
 namespace BigBang1112.WorldRecordReportLib.Repos;
@@ -27,6 +28,7 @@ public interface IWrRepo
     Task<List<WorldRecordModel>> GetWorldRecordHistoryFromMapAsync(MapModel map, CancellationToken cancellationToken = default);
     Task AddWorldRecordAsync(WorldRecordModel wr, CancellationToken cancellationToken = default);
     Task<RefreshModel?> GetRefreshByIdAsync(int id, CancellationToken cancellationToken = default);
+    Task<List<MapModel>> GetMapsByNameAsync(string mapName, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task AddReportAsync(ReportModel report, CancellationToken cancellationToken = default);
     Task<RefreshLoopModel?> GetRefreshLoopByGuidAsync(Guid guid, CancellationToken cancellationToken = default);
     Task<List<WorldRecordModel>> GetWorldRecordHistoryFromMapGroupAsync(MapGroupModel mapGroup, CancellationToken cancellationToken = default);
@@ -43,4 +45,8 @@ public interface IWrRepo
     Task<bool> HasReachedWebhookLimitAsync(AssociatedAccountModel associatedAccount, CancellationToken cancellationToken = default);
     Task AddDiscordWebhookAsync(DiscordWebhookModel webhook, CancellationToken cancellationToken = default);
     Task<WorldRecordModel?> GetWorldRecordAsync(Guid wrGuid, CancellationToken cancellationToken = default);
+    Task<List<string>> GetMapNamesAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
+    Task<List<string>> GetEnvNamesAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
+    Task<List<string>> GetMapUidsAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
+    Task<List<string>> GetTitlePacksAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
 }
