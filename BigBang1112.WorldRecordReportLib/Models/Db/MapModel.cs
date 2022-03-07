@@ -68,4 +68,21 @@ public class MapModel
     {
         return TitlePack?.GetTitleUid() ?? Environment.DisplayName ?? Environment.Name;
     }
+
+    public string GetHumanizedDeformattedName()
+    {
+        // Wouldn't work well for platform maps and maps with fake nadeo login
+
+        if (TitlePack is null)
+        {
+            return DeformattedName;
+        }
+
+        if (Author.Name != NameConsts.LoginNadeoName)
+        {
+            return DeformattedName;
+        }
+
+        return $"{Environment.Name} {DeformattedName}";
+    }
 }
