@@ -263,6 +263,14 @@ public class WrRepo : IWrRepo
         return await _db.WorldRecords.FirstOrDefaultAsync(x => x.Guid == wrGuid, cancellationToken);
     }
 
+    public async Task<WorldRecordModel?> GetWorldRecordAsync(MapModel map, CancellationToken cancellationToken = default)
+    {
+        return await _db.WorldRecords
+            .Where(x => x.Map == map && !x.Ignored)
+            .OrderByDescending(x => x.PublishedOn)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<List<string>> GetMapNamesAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
     {
         return await _db.Maps.Select(x => x.DeformattedName!)
@@ -303,8 +311,35 @@ public class WrRepo : IWrRepo
     public async Task<List<MapModel>> GetMapsByNameAsync(string mapName, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
     {
         return await _db.Maps
-            .Where(x => x.DeformattedName!.Contains(mapName))
+            .Where(x => x.DeformattedName.Contains(mapName))
             .OrderBy(x => x.DeformattedName)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<MapModel>> GetMapsByMultipleParamsAsync(string? mapName = null, string? env = null, string? title = null, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
+    {
+        var queryable = _db.Maps.AsQueryable();
+
+        if (mapName is not null)
+        {
+            queryable = queryable.Where(x => x.DeformattedName.Contains(mapName));
+        }
+
+        if (env is not null)
+        {
+            queryable = queryable.Where(x => x.Environment.Name.Contains(env));
+        }
+
+        if (title is not null)
+        {
+            var split = title.Split('@');
+
+            queryable = queryable.Where(x => x.TitlePack!.Name.Contains(split[0]) && x.TitlePack!.Author.Name.Contains(split[1]));
+        }
+
+        return await queryable.OrderBy(x => x.DeformattedName)
+            .ThenBy(x => x.TitlePack!.Id)
             .Take(limit)
             .ToListAsync(cancellationToken);
     }

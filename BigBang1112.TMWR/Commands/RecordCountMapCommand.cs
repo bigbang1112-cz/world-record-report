@@ -5,8 +5,8 @@ using Discord.WebSocket;
 
 namespace BigBang1112.TMWR.Commands;
 
-[DiscordBotCommand("guid", "Gets the UUID of an entity.")]
-public class GuidCommand : IDiscordBotCommand
+[DiscordBotCommand("recordcount map", "Shows the amount of records on a map.")]
+public class RecordCountMapCommand : IDiscordBotCommand
 {
     public Task AutocompleteAsync(SocketAutocompleteInteraction interaction, AutocompleteOption option)
     {

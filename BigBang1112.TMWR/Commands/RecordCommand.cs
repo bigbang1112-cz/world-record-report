@@ -1,54 +1,34 @@
 ﻿using BigBang1112.Attributes.DiscordBot;
-using BigBang1112.Models;
+using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
-using Discord.WebSocket;
 
 namespace BigBang1112.TMWR.Commands;
 
-[DiscordBotCommand("record", "Shows information about certain record")]
-public class RecordCommand : IDiscordBotCommand
+[DiscordBotCommand("record", "Shows information about a certain record.")]
+public class RecordCommand : MapRelatedCommand
 {
-    public Task AutocompleteAsync(SocketAutocompleteInteraction interaction, AutocompleteOption option)
+    public RecordCommand(IWrRepo repo) : base(repo)
     {
-        return Task.CompletedTask;
+
     }
 
-    public Task ExecuteAsync(SocketSlashCommand slashCommand)
+    public override IEnumerable<SlashCommandOptionBuilder> YieldOptions()
     {
-        return Task.CompletedTask;
-    }
-
-    public Task SelectMenuAsync(SocketMessageComponent messageComponent, IReadOnlyCollection<string> values)
-    {
-        return Task.CompletedTask;
-    }
-
-    public IEnumerable<SlashCommandOptionBuilder> YieldOptions()
-    {
-        yield return new SlashCommandOptionBuilder
+        foreach (var option in base.YieldOptions())
         {
-            Name = "tmx",
-            Type = ApplicationCommandOptionType.SubCommand,
-            Options = new List<SlashCommandOptionBuilder> {
-                new SlashCommandOptionBuilder
-                {
-                    Name = "value",
-                    Type = ApplicationCommandOptionType.String
-                }
-            }
-        };
+            yield return option;
+        }
+
+        yield return CreateMapUidOption();
 
         yield return new SlashCommandOptionBuilder
         {
-            Name = "official",
-            Type = ApplicationCommandOptionType.SubCommand,
-            Options = new List<SlashCommandOptionBuilder> {
-                new SlashCommandOptionBuilder
-                {
-                    Name = "value",
-                    Type = ApplicationCommandOptionType.String
-                }
-            }
+            Name = "rank",
+            Description = "Rank of the record.",
+            Type = ApplicationCommandOptionType.Integer,
+            IsRequired = true,
+            MinValue = 1,
+            MaxValue = 10
         };
     }
 }

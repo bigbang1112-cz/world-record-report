@@ -5,19 +5,30 @@ using Discord;
 
 namespace BigBang1112.TMWR.Commands;
 
-[DiscordBotCommand("wr", "Gets the world record of a map.")]
-public class WrCommand : MapRelatedCommand
+[DiscordBotCommand("history wr", "Gets the world record history of a map.")]
+public class HistoryWrCommand : MapRelatedCommand
 {
     private readonly IWrRepo _repo;
 
-    public WrCommand(IWrRepo repo) : base(repo)
+    public HistoryWrCommand(IWrRepo repo) : base(repo)
     {
         _repo = repo;
     }
 
     protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
     {
-        var wr = await _repo.GetWorldRecordAsync(map);
+        var isTMUF = map.Game.IsTMUF();
+
+        var wrs = await _repo.GetWorldRecordHistoryFromMapAsync(map);
+
+        builder.Title = map.GetHumanizedDeformattedName();
+
+        var desc = string.Join('\n', wrs.Select((x, i) =>
+        {
+            return $"{wrs.Count - i}. **{x.TimeInt32.ToString(useHundredths: isTMUF)}** by {x.GetPlayerNicknameDeformatted()} **({x.DrivenOn})**";
+        }));
+
+        builder.Description = desc;
 
         var thumbnailUrl = map.GetThumbnailUrl();
 
@@ -25,12 +36,6 @@ public class WrCommand : MapRelatedCommand
         {
             builder.ThumbnailUrl = thumbnailUrl;
         }
-
-        builder.Title = wr is null
-            ? "No world record!"
-            : $"{wr.GetTimeFormattedToGame()} by {wr.GetPlayerNicknameDeformatted()}";
-
-        builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname()}";
     }
 
     public override IEnumerable<SlashCommandOptionBuilder> YieldOptions()

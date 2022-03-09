@@ -1,4 +1,5 @@
 ﻿using BigBang1112.Attributes.DiscordBot;
+using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using BigBang1112.WorldRecordReportLib.Services;
@@ -11,6 +12,8 @@ namespace BigBang1112.TMWR.Commands;
 [DiscordBotCommand("top10", "Shows the Top 10 world leaderboard.")]
 public class Top10Command : MapRelatedCommand
 {
+    public const string OptionSelectableRecords = "selectablerecords";
+
     private readonly IWrRepo _repo;
     private readonly IRecordSetService _recordSetService;
 
@@ -20,48 +23,121 @@ public class Top10Command : MapRelatedCommand
         _recordSetService = recordSetService;
     }
 
-    protected override async Task<Embed> CreateEmbedAsync(MapModel map, bool hasMultipleSameNames)
+    public override IEnumerable<SlashCommandOptionBuilder> YieldOptions()
     {
-        var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+        foreach (var option in base.YieldOptions())
+        {
+            yield return option;
+        }
 
-        var desc = "";
+        yield return CreateMapUidOption();
+
+        /*yield return new SlashCommandOptionBuilder
+        {
+            Name = OptionSelectableRecords,
+            Type = ApplicationCommandOptionType.Boolean,
+            Description = "Adds a select menu for specific record selection."
+        };*/
+    }
+
+    protected override Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, IEnumerable<SocketSlashCommandDataOption> options)
+    {
+        /*var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
 
         if (recordSet is null)
         {
-            desc = "No record set found.";
+            return null;
         }
-        else
+
+        var selectableRecords = options.Any(x => x.Name == OptionSelectableRecords && (bool)x.Value == true);
+
+        if (!selectableRecords)
         {
-            var loginDictionary = new Dictionary<string, LoginModel>();
+            return null;
+        }
 
-            foreach (var login in recordSet.Records.Select(x => x.Login))
+        var isTMUF = map.Game.IsTMUF();
+
+        var logins = await FetchLoginModelsFromRecordSetAsync(recordSet);
+
+        var selectMenuBuilder = new SelectMenuBuilder()
+            .WithCustomId("ok")
+            .WithPlaceholder("Select a record...")
+            .WithOptions(recordSet.Records.Select((x, i) =>
             {
-                var loginModel = await _repo.GetLoginAsync(login);
+                var nickname = x.Login;
 
-                if (loginModel is null)
+                if (logins.TryGetValue(x.Login, out LoginModel? loginModel))
                 {
-                    continue;
+                    nickname = loginModel.GetDeformattedNickname();
                 }
 
-                loginDictionary[login] = loginModel;
+                return new SelectMenuOptionBuilder(new TimeInt32(x.Time).ToString(useHundredths: isTMUF), i.ToString(), $"by {nickname}");
+            }).ToList());
+
+        return new ComponentBuilder()
+            .WithSelectMenu(selectMenuBuilder);*/
+
+        return Task.FromResult(default(ComponentBuilder));
+    }
+
+    protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
+    {
+        var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+
+        var desc = recordSet is null
+            ? "No record set found."
+            : await CreateTop10DescAsync(recordSet, map.Game.IsTMUF());
+
+        builder.Title = map.GetHumanizedDeformattedName();
+        builder.Description = desc;
+
+        var thumbnailUrl = map.GetThumbnailUrl();
+
+        if (thumbnailUrl is not null)
+        {
+            builder.ThumbnailUrl = thumbnailUrl;
+        }
+    }
+
+    private async Task<IEnumerable<string>> CreateTop10EnumerableAsync(RecordSet recordSet, bool isTMUF)
+    {
+        var loginDictionary = await FetchLoginModelsFromRecordSetAsync(recordSet);
+
+        return recordSet.Records.Select(x =>
+        {
+            var login = x.Login;
+
+            if (loginDictionary.TryGetValue(login, out LoginModel? loginModel))
+            {
+                login = loginModel.GetDeformattedNickname();
             }
 
-            desc = string.Join('\n', recordSet.Records.Select(x =>
+            return $"{x.Rank}. **{new TimeInt32(x.Time).ToString(useHundredths: isTMUF)}** by {login}";
+        });
+    }
+
+    private async Task<Dictionary<string, LoginModel>> FetchLoginModelsFromRecordSetAsync(RecordSet recordSet)
+    {
+        var loginDictionary = new Dictionary<string, LoginModel>();
+
+        foreach (var login in recordSet.Records.Select(x => x.Login))
+        {
+            var loginModel = await _repo.GetLoginAsync(login);
+
+            if (loginModel is null)
             {
-                var login = x.Login;
+                continue;
+            }
 
-                if (loginDictionary.TryGetValue(login, out LoginModel? loginModel))
-                {
-                    login = loginModel.GetDeformattedNickname();
-                }
-
-                return $"{x.Rank}. **{new TimeInt32(x.Time)}** by {login}";
-            }));
+            loginDictionary[login] = loginModel;
         }
 
-        return new EmbedBuilder()
-            .WithTitle(hasMultipleSameNames ? $"{map.GetHumanizedDeformattedName()}" : map.DeformattedName)
-            .WithDescription(desc)
-            .Build();
+        return loginDictionary;
+    }
+
+    private async Task<string> CreateTop10DescAsync(RecordSet recordSet, bool isTMUF)
+    {
+        return string.Join('\n', await CreateTop10EnumerableAsync(recordSet, isTMUF));
     }
 }

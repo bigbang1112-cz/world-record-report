@@ -1,9 +1,11 @@
-﻿using BigBang1112.Data;
+﻿using BigBang1112.Attributes.DiscordBot;
+using BigBang1112.Data;
 using BigBang1112.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
 using Discord.WebSocket;
+using System.Reflection;
 
 namespace BigBang1112.TMWR.Commands;
 
@@ -31,7 +33,7 @@ public abstract class MapRelatedCommand : IDiscordBotCommand
         };
     }
 
-    public IEnumerable<SlashCommandOptionBuilder> YieldOptions()
+    public virtual IEnumerable<SlashCommandOptionBuilder> YieldOptions()
     {
         yield return new SlashCommandOptionBuilder
         {
@@ -56,8 +58,11 @@ public abstract class MapRelatedCommand : IDiscordBotCommand
             Description = "Title pack of the map.",
             IsAutocomplete = true
         };
+    }
 
-        yield return new SlashCommandOptionBuilder
+    protected static SlashCommandOptionBuilder CreateMapUidOption()
+    {
+        return new SlashCommandOptionBuilder
         {
             Name = OptionMapUid,
             Type = ApplicationCommandOptionType.String,
@@ -66,16 +71,24 @@ public abstract class MapRelatedCommand : IDiscordBotCommand
         };
     }
 
-    public virtual async Task ExecuteAsync(SocketSlashCommand slashCommand)
+    public virtual async Task<DiscordBotMessage> ExecuteAsync(SocketSlashCommand slashCommand, IEnumerable<SocketSlashCommandDataOption> options)
     {
         var mapName = default(string);
+        var env = default(string);
+        var title = default(string);
 
-        foreach (var option in slashCommand.Data.Options)
+        foreach (var option in options)
         {
             switch (option.Name)
             {
                 case OptionMapName:
                     mapName = (string)option.Value;
+                    break;
+                case OptionEnv:
+                    env = (string)option.Value;
+                    break;
+                case OptionTitle:
+                    title = (string)option.Value;
                     break;
                 case OptionMapUid:
                     var mapUid = (string)option.Value;
@@ -86,39 +99,36 @@ public abstract class MapRelatedCommand : IDiscordBotCommand
                         break;
                     }
 
-                    await ExecuteWithMapsAsync(slashCommand, new List<MapModel> { map });
-
-                    return;
+                    return await CreateResponseMessageWithMapsParamAsync(Enumerable.Repeat(map, 1), options);
             }
         }
 
-        var maps = default(List<MapModel>);
+        // If only title would be specified, then for the top 10 command it could display top 10 title ranking, once poss
 
-        if (mapName is null)
-        {
-            await RespondWithNoMapsFound(slashCommand);
-            return;
-        }
+        var maps = await _repo.GetMapsByMultipleParamsAsync(mapName, env, title);
 
-        maps = await _repo.GetMapsByNameAsync(mapName);
-
-        if (!maps.Any())
-        {
-            await RespondWithNoMapsFound(slashCommand);
-            return;
-        }
-
-        await ExecuteWithMapsAsync(slashCommand, maps);
+        return maps.Any()
+            ? await CreateResponseMessageWithMapsParamAsync(maps, options)
+            : CreateResponseMessageNoMapsFound();
     }
 
-    protected static async Task RespondWithNoMapsFound(SocketSlashCommand slashCommand)
+    public virtual async Task<DiscordBotMessage> ExecuteAsync(SocketSlashCommand slashCommand)
+    {
+        var subCommand = slashCommand.Data.Options.FirstOrDefault(x => x.Type == ApplicationCommandOptionType.SubCommand);
+
+        return subCommand is null
+            ? await ExecuteAsync(slashCommand, slashCommand.Data.Options)
+            : await ExecuteAsync(slashCommand, subCommand.Options);
+    }
+
+    protected static DiscordBotMessage CreateResponseMessageNoMapsFound()
     {
         var embed = new EmbedBuilder()
-            .WithTitle("No map was found")
+            .WithTitle("No maps were found")
             .WithDescription("Try different set of filters.")
             .Build();
 
-        await slashCommand.RespondAsync(embed: embed);
+        return new DiscordBotMessage(embed, ephemeral: true);
     }
 
     public async Task AutocompleteAsync(SocketAutocompleteInteraction interaction, AutocompleteOption option)
@@ -135,36 +145,53 @@ public abstract class MapRelatedCommand : IDiscordBotCommand
             .Select(x => new AutocompleteResult(x, x));
     }
 
-    public virtual async Task ExecuteWithMapsAsync(SocketSlashCommand slashCommand, List<MapModel> mapsForMenu)
+    public virtual async Task<DiscordBotMessage> CreateResponseMessageWithMapsParamAsync(IEnumerable<MapModel> mapsForMenu, IEnumerable<SocketSlashCommandDataOption> options)
     {
         var map = mapsForMenu.First();
 
-        var lookup = mapsForMenu.ToLookup(x => x.DeformattedName);
+        var embed = await CreateEmbedResponseAsync(map);
 
-        var firstMapHasMultipleSameNames = lookup[map.DeformattedName].Count() > 1;
+        var builder = await CreateComponentsAsync(map, options);
 
-        var embed = await CreateEmbedAsync(map, firstMapHasMultipleSameNames);
-
-        var component = default(MessageComponent);
-
-        if (mapsForMenu.Count > 1)
+        if (mapsForMenu.Count() > 1)
         {
-            component = CreateSelectMenu(slashCommand, mapsForMenu, lookup);
+            var lookup = mapsForMenu.ToLookup(x => x.DeformattedName);
+
+            var customId = GetType().GetCustomAttribute<DiscordBotCommandAttribute>()?.Name.Replace(' ', '_') ?? throw new Exception();
+
+            builder ??= new ComponentBuilder();
+            builder.WithSelectMenu(CreateSelectMenu(customId, mapsForMenu, lookup));
         }
 
-        await slashCommand.RespondAsync("Execution result:", embed: embed, components: component);
+        return new DiscordBotMessage(embed, builder?.Build());
     }
 
-    protected virtual Task<Embed> CreateEmbedAsync(MapModel map, bool firstMapHasMultipleSameNames)
+    protected virtual Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, IEnumerable<SocketSlashCommandDataOption> options)
     {
-        return Task.FromResult(new EmbedBuilder().WithTitle("Map-related command not implemented").Build());
+        return Task.FromResult<ComponentBuilder?>(null);
     }
 
-    private static MessageComponent CreateSelectMenu(SocketSlashCommand slashCommand, List<MapModel> mapsForMenu, ILookup<string, MapModel> lookup)
+    protected virtual async Task<Embed> CreateEmbedResponseAsync(MapModel map)
+    {
+        var builder = new EmbedBuilder();
+
+        await BuildEmbedResponseAsync(map, builder);
+
+        return builder.Build();
+    }
+
+    protected virtual Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
+    {
+        builder.Title = "Map-related command not implemented.";
+
+        return Task.CompletedTask;
+    }
+
+    private static SelectMenuBuilder CreateSelectMenu(string customId, IEnumerable<MapModel> mapsForMenu, ILookup<string, MapModel> lookup)
     {
         var menuBuilder = new SelectMenuBuilder()
             .WithPlaceholder("Select other map...")
-            .WithCustomId(slashCommand.CommandName);
+            .WithCustomId(customId);
 
         foreach (var m in mapsForMenu)
         {
@@ -179,12 +206,10 @@ public abstract class MapRelatedCommand : IDiscordBotCommand
             menuBuilder.AddOption(label, m.MapUid, description: $"by {m.Author.GetDeformattedNickname()}");
         }
 
-        return new ComponentBuilder()
-            .WithSelectMenu(menuBuilder)
-            .Build();
+        return menuBuilder;
     }
 
-    public virtual async Task SelectMenuAsync(SocketMessageComponent messageComponent, IReadOnlyCollection<string> values)
+    public virtual async Task<DiscordBotMessage> SelectMenuAsync(SocketMessageComponent messageComponent, IReadOnlyCollection<string> values)
     {
         var mapUid = values.First();
 
@@ -192,16 +217,9 @@ public abstract class MapRelatedCommand : IDiscordBotCommand
 
         if (map is null)
         {
-            return;
+            return new DiscordBotMessage(new EmbedBuilder().WithTitle("Map not found.").Build());
         }
 
-        var mapNames = await _repo.GetMapNamesAsync(map.DeformattedName);
-
-        var embed = await CreateEmbedAsync(map, mapNames.Count > 1);
-
-        await messageComponent.UpdateAsync(x =>
-        {
-            x.Embed = embed;
-        });
+        return new DiscordBotMessage(await CreateEmbedResponseAsync(map));
     }
 }
