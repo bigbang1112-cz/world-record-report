@@ -604,8 +604,8 @@ public class TM2ReportService : ITM2ReportService
 
         var embeds = new List<Discord.Embed> { embed };
 
-        var login = WorldRecordModel.GetPlayerLogin(report.WorldRecord);
-        var nickname = WorldRecordModel.GetPlayerNickname(report.WorldRecord);
+        var login = report.WorldRecord.GetPlayerLogin();
+        var nickname = report.WorldRecord.GetPlayerNicknameDeformatted();
 
         embeds.AddRange(ApplyAdditionalEmbeds(login, nickname));
 

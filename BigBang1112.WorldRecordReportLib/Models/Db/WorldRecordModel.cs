@@ -59,34 +59,33 @@ public class WorldRecordModel
     {
         var mapName = Map?.Name ?? "[not found]";
 
-        var (time, userName) = GetWrParams(this);
-
-        var baseStr = $"{time} by {userName} on {mapName}";
+        var baseStr = $"{TimeInt32} by {GetPlayerNicknameDeformatted()} on {mapName}";
 
         if (PreviousWorldRecord is not null)
         {
-            var (prevTime, prevUserName) = GetWrParams(PreviousWorldRecord);
-            baseStr += $" (previous: {prevTime} by {prevUserName})";
+            baseStr += $" (previous: {PreviousWorldRecord.TimeInt32} by {PreviousWorldRecord.GetPlayerNicknameDeformatted()})";
         }
 
         return baseStr;
     }
 
-    private static (TimeInt32 time, string userName) GetWrParams(WorldRecordModel wrModel)
+    public string GetPlayerLogin()
     {
-        var time = wrModel.TimeInt32;
-        var userName = wrModel.Player?.ToString() ?? wrModel.TmxPlayer?.Nickname ?? "[not found]";
-
-        return (time, userName);
+        return Player?.Name ?? TmxPlayer?.Nickname ?? "[unknown player]";
     }
 
-    public static string GetPlayerLogin(WorldRecordModel wr)
+    public string GetPlayerNickname()
     {
-        return wr.Player?.Name ?? wr.TmxPlayer?.Nickname ?? "[unknown login]";
+        return Player?.Nickname ?? TmxPlayer?.Nickname ?? "[unknown player]";
     }
 
-    public static string GetPlayerNickname(WorldRecordModel wr)
+    public string GetPlayerNicknameDeformatted()
     {
-        return wr.Player?.Nickname ?? wr.TmxPlayer?.Nickname ?? "[unknown nickname]";
+        return Player?.GetDeformattedNickname() ?? TmxPlayer?.Nickname ?? "[unknown player]";
+    }
+
+    public string GetTimeFormattedToGame()
+    {
+        return TimeInt32.ToString(useHundredths: Map.Game.IsTMUF());
     }
 }

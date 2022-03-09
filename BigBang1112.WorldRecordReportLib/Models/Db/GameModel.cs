@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using BigBang1112.WorldRecordReportLib.Data;
+using System.ComponentModel.DataAnnotations;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
@@ -19,5 +20,15 @@ public class GameModel
     public override string ToString()
     {
         return string.IsNullOrWhiteSpace(DisplayName) ? Name : DisplayName;
+    }
+
+    public bool IsTMUF()
+    {
+        return Name == NameConsts.GameTMUFName;
+    }
+
+    public bool IsTM2()
+    {
+        return Name == NameConsts.GameTM2Name;
     }
 }

@@ -85,4 +85,33 @@ public class MapModel
 
         return $"{Environment.Name} {DeformattedName}";
     }
+
+    public string? GetThumbnailUrl()
+    {
+        if (MxId is null)
+        {
+            return null;
+        }
+
+        if (Game.IsTMUF())
+        {
+            if (TmxAuthor is null)
+            {
+                return null;
+            }
+
+            return TmxAuthor.Site.ShortName switch
+            {
+                NameConsts.TMXSiteUnited or NameConsts.TMXSiteTMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}/image/0",
+                _ => null,
+            };
+        }
+
+        if (Game.IsTM2())
+        {
+            return $"https://tm.mania-exchange.com/tracks/thumbnail/{MxId}";
+        }
+
+        return null;
+    }
 }

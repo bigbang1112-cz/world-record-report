@@ -98,8 +98,8 @@ public class DiscordWebhookService : IDiscordWebhookService
         }
 
         var nickname = FilterOutNickname(
-            nickname: TextFormatter.Deformat(WorldRecordModel.GetPlayerNickname(wr)),
-            loginIfFilteredOut: WorldRecordModel.GetPlayerLogin(wr));
+            nickname: wr.GetPlayerNicknameDeformatted(),
+            loginIfFilteredOut: wr.GetPlayerLogin());
 
         var builder = new Discord.EmbedBuilder()
             .WithTitle("New world record!")
@@ -156,20 +156,20 @@ public class DiscordWebhookService : IDiscordWebhookService
                 map.Environment.Color[0],
                 map.Environment.Color[1],
                 map.Environment.Color[2]))
-            .AddField("Map", TextFormatter.Deformat(map.Name), true)
+            .AddField("Map", map.DeformattedName, true)
             .AddField("Time", time, true)
-            .AddField("By", TextFormatter.Deformat(WorldRecordModel.GetPlayerNickname(previousWr)), true);
+            .AddField("By", previousWr.GetPlayerNicknameDeformatted(), true);
 
         var currentWr = removedWr.Current;
 
         if (currentWr is not null)
         {
             var prevTime = currentWr.TimeInt32.ToString();
-            var prevNickname = WorldRecordModel.GetPlayerNickname(currentWr);
+            var prevNickname = currentWr.GetPlayerNicknameDeformatted();
 
             builder
                 .AddField("New time", prevTime, true)
-                .AddField("Now by", TextFormatter.Deformat(prevNickname), true);
+                .AddField("Now by", prevNickname, true);
         }
 
         AddThumbnailAndUrl(builder, map);
