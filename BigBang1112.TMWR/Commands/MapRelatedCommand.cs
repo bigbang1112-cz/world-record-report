@@ -172,9 +172,4 @@ public abstract class MapRelatedCommand : DiscordBotCommand
 
         return new DiscordBotMessage(await CreateEmbedResponseAsync(map), componentBuilder?.Build());
     }
-
-    protected virtual Task<MessageComponent?> CreateComponentResponseAsync(MapModel map)
-    {
-        return Task.FromResult(default(MessageComponent));
-    }
 }

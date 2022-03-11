@@ -41,11 +41,6 @@ public class Top10Command : MapRelatedWithUidCommand
         }
     }
 
-    protected override Task<MessageComponent?> CreateComponentResponseAsync(MapModel map)
-    {
-        return base.CreateComponentResponseAsync(map);
-    }
-
     protected override async Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, bool isModified)
     {
         var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
