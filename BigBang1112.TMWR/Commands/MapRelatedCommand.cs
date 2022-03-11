@@ -1,5 +1,6 @@
 ﻿using BigBang1112.Attributes.DiscordBot;
-using BigBang1112.Models;
+using BigBang1112.Extensions;
+using BigBang1112.Models.DiscordBot;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
@@ -91,7 +92,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
     protected virtual async Task<Embed> CreateEmbedResponseAsync(MapModel map)
     {
         var builder = new EmbedBuilder();
-        builder.WithFooter(map.MapUid, "https://wr.bigbang1112.cz/favicon/favicon-32x32.png");
+        builder.WithBotFooter(map.MapUid);
 
         await BuildEmbedResponseAsync(map, builder);
 

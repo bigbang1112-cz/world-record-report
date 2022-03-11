@@ -1,5 +1,5 @@
 ﻿using BigBang1112.Attributes.DiscordBot;
-using BigBang1112.Models;
+using BigBang1112.Models.DiscordBot;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
 using Discord.WebSocket;
