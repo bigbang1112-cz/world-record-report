@@ -1,6 +1,7 @@
 ﻿using BigBang1112.Data;
 using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models.Db;
+using EFCoreSecondLevelCacheInterceptor;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -19,17 +20,17 @@ public class WrRepo : IWrRepo
 
     public async Task<MapModel?> GetMapByUidAsync(string mapUid, CancellationToken cancellationToken = default)
     {
-        return await _db.Maps.FirstOrDefaultAsync(x => x.MapUid == mapUid, cancellationToken);
+        return await _db.Maps.Cacheable().FirstOrDefaultAsync(x => x.MapUid == mapUid, cancellationToken);
     }
 
     public async Task<bool> HasRecordCountAsync(MapModel map, CancellationToken cancellationToken = default)
     {
-        return await _db.RecordCounts.AnyAsync(x => x.Map == map, cancellationToken);
+        return await _db.RecordCounts.Cacheable().AnyAsync(x => x.Map == map, cancellationToken);
     }
 
     public async Task<GameModel> GetTM2GameAsync(CancellationToken cancellationToken = default)
     {
-        return await _db.Games.FirstAsync(x => x.Name == NameConsts.GameTM2Name, cancellationToken);
+        return await _db.Games.Cacheable().FirstAsync(x => x.Name == NameConsts.GameTM2Name, cancellationToken);
     }
 
     public async Task<LoginModel> GetOrAddLoginAsync(string login, GameModel game, CancellationToken cancellationToken = default)
@@ -38,7 +39,7 @@ public class WrRepo : IWrRepo
         {
             Name = login,
             Game = game
-        }, cancellationToken);
+        }, cancellationToken: cancellationToken);
     }
 
     public async Task AddRecordSetDetailedChangesAsync(IEnumerable<RecordSetDetailedChangeModel> changes, CancellationToken cancellationToken = default)
@@ -55,17 +56,22 @@ public class WrRepo : IWrRepo
     {
         return await _db.IgnoredLoginsFromRemovedRecordReport
             .Select(x => x.Login)
+            .Cacheable()
             .ToListAsync(cancellationToken);
     }
 
     public async Task<List<DiscordWebhookModel>> GetDiscordWebhooksAsync(CancellationToken cancellationToken = default)
     {
-        return await _db.DiscordWebhooks.ToListAsync(cancellationToken);
+        return await _db.DiscordWebhooks
+            .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<DiscordWebhookModel?> GetDiscordWebhookByGuidAsync(Guid webhookGuid, CancellationToken cancellationToken = default)
     {
-        return await _db.DiscordWebhooks.FirstOrDefaultAsync(x => x.Guid == webhookGuid, cancellationToken);
+        return await _db.DiscordWebhooks
+            .Cacheable()
+            .FirstOrDefaultAsync(x => x.Guid == webhookGuid, cancellationToken);
     }
 
     public async Task AddRecordCountAsync(RecordCountModel recordCount, CancellationToken cancellationToken = default)
@@ -90,14 +96,19 @@ public class WrRepo : IWrRepo
 
     public async Task<List<MapModel>> GetMapsFromMapGroupAsync(MapGroupModel mapGroup, CancellationToken cancellationToken = default)
     {
-        return await _db.Maps.Where(x => x.Group == mapGroup).ToListAsync(cancellationToken);
+        return await _db.Maps
+            .Where(x => x.Group == mapGroup)
+            .Cacheable()
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<List<WorldRecordModel>> GetWorldRecordHistoryFromMapAsync(MapModel map, CancellationToken cancellationToken = default)
     {
         return await _db.WorldRecords
             .Where(x => x.Map == map)
-            .OrderByDescending(x => x.PublishedOn).ToListAsync(cancellationToken);
+            .OrderByDescending(x => x.PublishedOn)
+            .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromSeconds(10))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task AddWorldRecordAsync(WorldRecordModel wr, CancellationToken cancellationToken = default)
@@ -126,6 +137,7 @@ public class WrRepo : IWrRepo
             .Include(x => x.StartingRefresh)
             .ThenInclude(x => x.MapGroup)
             .ThenInclude(x => x!.TitlePack) //
+            .Cacheable()
             .FirstOrDefaultAsync(x => x.Guid == guid, cancellationToken);
     }
 
@@ -133,22 +145,29 @@ public class WrRepo : IWrRepo
     {
         return await _db.WorldRecords
             .Where(x => x.Map.Group == mapGroup)
+            .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromSeconds(10))
             .OrderByDescending(x => x.PublishedOn).ToListAsync(cancellationToken);
     }
 
     public async Task<ReportModel?> GetReportFromWorldRecordAsync(WorldRecordModel wr, CancellationToken cancellationToken = default)
     {
-        return await _db.Reports.FirstOrDefaultAsync(x => x.WorldRecord == wr, cancellationToken);
+        return await _db.Reports.Cacheable().FirstOrDefaultAsync(x => x.WorldRecord == wr, cancellationToken);
     }
 
     public async Task<List<LoginModel>> GetLoginsByGameAsync(GameModel game, CancellationToken cancellationToken = default)
     {
-        return await _db.Logins.Where(x => x.Game == game).ToListAsync(cancellationToken);
+        return await _db.Logins
+            .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
+            .Where(x => x.Game == game)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<List<LoginModel>> GetLoginsInTM2Async(CancellationToken cancellationToken = default)
     {
-        return await _db.Logins.Where(x => x.Game.Name == NameConsts.GameTM2Name).ToListAsync(cancellationToken);
+        return await _db.Logins
+            .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
+            .Where(x => x.Game.Name == NameConsts.GameTM2Name)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<List<WorldRecordModel>> GetReportsFromTitlePackAsync(string titleIdPart, string titleAuthorPart, int count, CancellationToken cancellationToken = default)
@@ -166,17 +185,22 @@ public class WrRepo : IWrRepo
                 && x.Map.TitlePack.Author.Name == titleAuthorPart)
             .OrderByDescending(x => x.DrivenOn)
             .Take(count)
+            .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
             .ToListAsync(cancellationToken);
     }
 
     public async Task<MapModel?> GetMapByMxIdAsync(int mxId, TmxSiteModel site, CancellationToken cancellationToken = default)
     {
-        return await _db.Maps.FirstOrDefaultAsync(x => x.TmxAuthor != null && x.TmxAuthor.Site == site && x.MxId == mxId, cancellationToken);
+        return await _db.Maps
+            .Cacheable()
+            .FirstOrDefaultAsync(x => x.TmxAuthor != null && x.TmxAuthor.Site == site && x.MxId == mxId, cancellationToken);
     }
 
     public async Task<TmxSiteModel?> GetTmxSiteByShortNameAsync(string shortName, CancellationToken cancellationToken = default)
     {
-        return await _db.TmxSites.FirstOrDefaultAsync(x => x.ShortName == shortName, cancellationToken);
+        return await _db.TmxSites
+            .Cacheable()
+            .FirstOrDefaultAsync(x => x.ShortName == shortName, cancellationToken);
     }
 
     public async Task<TmxSiteModel> GetUnitedTmxAsync(CancellationToken cancellationToken = default)
@@ -196,7 +220,7 @@ public class WrRepo : IWrRepo
             UserId = userId,
             JoinedOn = DateTime.UtcNow,
             Site = site
-        }, cancellationToken);
+        }, cancellationToken: cancellationToken);
     }
 
     public async Task<List<WorldRecordModel>> GetLastWorldRecordsInTMUFAsync(int count, CancellationToken cancellationToken = default)
@@ -228,12 +252,14 @@ public class WrRepo : IWrRepo
 
     public async Task<List<DiscordWebhookModel>> GetDiscordWebhooksByAssociatedAccountAsync(AssociatedAccountModel associatedAccount, CancellationToken cancellationToken = default)
     {
-        return await _db.DiscordWebhooks.Where(x => x.Account.Guid == associatedAccount.Guid).ToListAsync(cancellationToken);
+        return await _db.DiscordWebhooks
+            .Where(x => x.Account.Guid == associatedAccount.Guid)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<AssociatedAccountModel> GetOrCreateAssociatedAccountAsync(Guid accountGuid, CancellationToken cancellationToken = default)
     {
-        return await _db.AssociatedAccounts.FirstOrAddAsync(x => x.Guid == accountGuid, () => new AssociatedAccountModel { Guid = accountGuid }, cancellationToken);
+        return await _db.AssociatedAccounts.FirstOrAddAsync(x => x.Guid == accountGuid, () => new AssociatedAccountModel { Guid = accountGuid }, cancellationToken: cancellationToken);
     }
 
     public async Task<bool> HasReachedWebhookLimitAsync(AssociatedAccountModel associatedAccount, CancellationToken cancellationToken = default)
@@ -260,7 +286,9 @@ public class WrRepo : IWrRepo
 
     public async Task<WorldRecordModel?> GetWorldRecordAsync(Guid wrGuid, CancellationToken cancellationToken = default)
     {
-        return await _db.WorldRecords.FirstOrDefaultAsync(x => x.Guid == wrGuid, cancellationToken);
+        return await _db.WorldRecords
+            .Cacheable()
+            .FirstOrDefaultAsync(x => x.Guid == wrGuid, cancellationToken);
     }
 
     public async Task<WorldRecordModel?> GetWorldRecordAsync(MapModel map, CancellationToken cancellationToken = default)
@@ -268,6 +296,7 @@ public class WrRepo : IWrRepo
         return await _db.WorldRecords
             .Where(x => x.Map == map && !x.Ignored)
             .OrderByDescending(x => x.PublishedOn)
+            .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -278,6 +307,7 @@ public class WrRepo : IWrRepo
             .Distinct()
             .OrderBy(x => x)
             .Take(limit)
+            .Cacheable()
             .ToListAsync(cancellationToken);
     }
 
@@ -288,6 +318,7 @@ public class WrRepo : IWrRepo
             .OrderBy(x => x.Id)
             .Select(x => x.Name)
             .Take(limit)
+            .Cacheable()
             .ToListAsync(cancellationToken);
     }
 
@@ -297,12 +328,14 @@ public class WrRepo : IWrRepo
             .Where(x => x.Contains(value))
             .OrderBy(x => x)
             .Take(limit)
+            .Cacheable()
             .ToListAsync(cancellationToken);
     }
 
     public async Task<List<string>> GetTitlePacksAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
     {
         return (await _db.TitlePacks
+            .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
             .ToListAsync(cancellationToken))
             .Select(x => $"{x.Name}@{x.Author.Name}")
             .ToList();
@@ -314,6 +347,7 @@ public class WrRepo : IWrRepo
             .Where(x => x.DeformattedName.Contains(mapName))
             .OrderBy(x => x.DeformattedName)
             .Take(limit)
+            .Cacheable()
             .ToListAsync(cancellationToken);
     }
 
@@ -341,6 +375,7 @@ public class WrRepo : IWrRepo
         return await queryable.OrderBy(x => x.DeformattedName)
             .ThenBy(x => x.TitlePack!.Id)
             .Take(limit)
+            .Cacheable()
             .ToListAsync(cancellationToken);
     }
 }
