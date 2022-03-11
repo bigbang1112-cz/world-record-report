@@ -16,6 +16,21 @@ public class WrCommand : MapRelatedWithUidCommand
         _repo = repo;
     }
 
+    protected override async Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, bool isModified)
+    {
+        var wr = await _repo.GetWorldRecordAsync(map);
+
+        if (wr is null)
+        {
+            return null;
+        }
+
+        return new ComponentBuilder()
+            .WithButton("Checkpoints", CreateCustomId($"{wr.Guid}-checkpoints"), ButtonStyle.Secondary, disabled: true)
+            .WithButton("Inputs", CreateCustomId($"{wr.Guid}-inputs"), ButtonStyle.Secondary, disabled: true)
+            .WithButton("Compare with previous", CreateCustomId($"{wr.Guid}-compareprev"), ButtonStyle.Secondary, disabled: true);
+    }
+
     protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
     {
         var wr = await _repo.GetWorldRecordAsync(map);
