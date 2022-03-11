@@ -31,6 +31,6 @@ public class LoginModel
 
     public string GetDeformattedNickname()
     {
-        return string.IsNullOrWhiteSpace(Nickname) ? Name : TextFormatter.Deformat(Nickname);
+        return string.IsNullOrWhiteSpace(Nickname) ? Name : TextFormatter.Deformat(Nickname).Trim();
     }
 }
