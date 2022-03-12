@@ -35,6 +35,8 @@ builder.Services.AddScoped<WrAuthService>();
 builder.Services.AddScoped<ITmxService, TmxService>();
 builder.Services.AddScoped<TmxReportService>();
 
+builder.Services.AddScoped<IGhostService, GhostService>();
+
 builder.Services.AddHostedService<TmwrDiscordBotService>();
 
 builder.Services.AddQuartz(q =>

@@ -32,7 +32,7 @@ public class TM2ReportService : ITM2ReportService
     private readonly IRecordSetService _recordSetService;
     private readonly IMemoryCache _cache;
     private readonly IDiscordWebhookService _discordWebhookService;
-    private readonly IFileHostService _fileHostService;
+    private readonly IGhostService _ghostService;
 
     public TM2ReportService(
         ILogger<TM2ReportService> logger,
@@ -40,14 +40,14 @@ public class TM2ReportService : ITM2ReportService
         IRecordSetService recordSetService,
         IMemoryCache cache,
         IDiscordWebhookService discordWebhookService,
-        IFileHostService fileHostService)
+        IGhostService ghostService)
     {
         _logger = logger;
         _repo = repo;
         _recordSetService = recordSetService;
         _cache = cache;
         _discordWebhookService = discordWebhookService;
-        _fileHostService = fileHostService;
+        _ghostService = ghostService;
     }
 
     /// <exception cref="RefreshLoopNotFoundException"/>
@@ -353,7 +353,7 @@ public class TM2ReportService : ITM2ReportService
                 {
                     verified = true;
                     replayUrl = record.ReplayUrl;
-                    timestamp = await GetTimestampAndDownloadGhostAsync(leaderboard.MapUid, record);
+                    timestamp = await _ghostService.DownloadGhostAndGetTimestampAsync(leaderboard.MapUid, record);
                     login = record.Login;
                     nickname = record.Nickname;
 
@@ -437,7 +437,7 @@ public class TM2ReportService : ITM2ReportService
         // Reference the PREVIOUS WR from 'currentWr' as the previous wr
         // It is possible to be null if 'currentWr.PreviousWorldRecord' is null
 
-        var timestamp = await GetTimestampAndDownloadGhostAsync(map.MapUid, record);
+        var timestamp = await _ghostService.DownloadGhostAndGetTimestampAsync(map.MapUid, record);
 
         var freshWr = await CreateWorldRecordAsync(record, map, timestamp,
             previousWr: currentWr.PreviousWorldRecord,
@@ -450,7 +450,7 @@ public class TM2ReportService : ITM2ReportService
 
     private async Task<WorldRecordModel?> AddNewWorldRecordAsync(MapModel map, LeaderboardRecord record, WorldRecordModel? previousWr)
     {
-        var timestamp = await GetTimestampAndDownloadGhostAsync(map.MapUid, record);
+        var timestamp = await _ghostService.DownloadGhostAndGetTimestampAsync(map.MapUid, record);
 
         if (previousWr is null)
         {
@@ -477,31 +477,6 @@ public class TM2ReportService : ITM2ReportService
         // Do not report
 
         return null;
-    }
-
-    private async Task<DateTimeOffset> GetTimestampAndDownloadGhostAsync(string mapUid, LeaderboardRecord record)
-    {
-        if (record.IsFromManialink)
-        {
-            return record.Timestamp;
-        }
-
-        using var http = new HttpClient(); // TODO: Put as static
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("World Record Report by BigBang1112 | Ghost download");
-
-        using var response = await http.GetAsync(record.ReplayUrl);
-
-        if (response.IsSuccessStatusCode)
-        {
-            using var fileStream = File.OpenWrite(_fileHostService.GetFilePath("Ghosts", $"{mapUid}_{record.Time.TotalMilliseconds}_{record.Login}.Ghost.Gbx"));
-            using var ghostStream = await response.Content.ReadAsStreamAsync();
-            await ghostStream.CopyToAsync(fileStream);
-
-            return response.Content.Headers.LastModified.GetValueOrDefault(DateTimeOffset.UtcNow);
-        }
-
-        // access denied or not found
-        return DateTimeOffset.UtcNow;
     }
 
     private static bool IsRemovedWorldRecord(WorldRecordModel currentWr, LeaderboardRecord record)

@@ -22,6 +22,7 @@ public class RecordSetService : IRecordSetService
     private readonly IWrRepo _repo;
     private readonly IMemoryCache _cache;
     private readonly IDiscordWebhookService _discordWebhookService;
+    private readonly IGhostService _ghostService;
 
     private static readonly JsonSerializerOptions jsonSerializerOptions = new()
     {
@@ -38,13 +39,15 @@ public class RecordSetService : IRecordSetService
                             IWebHostEnvironment env,
                             IWrRepo repo,
                             IMemoryCache cache,
-                            IDiscordWebhookService discordWebhookService)
+                            IDiscordWebhookService discordWebhookService,
+                            IGhostService ghostService)
     {
         _logger = logger;
         _env = env;
         _repo = repo;
         _cache = cache;
         _discordWebhookService = discordWebhookService;
+        _ghostService = ghostService;
     }
 
     public void GetFilePaths(string zone, string mapUid,
@@ -93,6 +96,8 @@ public class RecordSetService : IRecordSetService
             recordSetPrev = await JsonHelper.DeserializeAsync<RecordSet>(gzip, jsonSerializerOptions);
         }
 
+        await DownloadMissingGhostsAsync(mapUid, recordSet);
+
         var recordSetChanges = CompareTop10(recordSet, recordSetPrev);
         var timeChanges = CompareTimes(recordSet, recordSetPrev);
 
@@ -124,6 +129,23 @@ public class RecordSetService : IRecordSetService
         }
 
         _cache.Set(cacheKey, DateTime.UtcNow);
+    }
+
+    private async Task DownloadMissingGhostsAsync(string mapUid, RecordSet recordSet)
+    {
+        foreach (var record in recordSet.Records)
+        {
+            if (_ghostService.GhostExists(mapUid, record))
+            {
+                continue;
+            }
+
+            await _ghostService.DownloadGhostAndGetTimestampAsync(mapUid, record);
+
+            _logger.LogInformation("Downloaded {time} on {mapUid} by {login}", new TimeInt32(record.Time), mapUid, record.Login);
+
+            await Task.Delay(500);
+        }
     }
 
     private async Task ApplyChangesAsync(RecordSet recordSet, string fullFileName, RecordSetDetailedRecordChanges? recordSetChanges, RecordSetChanges timeChanges, string cacheKey, MapModel map, bool noCountExists)
