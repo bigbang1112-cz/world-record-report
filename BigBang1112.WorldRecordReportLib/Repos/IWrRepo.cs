@@ -26,12 +26,15 @@ public interface IWrRepo
     Task AddDiscordWebhookMessageAsync(DiscordWebhookMessageModel msg);
     Task<List<MapModel>> GetMapsFromMapGroupAsync(MapGroupModel mapGroup, CancellationToken cancellationToken = default);
     Task<List<WorldRecordModel>> GetWorldRecordHistoryFromMapAsync(MapModel map, CancellationToken cancellationToken = default);
+    Task<RecordSetChangeModel?> GetLastRecordSetChangeOnMapAsync(MapModel map, CancellationToken cancellationToken = default);
+    Task<RecordSetDetailedChangeModel?> GetLastRecordSetDetailedChangeOnMapAsync(MapModel map, CancellationToken cancellationToken = default);
     Task AddWorldRecordAsync(WorldRecordModel wr, CancellationToken cancellationToken = default);
     Task<RefreshModel?> GetRefreshByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<List<MapModel>> GetMapsByNameAsync(string mapName, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task AddReportAsync(ReportModel report, CancellationToken cancellationToken = default);
     Task<RefreshLoopModel?> GetRefreshLoopByGuidAsync(Guid guid, CancellationToken cancellationToken = default);
     Task<List<WorldRecordModel>> GetWorldRecordHistoryFromMapGroupAsync(MapGroupModel mapGroup, CancellationToken cancellationToken = default);
+    Task<RecordSetDetailedChangeModel?> GetOldestRecordSetDetailedChangeOnMapAsync(MapModel map, CancellationToken cancellationToken = default);
     Task<ReportModel?> GetReportFromWorldRecordAsync(WorldRecordModel wr, CancellationToken cancellationToken = default);
     Task<List<MapModel>> GetMapsByMultipleParamsAsync(string? mapName = null, string? env = null, string? title = null, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task<List<WorldRecordModel>> GetReportsFromTitlePackAsync(string titleIdPart, string titleAuthorPart, int count, CancellationToken cancellationToken = default);

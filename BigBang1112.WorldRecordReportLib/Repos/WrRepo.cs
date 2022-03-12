@@ -1,5 +1,6 @@
 ﻿using BigBang1112.Data;
 using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using EFCoreSecondLevelCacheInterceptor;
 using Microsoft.EntityFrameworkCore;
@@ -377,5 +378,30 @@ public class WrRepo : IWrRepo
             .Take(limit)
             .Cacheable()
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<RecordSetDetailedChangeModel?> GetLastRecordSetDetailedChangeOnMapAsync(MapModel map, CancellationToken cancellationToken = default)
+    {
+        return await _db.RecordSetDetailedChanges
+            .Where(x => x.Map == map && x.Type != RecordSetDetailedChangeType.PushedOff)
+            .OrderByDescending(x => x.DrivenBefore)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<RecordSetChangeModel?> GetLastRecordSetChangeOnMapAsync(MapModel map, CancellationToken cancellationToken = default)
+    {
+        return await _db.RecordSetChanges
+            .Where(x => x.Map == map)
+            .OrderByDescending(x => x.DrivenBefore)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<RecordSetDetailedChangeModel?> GetOldestRecordSetDetailedChangeOnMapAsync(MapModel map, CancellationToken cancellationToken = default)
+    {
+        return await _db.RecordSetDetailedChanges
+            .Where(x => x.Map == map && x.DrivenBefore != null)
+            .OrderBy(x => x.DrivenBefore)
+            .Cacheable()
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }
