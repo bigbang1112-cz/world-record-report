@@ -39,6 +39,11 @@ public class Top10Command : MapRelatedWithUidCommand
         {
             builder.ThumbnailUrl = thumbnailUrl;
         }
+
+        if (recordSet is not null)
+        {
+            builder.AddField("Record count", recordSet.GetRecordCount().ToString("N0"));
+        }
     }
 
     protected override async Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, bool isModified)
