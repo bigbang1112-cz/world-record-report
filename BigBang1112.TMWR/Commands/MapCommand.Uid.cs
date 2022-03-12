@@ -21,7 +21,7 @@ public partial class MapCommand
         protected override Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
         {
             builder.Title = map.MapUid;
-            builder.WithBotFooter($"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname()}");
+            builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname()}";
 
             return Task.CompletedTask;
         }
