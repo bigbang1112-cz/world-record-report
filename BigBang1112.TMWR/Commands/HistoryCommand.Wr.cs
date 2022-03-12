@@ -1,4 +1,5 @@
 ﻿using BigBang1112.Attributes.DiscordBot;
+using BigBang1112.Extensions;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
@@ -11,6 +12,9 @@ public partial class HistoryCommand
     public class Wr : MapRelatedWithUidCommand
     {
         private readonly IWrRepo _repo;
+
+        public bool HideTimestamps { get; set; }
+        public bool HideNicknames { get; set; }
 
         public Wr(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo) : base(tmwrDiscordBotService, repo)
         {
@@ -27,7 +31,22 @@ public partial class HistoryCommand
 
             var desc = string.Join('\n', wrs.Select((x, i) =>
             {
-                return $"{wrs.Count - i}. **{x.TimeInt32.ToString(useHundredths: isTMUF)}** by {x.GetPlayerNicknameDeformatted()} **({x.DrivenOn})**";
+                if (HideNicknames && HideTimestamps)
+                {
+                    return $"{wrs.Count - i}. **{x.TimeInt32.ToString(useHundredths: isTMUF)}**";
+                }
+
+                if (HideTimestamps)
+                {
+                    return $"{wrs.Count - i}. **{x.TimeInt32.ToString(useHundredths: isTMUF)}** by {x.GetPlayerNicknameDeformatted()}";
+                }
+
+                if (HideNicknames)
+                {
+                    return $"{wrs.Count - i}. **{x.TimeInt32.ToString(useHundredths: isTMUF)}** ({x.DrivenOn.ToTimestampTag()})";
+                }
+
+                return $"{wrs.Count - i}. **{x.TimeInt32.ToString(useHundredths: isTMUF)}** by {x.GetPlayerNicknameDeformatted()} ({x.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
             }));
 
             builder.Description = desc;
@@ -38,6 +57,8 @@ public partial class HistoryCommand
             {
                 builder.ThumbnailUrl = thumbnailUrl;
             }
+
+            builder.Footer = null;
         }
     }
 }
