@@ -53,7 +53,9 @@ public class WrCommand : MapRelatedWithUidCommand
             builder.Footer = null;
         }
         else
-        { 
+        {
+            builder.AddField("Driven on", wr.DrivenOn.ToTimestampTag(TimestampTagStyles.LongDateTime));
+            builder.Timestamp = DateTime.SpecifyKind(wr.DrivenOn, DateTimeKind.Utc);
             builder.WithBotFooter(wr.Guid.ToString());
         }
     }
