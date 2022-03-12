@@ -114,4 +114,33 @@ public class MapModel
 
         return null;
     }
+
+    public string? GetTmxUrl()
+    {
+        if (MxId is null)
+        {
+            return null;
+        }
+
+        if (Game.IsTMUF())
+        {
+            if (TmxAuthor is null)
+            {
+                return null;
+            }
+
+            return TmxAuthor.Site.ShortName switch
+            {
+                NameConsts.TMXSiteUnited or NameConsts.TMXSiteTMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}",
+                _ => null,
+            };
+        }
+
+        if (Game.IsTM2())
+        {
+            return $"https://tm.mania.exchange/maps/{MxId}";
+        }
+
+        return null;
+    }
 }
