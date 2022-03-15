@@ -269,6 +269,14 @@ public class TM2ReportService : ITM2ReportService
 
             if (loginModel.Nickname is not null && loginModel.Nickname != nickname)
             {
+                var latestNicknameChange = await _repo.GetLatestNicknameChangeByLoginAsync(loginModel);
+
+                if (latestNicknameChange is not null
+                    && DateTime.UtcNow - latestNicknameChange.PreviousLastSeenOn <= TimeSpan.FromHours(1))
+                {
+                    continue; // loginModel.Nickname set MUST be skipped, otherwise the change would get lost
+                }
+
                 // Track nickname change
                 var nicknameChangeModel = new NicknameChangeModel
                 {

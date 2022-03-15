@@ -410,4 +410,11 @@ public class WrRepo : IWrRepo
     {
         await _db.NicknameChanges.AddAsync(nicknameChangeModel, cancellationToken);
     }
+
+    public async Task<NicknameChangeModel?> GetLatestNicknameChangeByLoginAsync(LoginModel loginModel, CancellationToken cancellationToken = default)
+    {
+        return await _db.NicknameChanges
+            .OrderByDescending(x => x.PreviousLastSeenOn)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 }
