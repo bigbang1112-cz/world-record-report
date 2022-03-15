@@ -3,6 +3,7 @@ using System;
 using BigBang1112.WorldRecordReportLib.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BigBang1112.WorldRecordReportLib.Migrations
 {
     [DbContext(typeof(WrContext))]
-    partial class WrContextModelSnapshot : ModelSnapshot
+    [Migration("20220312163053_AddDrivenOn")]
+    partial class AddDrivenOn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -484,30 +486,6 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                             Id = 2,
                             Name = "Stunts"
                         });
-                });
-
-            modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.NicknameChangeModel", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<int>("LoginId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Previous")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<DateTime>("PreviousLastSeenOn")
-                        .HasColumnType("datetime");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LoginId");
-
-                    b.ToTable("NicknameChanges");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.RecordCountModel", b =>
@@ -1044,17 +1022,6 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.Navigation("TitlePack");
 
                     b.Navigation("TmxAuthor");
-                });
-
-            modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.NicknameChangeModel", b =>
-                {
-                    b.HasOne("BigBang1112.WorldRecordReportLib.Models.Db.LoginModel", "Login")
-                        .WithMany()
-                        .HasForeignKey("LoginId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Login");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.RecordCountModel", b =>

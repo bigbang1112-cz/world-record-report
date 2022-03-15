@@ -10,5 +10,5 @@ public interface IRecordSetService
     Task<RecordSet?> GetFromMapAsync(string zone, string mapUid);
     Task<string?> GetJsonFromMapAsync(string zone, string mapUid);
     Stream? GetStreamFromMap(string zone, string mapUid);
-    Task UpdateRecordSetAsync(string zone, string mapUid, RecordSet recordSet);
+    Task UpdateRecordSetAsync(string zone, string mapUid, RecordSet recordSet, Dictionary<string, string> nicknameDictionary);
 }

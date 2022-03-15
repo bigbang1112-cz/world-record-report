@@ -9,7 +9,7 @@ public interface IWrRepo
     Task AddRecordSetDetailedChangesAsync(IEnumerable<RecordSetDetailedChangeModel> changes, CancellationToken cancellationToken = default);
     Task<MapModel?> GetMapByUidAsync(string mapUid, CancellationToken cancellationToken = default);
     Task<MapModel?> GetMapByMxIdAsync(int mxId, TmxSiteModel site, CancellationToken cancellationToken = default);
-    Task<LoginModel> GetOrAddLoginAsync(string login, GameModel game, CancellationToken cancellationToken = default);
+    Task<LoginModel> GetOrAddLoginAsync(string login, string? nickname, GameModel game, CancellationToken cancellationToken = default);
     Task<LoginModel?> GetLoginAsync(string login, CancellationToken cancellationToken = default);
     Task<List<LoginModel>> GetLoginsByGameAsync(GameModel game, CancellationToken cancellationToken = default);
     Task<List<LoginModel>> GetLoginsInTM2Async(CancellationToken cancellationToken = default);
@@ -54,4 +54,5 @@ public interface IWrRepo
     Task<List<string>> GetMapUidsAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task<List<string>> GetTitlePacksAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task<WorldRecordModel?> GetWorldRecordAsync(MapModel map, CancellationToken cancellationToken = default);
+    Task AddNicknameChangeAsync(NicknameChangeModel nicknameChangeModel, CancellationToken cancellationToken = default);
 }

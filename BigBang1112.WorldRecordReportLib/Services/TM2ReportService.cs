@@ -85,7 +85,7 @@ public class TM2ReportService : ITM2ReportService
                 newWrsToReport, removedWrsToReport);
         }
 
-        await UpdateNicknamesAsync(nicknameDictionary);
+        await UpdateNicknamesAsync(await _repo.GetTM2GameAsync(), nicknameDictionary);
         await ReportChangesAsync(newWrsToReport, removedWrsToReport);
 
         await _repo.SaveAsync();
@@ -252,6 +252,38 @@ public class TM2ReportService : ITM2ReportService
         return maps.ToDictionary(x => x.MapUid);
     }
 
+    private async Task UpdateNicknamesAsync(GameModel game, Dictionary<string, string> nicknameDictionary)
+    {
+        var logins = await _repo.GetLoginsInTM2Async();
+
+        foreach (var (login, nickname) in nicknameDictionary)
+        {
+            var loginModel = logins.FirstOrDefault(x => x.Name == login);
+
+            if (loginModel is null)
+            {
+                _ = await _repo.GetOrAddLoginAsync(login, nickname, game);
+
+                continue;
+            }
+
+            if (loginModel.Nickname is not null && loginModel.Nickname != nickname)
+            {
+                // Track nickname change
+                var nicknameChangeModel = new NicknameChangeModel
+                {
+                    Login = loginModel,
+                    Previous = loginModel.Nickname,
+                    PreviousLastSeenOn = DateTime.UtcNow
+                };
+
+                await _repo.AddNicknameChangeAsync(nicknameChangeModel);
+            }
+
+            loginModel.Nickname = nickname;
+        }
+    }
+
     private async Task ReportChangesAsync(List<WorldRecordModel> newWrsToReport, List<RemovedWorldRecord> removedWrsToReport)
     {
         foreach (var removedWr in removedWrsToReport)
@@ -298,21 +330,6 @@ public class TM2ReportService : ITM2ReportService
         var embed = _discordWebhookService.GetDefaultEmbed_RemovedWorldRecord(removedWr);
 
         await SendMessageToAllWebhooksAsync(embed, report);
-    }
-
-    private async Task UpdateNicknamesAsync(Dictionary<string, string> nicknameDictionary)
-    {
-        var logins = await _repo.GetLoginsInTM2Async();
-
-        foreach (var (login, nickname) in nicknameDictionary)
-        {
-            var loginModel = logins.FirstOrDefault(x => x.Name == login);
-
-            if (loginModel is not null)
-            {
-                loginModel.Nickname = nickname;
-            }
-        }
     }
 
     private async Task HandleLeaderboardFromMapDictionaryAsync(
@@ -556,7 +573,7 @@ public class TM2ReportService : ITM2ReportService
 
         var recordSet = new RecordSet(recordList, lb.Times);
 
-        await _recordSetService.UpdateRecordSetAsync(lb.Zone, lb.MapUid, recordSet);
+        await _recordSetService.UpdateRecordSetAsync(lb.Zone, lb.MapUid, recordSet, nicknameDictionary);
     }
 
     private async Task<Dictionary<string, IGrouping<MapModel, WorldRecordModel>>>
@@ -680,7 +697,7 @@ public class TM2ReportService : ITM2ReportService
         MapModel map, DateTimeOffset recordTimestamp, WorldRecordModel? previousWr,
         DateTime? publishedTimestamp = null)
     {
-        var login = await _repo.GetOrAddLoginAsync(record.Login, await _repo.GetTM2GameAsync());
+        var login = await _repo.GetOrAddLoginAsync(record.Login, record.Nickname, await _repo.GetTM2GameAsync());
 
         login.Nickname = record.Nickname;
 
@@ -692,7 +709,7 @@ public class TM2ReportService : ITM2ReportService
             DrivenOn = recordTimestamp.UtcDateTime,
             PublishedOn = publishedTimestamp ?? recordTimestamp.UtcDateTime,
             ReplayUrl = record.ReplayUrl,
-            Time = Convert.ToInt32(record.Time.TotalMilliseconds),
+            Time = record.Time.TotalMilliseconds,
             PreviousWorldRecord = previousWr,
             Unverified = record.IsFromManialink
         };

@@ -24,4 +24,7 @@ public class RecordSetDetailedChangeModel
 
     [Column(TypeName = "datetime")]
     public DateTime? DrivenBefore { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? DrivenOn { get; set; }
 }

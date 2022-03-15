@@ -34,11 +34,12 @@ public class WrRepo : IWrRepo
         return await _db.Games.Cacheable().FirstAsync(x => x.Name == NameConsts.GameTM2Name, cancellationToken);
     }
 
-    public async Task<LoginModel> GetOrAddLoginAsync(string login, GameModel game, CancellationToken cancellationToken = default)
+    public async Task<LoginModel> GetOrAddLoginAsync(string login, string? nickname, GameModel game, CancellationToken cancellationToken = default)
     {
         return await _db.Logins.FirstOrAddAsync(x => x.Name == login, () => new LoginModel
         {
             Name = login,
+            Nickname = nickname,
             Game = game
         }, cancellationToken: cancellationToken);
     }
@@ -403,5 +404,10 @@ public class WrRepo : IWrRepo
             .OrderBy(x => x.DrivenBefore)
             .Cacheable()
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task AddNicknameChangeAsync(NicknameChangeModel nicknameChangeModel, CancellationToken cancellationToken = default)
+    {
+        await _db.NicknameChanges.AddAsync(nicknameChangeModel, cancellationToken);
     }
 }

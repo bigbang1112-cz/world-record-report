@@ -23,6 +23,7 @@ public class RecordSetService : IRecordSetService
     private readonly IMemoryCache _cache;
     private readonly IDiscordWebhookService _discordWebhookService;
     private readonly IGhostService _ghostService;
+    private readonly HttpClient _http;
 
     private static readonly JsonSerializerOptions jsonSerializerOptions = new()
     {
@@ -40,7 +41,8 @@ public class RecordSetService : IRecordSetService
                             IWrRepo repo,
                             IMemoryCache cache,
                             IDiscordWebhookService discordWebhookService,
-                            IGhostService ghostService)
+                            IGhostService ghostService,
+                            HttpClient http)
     {
         _logger = logger;
         _env = env;
@@ -48,6 +50,7 @@ public class RecordSetService : IRecordSetService
         _cache = cache;
         _discordWebhookService = discordWebhookService;
         _ghostService = ghostService;
+        _http = http;
     }
 
     public void GetFilePaths(string zone, string mapUid,
@@ -70,7 +73,7 @@ public class RecordSetService : IRecordSetService
         return _env.WebRootFileProvider.GetFileInfo(subDirFileName);
     }
 
-    public async Task UpdateRecordSetAsync(string zone, string mapUid, RecordSet recordSet)
+    public async Task UpdateRecordSetAsync(string zone, string mapUid, RecordSet recordSet, Dictionary<string, string> nicknameDictionary)
     {
         GetFilePaths(zone, mapUid,
             out string path,
@@ -125,7 +128,7 @@ public class RecordSetService : IRecordSetService
 
         if (timeChanges is not null)
         {
-            await ApplyChangesAsync(recordSet, fullFileName, recordSetChanges, timeChanges, cacheKey, map, noCountExists);
+            await ApplyChangesAsync(recordSet, fullFileName, recordSetChanges, timeChanges, cacheKey, map, noCountExists, nicknameDictionary);
         }
 
         _cache.Set(cacheKey, DateTime.UtcNow);
@@ -148,7 +151,7 @@ public class RecordSetService : IRecordSetService
         }
     }
 
-    private async Task ApplyChangesAsync(RecordSet recordSet, string fullFileName, RecordSetDetailedRecordChanges? recordSetChanges, RecordSetChanges timeChanges, string cacheKey, MapModel map, bool noCountExists)
+    private async Task ApplyChangesAsync(RecordSet recordSet, string fullFileName, RecordSetDetailedRecordChanges? recordSetChanges, RecordSetChanges timeChanges, string cacheKey, MapModel map, bool noCountExists, Dictionary<string, string> nicknameDictionary)
     {
         var drivenAfter = _cache.GetOrCreate(cacheKey, entry =>
         {
@@ -191,7 +194,32 @@ public class RecordSetService : IRecordSetService
             {
                 if (!logins.ContainsKey(record.Login))
                 {
-                    logins[record.Login] = await _repo.GetOrAddLoginAsync(record.Login, game);
+                    _ = nicknameDictionary.TryGetValue(record.Login, out string? nickname);
+
+                    logins[record.Login] = await _repo.GetOrAddLoginAsync(record.Login, nickname, game);
+                }
+
+                var replayUrl = changeType == RecordSetDetailedChangeType.New
+                    ? recordSet.Records
+                        .FirstOrDefault(x => x.Login == record.Login)?
+                        .ReplayUrl
+                    : record.ReplayUrl;
+
+                var drivenOn = default(DateTime?);
+
+                if (replayUrl is not null)
+                {
+                    using var replayHeadResponse = await _http.HeadAsync(replayUrl);
+
+                    if (replayHeadResponse.IsSuccessStatusCode)
+                    {
+                        var lastModified = replayHeadResponse.Content.Headers.LastModified;
+
+                        if (lastModified.HasValue)
+                        {
+                            drivenOn = lastModified.Value.UtcDateTime;
+                        }
+                    }
                 }
 
                 var recordChange = new RecordSetDetailedChangeModel
@@ -199,7 +227,8 @@ public class RecordSetService : IRecordSetService
                     Login = logins[record.Login],
                     Map = map,
                     Type = changeType,
-                    DrivenBefore = drivenBefore
+                    DrivenBefore = drivenBefore,
+                    DrivenOn = drivenOn
                 };
 
                 if (changeType != RecordSetDetailedChangeType.New)
