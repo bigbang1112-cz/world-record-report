@@ -1,5 +1,5 @@
-﻿using BigBang1112.Attributes.DiscordBot;
-using BigBang1112.Models.DiscordBot;
+﻿using BigBang1112.DiscordBot.Attributes;
+using BigBang1112.DiscordBot.Models;
 using Discord.WebSocket;
 
 namespace BigBang1112.TMWR.Commands;

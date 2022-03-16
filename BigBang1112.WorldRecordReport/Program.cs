@@ -6,6 +6,7 @@ using BigBang1112.WorldRecordReport.Jobs;
 using BigBang1112.WorldRecordReportLib.Services;
 using Quartz;
 using BigBang1112.WorldRecordReportLib.Repos;
+using BigBang1112.DiscordBot.Data;
 
 var assembly = typeof(Program).Assembly;
 
@@ -24,8 +25,11 @@ var options = new EssentialsOptions
 builder.Services.AddEssentials(options);
 
 builder.Services.AddDbContext2<WrContext>(options.Config, "WrDb");
+builder.Services.AddDbContext2<DiscordBotContext>(options.Config, "DiscordBotDb");
 
 builder.Services.AddScoped<IWrRepo, WrRepo>();
+builder.Services.AddScoped<IDiscordBotRepo, DiscordBotRepo>();
+
 builder.Services.AddScoped<IRecordSetService, RecordSetService>();
 builder.Services.AddScoped<IDiscordWebhookService, DiscordWebhookService>();
 builder.Services.AddScoped<ILeaderboardsManialinkService, LeaderboardsManialinkService>();

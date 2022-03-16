@@ -1,13 +1,4 @@
-﻿using BigBang1112.Attributes.DiscordBot;
-using BigBang1112.Models.DiscordBot;
-using BigBang1112.Services;
-using BigBang1112.TMWR;
-using Discord.WebSocket;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace BigBang1112.TMWR.Commands;
 
 [DiscordBotCommand("wroftheday")]
 public class WrOfTheDayCommand : DiscordBotCommand

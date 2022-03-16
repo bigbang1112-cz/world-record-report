@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -6,7 +6,14 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+	<ItemGroup>
+		<Using Include="BigBang1112.DiscordBot.Attributes" />
+		<Using Include="BigBang1112.DiscordBot.Models" />
+		<Using Include="Discord.WebSocket" />
+	</ItemGroup>
+
   <ItemGroup>
+    <ProjectReference Include="..\BigBang1112.Essentials\BigBang1112.DiscordBot\BigBang1112.DiscordBot.csproj" />
     <ProjectReference Include="..\BigBang1112.WorldRecordReportLib\BigBang1112.WorldRecordReportLib.csproj" />
   </ItemGroup>
 

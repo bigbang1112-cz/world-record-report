@@ -1,11 +1,8 @@
-﻿using BigBang1112.Attributes.DiscordBot;
-using BigBang1112.Models.DiscordBot;
-using BigBang1112.WorldRecordReportLib.Models;
+﻿using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using BigBang1112.WorldRecordReportLib.Services;
 using Discord;
-using Discord.WebSocket;
 using TmEssentials;
 
 namespace BigBang1112.TMWR.Commands;

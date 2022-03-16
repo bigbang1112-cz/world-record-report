@@ -1,4 +1,4 @@
-﻿using BigBang1112.Attributes.DiscordBot;
+﻿using BigBang1112.DiscordBot.Attributes;
 using BigBang1112.WorldRecordReportLib.Repos;
 
 namespace BigBang1112.TMWR.Commands;

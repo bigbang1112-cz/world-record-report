@@ -1,11 +1,8 @@
-﻿using BigBang1112.Attributes.DiscordBot;
-using BigBang1112.Models.DiscordBot;
-using BigBang1112.Services;
+﻿using BigBang1112.DiscordBot;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using BigBang1112.WorldRecordReportLib.Services;
 using Discord;
-using Discord.WebSocket;
 
 namespace BigBang1112.TMWR.Commands;
 
@@ -14,7 +11,7 @@ public class RecordCountCommand : DiscordBotCommand
 {
     public RecordCountCommand(DiscordBotService discordBotService) : base(discordBotService)
     {
-
+        
     }
 
     public override Task<DiscordBotMessage> ExecuteAsync(SocketSlashCommand slashCommand)

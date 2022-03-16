@@ -1,8 +1,5 @@
-﻿using BigBang1112.Services;
+﻿using BigBang1112.DiscordBot;
 using BigBang1112.Attributes;
-using Discord.WebSocket;
-using Discord;
-using BigBang1112.Attributes.DiscordBot;
 
 namespace BigBang1112.TMWR;
 
