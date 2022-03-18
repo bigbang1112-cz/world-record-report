@@ -160,7 +160,7 @@ public class RecordSetService : IRecordSetService
 
         await SaveRecordSetAsync(fullFileName, recordSet);
 
-        var drivenBefore = File.GetLastWriteTimeUtc(fullFileName);
+        var drivenBefore = DateTime.UtcNow;
 
         if (!noCountExists)
         {
