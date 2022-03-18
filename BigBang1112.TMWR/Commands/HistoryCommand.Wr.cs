@@ -28,24 +28,33 @@ public partial class HistoryCommand
 
             builder.Title = map.GetHumanizedDeformattedName();
 
+            var isStunts = map.IsStuntsMode();
+
             var desc = string.Join('\n', wrs.Select((x, i) =>
             {
-                if (HideNicknames && HideTimestamps)
+                var time = isStunts ? x.Time.ToString() : x.TimeInt32.ToString(useHundredths: isTMUF);
+
+                var baseStr = $"{wrs.Count - i}. **{time}**";
+
+                if (!HideNicknames && !HideTimestamps)
                 {
-                    return $"{wrs.Count - i}. **{x.TimeInt32.ToString(useHundredths: isTMUF)}**";
+                    baseStr = $"{baseStr} by {x.GetPlayerNicknameDeformatted()} ({x.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
+                }
+                else if (HideTimestamps)
+                {
+                    baseStr = $"{baseStr} by {x.GetPlayerNicknameDeformatted()}";
+                }
+                else if (HideNicknames)
+                {
+                    baseStr = $"{baseStr} ({x.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
                 }
 
-                if (HideTimestamps)
+                if (x.Ignored)
                 {
-                    return $"{wrs.Count - i}. **{x.TimeInt32.ToString(useHundredths: isTMUF)}** by {x.GetPlayerNicknameDeformatted()}";
+                    return $"~~{baseStr}~~";
                 }
 
-                if (HideNicknames)
-                {
-                    return $"{wrs.Count - i}. **{x.TimeInt32.ToString(useHundredths: isTMUF)}** ({x.DrivenOn.ToTimestampTag()})";
-                }
-
-                return $"{wrs.Count - i}. **{x.TimeInt32.ToString(useHundredths: isTMUF)}** by {x.GetPlayerNicknameDeformatted()} ({x.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
+                return baseStr;
             }));
 
             builder.Description = desc;
