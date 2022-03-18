@@ -6,9 +6,9 @@ namespace BigBang1112.TMWR.Commands;
 public partial class HistoryCommand
 {
     [DiscordBotSubCommand("recordcount")]
-    public partial class RecordCount : MapRelatedWithUidCommand
+    public partial class RecordCount : DiscordBotCommand
     {
-        public RecordCount(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo) : base(tmwrDiscordBotService, repo)
+        public RecordCount(TmwrDiscordBotService tmwrDiscordBotService) : base(tmwrDiscordBotService)
         {
 
         }

@@ -64,6 +64,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
     {
         var map = maps.First();
 
+        var attachment = await CreateAttachmentAsync(map);
         var embed = await CreateEmbedResponseAsync(map);
 
         var builder = await CreateComponentsAsync(map, isModified: false);
@@ -78,7 +79,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
             builder.WithSelectMenu(CreateSelectMenu(customId, maps, lookup));
         }
 
-        return new DiscordBotMessage(embed, builder?.Build());
+        return new DiscordBotMessage(embed, builder?.Build(), attachment: attachment);
     }
 
     protected virtual Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, bool isModified)
@@ -94,6 +95,11 @@ public abstract class MapRelatedCommand : DiscordBotCommand
         await BuildEmbedResponseAsync(map, builder);
 
         return builder.Build();
+    }
+
+    protected virtual Task<FileAttachment?> CreateAttachmentAsync(MapModel map)
+    {
+        return Task.FromResult(default(FileAttachment?));
     }
 
     protected virtual Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
@@ -167,6 +173,8 @@ public abstract class MapRelatedCommand : DiscordBotCommand
             }
         }
 
-        return new DiscordBotMessage(await CreateEmbedResponseAsync(map), componentBuilder?.Build());
+        var attachment = await CreateAttachmentAsync(map);
+
+        return new DiscordBotMessage(await CreateEmbedResponseAsync(map), componentBuilder?.Build(), attachment: attachment);
     }
 }

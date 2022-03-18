@@ -34,6 +34,11 @@ public class RecordCountCommand : DiscordBotCommand
 
         protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
         {
+            if (HistoryGraph)
+            {
+                return;
+            }
+
             var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
 
             if (recordSet is null)

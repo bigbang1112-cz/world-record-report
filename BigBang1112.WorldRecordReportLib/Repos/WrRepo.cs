@@ -417,4 +417,13 @@ public class WrRepo : IWrRepo
             .OrderByDescending(x => x.PreviousLastSeenOn)
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+    public async Task<List<RecordCountModel>> GetRecordCountsOnMapAsync(MapModel map, CancellationToken cancellationToken = default)
+    {
+        return await _db.RecordCounts.Where(x => x.Map == map)
+            .OrderBy(x => x.Before)
+            .GroupBy(x => x.Before)
+            .Select(x => x.First())
+            .ToListAsync(cancellationToken);
+    }
 }
