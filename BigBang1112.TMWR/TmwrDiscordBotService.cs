@@ -21,4 +21,15 @@ public class TmwrDiscordBotService : DiscordBotService
 
         await Client.SetGameAsync($"{botVersion?.ToString() ?? "unknown version"} (WrrLib: {wrrlibversion?.ToString() ?? "unknown version"})");
     }
+
+    protected override async Task SlashCommandExecutedAsync(SocketSlashCommand slashCommand)
+    {
+        if (slashCommand.IsDMInteraction)
+        {
+            await slashCommand.RespondAsync("DM interactions are temporarily disabled.");
+            return;
+        }
+
+        await base.SlashCommandExecutedAsync(slashCommand);
+    }
 }
