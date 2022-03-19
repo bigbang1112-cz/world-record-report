@@ -149,12 +149,12 @@ public partial class MapCommand
                 rank = lastTop10Change.Rank.GetValueOrDefault().ToString();
             }
             
-            builder.AddField($"Last Top 10 activity - {typeOfActivity}", $"{rank}) {time.ToTmString(useHundredths: map.Game.IsTMUF())} by {lastTop10Change.Login.GetDeformattedNickname()}");
+            builder.AddField($"Last Top 10 activity  ➡️  {typeOfActivity}", $"{rank}) {time.ToTmString(useHundredths: map.Game.IsTMUF())} by {lastTop10Change.Login.GetDeformattedNickname()}");
             
             return recordSet;
         }
 
-        public override async Task<DiscordBotMessage?> ExecuteButtonAsync(SocketMessageComponent messageComponent)
+        public override async Task<DiscordBotMessage?> ExecuteButtonAsync(SocketMessageComponent messageComponent, Deferer deferer)
         {
             var split = messageComponent.Data.CustomId.Split('-');
 
@@ -168,25 +168,25 @@ public partial class MapCommand
 
             if (messageComponent.Data.CustomId.StartsWith(CreateCustomId("top10")))
             {
-                return await ExecuteMapRelatedCommandFromButtonAsync<Top10Command>(messageComponent, mapUid);
+                return await ExecuteMapRelatedCommandFromButtonAsync<Top10Command>(messageComponent, deferer, mapUid);
             }
             else if (messageComponent.Data.CustomId.StartsWith(CreateCustomId("wrdetails")))
             {
-                return await ExecuteMapRelatedCommandFromButtonAsync<WrCommand>(messageComponent, mapUid);
+                return await ExecuteMapRelatedCommandFromButtonAsync<WrCommand>(messageComponent, deferer, mapUid);
             }
             else if (messageComponent.Data.CustomId.StartsWith(CreateCustomId("wrhistory")))
             {
-                return await ExecuteMapRelatedCommandFromButtonAsync<HistoryCommand.Wr>(messageComponent, mapUid);
+                return await ExecuteMapRelatedCommandFromButtonAsync<HistoryCommand.Wr>(messageComponent, deferer, mapUid);
             }
             else if (messageComponent.Data.CustomId.StartsWith(CreateCustomId("counthistory")))
             {
-                return await ExecuteMapRelatedCommandFromButtonAsync<HistoryCommand.RecordCount.Map>(messageComponent, mapUid);
+                return await ExecuteMapRelatedCommandFromButtonAsync<HistoryCommand.RecordCount.Map>(messageComponent, deferer, mapUid);
             }
 
             return null;
         }
 
-        private async Task<DiscordBotMessage> ExecuteMapRelatedCommandFromButtonAsync<T>(SocketInteraction messageComponent, string mapUid) where T : MapRelatedWithUidCommand
+        private async Task<DiscordBotMessage> ExecuteMapRelatedCommandFromButtonAsync<T>(SocketInteraction messageComponent, Deferer deferer, string mapUid) where T : MapRelatedWithUidCommand
         {
             using var scope = _tmwrDiscordBotService.CreateCommand(out T? mapRelatedCommand);
 
@@ -197,7 +197,7 @@ public partial class MapCommand
 
             mapRelatedCommand.MapUid = mapUid;
 
-            var message = await mapRelatedCommand.ExecuteAsync(messageComponent);
+            var message = await mapRelatedCommand.ExecuteAsync(messageComponent, deferer);
 
             return message with { AlwaysPostAsNewMessage = true, Ephemeral = true };
         }

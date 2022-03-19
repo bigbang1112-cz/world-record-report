@@ -46,13 +46,13 @@ public abstract class MapRelatedCommand : DiscordBotCommand
         return await _repo.GetMapAuthorLoginsAsync(value);
     }
 
-    public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand)
+    public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand, Deferer deferer)
     {
         var maps = await _repo.GetMapsByMultipleParamsAsync(MapName, Environment, TitlePack, AuthorLogin);
 
         if (maps.Any())
         {
-            return await CreateResponseMessageWithMapsParamAsync(maps);
+            return await CreateResponseMessageWithMapsParamAsync(maps, deferer);
         }
 
         return CreateResponseMessageNoMapsFound();
@@ -68,11 +68,11 @@ public abstract class MapRelatedCommand : DiscordBotCommand
         return new DiscordBotMessage(embed, ephemeral: true);
     }
 
-    protected async Task<DiscordBotMessage> CreateResponseMessageWithMapsParamAsync(IEnumerable<MapModel> maps)
+    protected async Task<DiscordBotMessage> CreateResponseMessageWithMapsParamAsync(IEnumerable<MapModel> maps, Deferer deferer)
     {
         var map = maps.First();
 
-        var attachment = await CreateAttachmentAsync(map);
+        var attachment = await CreateAttachmentAsync(map, deferer);
         var embed = await CreateEmbedResponseAsync(map);
 
         var builder = await CreateComponentsAsync(map, isModified: false);
@@ -105,7 +105,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
         return builder.Build();
     }
 
-    protected virtual Task<FileAttachment?> CreateAttachmentAsync(MapModel map)
+    protected virtual Task<FileAttachment?> CreateAttachmentAsync(MapModel map, Deferer deferer)
     {
         return Task.FromResult(default(FileAttachment?));
     }
@@ -139,19 +139,19 @@ public abstract class MapRelatedCommand : DiscordBotCommand
         return menuBuilder;
     }
 
-    public override async Task<DiscordBotMessage?> SelectMenuAsync(SocketMessageComponent messageComponent)
+    public override async Task<DiscordBotMessage?> SelectMenuAsync(SocketMessageComponent messageComponent, Deferer deferrer)
     {
         var customIdMap = CreateCustomId("map");
 
         if (messageComponent.Data.CustomId == customIdMap)
         {
-            return await SelectMenuMapAsync(messageComponent, customIdMap);
+            return await SelectMenuMapAsync(messageComponent, deferrer, customIdMap);
         }
 
         return null;
     }
 
-    private async Task<DiscordBotMessage> SelectMenuMapAsync(SocketMessageComponent messageComponent, string customIdMap)
+    private async Task<DiscordBotMessage> SelectMenuMapAsync(SocketMessageComponent messageComponent, Deferer deferrer, string customIdMap)
     {
         if (messageComponent.Message.Interaction is not null && messageComponent.User.Id != messageComponent.Message.Interaction.User.Id)
         {
@@ -187,7 +187,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
             }
         }
 
-        var attachment = await CreateAttachmentAsync(map);
+        var attachment = await CreateAttachmentAsync(map, deferrer);
 
         return new DiscordBotMessage(await CreateEmbedResponseAsync(map), componentBuilder?.Build(), attachment: attachment);
     }

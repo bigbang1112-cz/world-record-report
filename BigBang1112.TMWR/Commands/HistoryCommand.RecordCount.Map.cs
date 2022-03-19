@@ -30,9 +30,11 @@ public partial class HistoryCommand
                 _repo = repo;
             }
 
-            protected override async Task<FileAttachment?> CreateAttachmentAsync(MapModel map)
+            protected override async Task<FileAttachment?> CreateAttachmentAsync(MapModel map, Deferer deferer)
             {
                 var counts = await _repo.GetRecordCountsOnMapAsync(map);
+
+                await deferer.DeferAsync();
 
                 var ms = CreateChartFromValues(counts);
 

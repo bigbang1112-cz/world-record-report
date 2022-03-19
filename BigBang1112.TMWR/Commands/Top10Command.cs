@@ -115,13 +115,13 @@ public class Top10Command : MapRelatedWithUidCommand
         return string.Join('\n', await CreateTop10EnumerableAsync(recordSet, isTMUF));
     }
 
-    public override async Task<DiscordBotMessage?> SelectMenuAsync(SocketMessageComponent messageComponent)
+    public override async Task<DiscordBotMessage?> SelectMenuAsync(SocketMessageComponent messageComponent, Deferer deferer)
     {
         var customIdRec = CreateCustomId("rec");
 
         if (messageComponent.Data.CustomId != customIdRec)
         {
-            return await base.SelectMenuAsync(messageComponent);
+            return await base.SelectMenuAsync(messageComponent, deferer);
         }
 
         var embed = new EmbedBuilder()

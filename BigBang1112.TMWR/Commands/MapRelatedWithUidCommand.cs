@@ -20,7 +20,7 @@ public abstract class MapRelatedWithUidCommand : MapRelatedCommand
         return await _repo.GetMapUidsAsync(value);
     }
 
-    public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand)
+    public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand, Deferer deferer)
     {
         if (MapUid is not null)
         {
@@ -28,10 +28,10 @@ public abstract class MapRelatedWithUidCommand : MapRelatedCommand
 
             if (map is not null)
             {
-                return await CreateResponseMessageWithMapsParamAsync(Enumerable.Repeat(map, 1));
+                return await CreateResponseMessageWithMapsParamAsync(Enumerable.Repeat(map, 1), deferer);
             }
         }
 
-        return await base.ExecuteAsync(slashCommand);
+        return await base.ExecuteAsync(slashCommand, deferer);
     }
 }
