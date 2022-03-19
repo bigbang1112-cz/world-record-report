@@ -7,6 +7,9 @@ using BigBang1112.WorldRecordReportLib.Services;
 using Quartz;
 using BigBang1112.WorldRecordReportLib.Repos;
 using BigBang1112.DiscordBot.Data;
+using System.Globalization;
+
+CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
 var assembly = typeof(Program).Assembly;
 
