@@ -87,7 +87,7 @@ public class Top10Command : MapRelatedWithUidCommand
                 login = loginModel.GetDeformattedNickname();
             }
 
-            return $"{x.Rank}. **{new TimeInt32(x.Time).ToString(useHundredths: isTMUF)}** by {login}";
+            return $"{x.Rank}) **{new TimeInt32(x.Time).ToString(useHundredths: isTMUF)}** by {login}";
         });
     }
 
