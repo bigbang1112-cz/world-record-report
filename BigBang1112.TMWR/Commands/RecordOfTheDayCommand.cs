@@ -8,7 +8,7 @@ public class RecordOfTheDayCommand : DiscordBotCommand
 
     }
 
-    public override Task<DiscordBotMessage> ExecuteAsync(SocketSlashCommand slashCommand)
+    public override Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand)
     {
         throw new NotImplementedException();
     }

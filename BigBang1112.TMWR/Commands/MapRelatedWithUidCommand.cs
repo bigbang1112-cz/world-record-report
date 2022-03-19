@@ -20,7 +20,7 @@ public abstract class MapRelatedWithUidCommand : MapRelatedCommand
         return await _repo.GetMapUidsAsync(value);
     }
 
-    public override async Task<DiscordBotMessage> ExecuteAsync(SocketSlashCommand slashCommand)
+    public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand)
     {
         if (MapUid is not null)
         {

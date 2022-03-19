@@ -13,11 +13,13 @@ public partial class MapCommand
     [DiscordBotSubCommand("info", "Gets information about the map.")]
     public class Info : MapRelatedWithUidCommand
     {
+        private readonly TmwrDiscordBotService _tmwrDiscordBotService;
         private readonly IWrRepo _repo;
         private readonly IRecordSetService _recordSetService;
 
         public Info(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo, IRecordSetService recordSetService) : base(tmwrDiscordBotService, repo)
         {
+            _tmwrDiscordBotService = tmwrDiscordBotService;
             _repo = repo;
             _recordSetService = recordSetService;
         }
@@ -25,9 +27,10 @@ public partial class MapCommand
         protected override Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, bool isModified)
         {
             var builder = new ComponentBuilder()
-                .WithButton("Top 10", CreateCustomId("top10"), ButtonStyle.Secondary, disabled: true)
-                .WithButton("WR", CreateCustomId("wrdetails"), ButtonStyle.Secondary, disabled: true)
-                .WithButton("WR history", CreateCustomId("wrhistory"), ButtonStyle.Secondary, disabled: true);
+                .WithButton("Top 10", CreateCustomId($"top10-{map.MapUid}"), ButtonStyle.Secondary, disabled: false)
+                .WithButton("World record", CreateCustomId($"wrdetails-{map.MapUid}"), ButtonStyle.Secondary, disabled: false)
+                .WithButton("World record history", CreateCustomId($"wrhistory-{map.MapUid}"), ButtonStyle.Secondary, disabled: false)
+                .WithButton("Record count history", CreateCustomId($"counthistory-{map.MapUid}"), ButtonStyle.Secondary, disabled: false);
 
             return Task.FromResult(builder)!;
         }
@@ -137,6 +140,54 @@ public partial class MapCommand
             {
                 builder.AddField("Record count", recordSet.GetRecordCount().ToString("N0"));
             }
+        }
+
+        public override async Task<DiscordBotMessage?> ExecuteButtonAsync(SocketMessageComponent messageComponent)
+        {
+            var split = messageComponent.Data.CustomId.Split('-');
+
+            if (split.Length < 3)
+            {
+                return new DiscordBotMessage(new EmbedBuilder().WithDescription("Not enough data for the command.").Build(),
+                    ephemeral: true, alwaysPostAsNewMessage: true);
+            }
+
+            var mapUid = split[2];
+
+            if (messageComponent.Data.CustomId.StartsWith(CreateCustomId("top10")))
+            {
+                return await ExecuteMapRelatedCommandFromButtonAsync<Top10Command>(messageComponent, mapUid);
+            }
+            else if (messageComponent.Data.CustomId.StartsWith(CreateCustomId("wrdetails")))
+            {
+                return await ExecuteMapRelatedCommandFromButtonAsync<WrCommand>(messageComponent, mapUid);
+            }
+            else if (messageComponent.Data.CustomId.StartsWith(CreateCustomId("wrhistory")))
+            {
+                return await ExecuteMapRelatedCommandFromButtonAsync<HistoryCommand.Wr>(messageComponent, mapUid);
+            }
+            else if (messageComponent.Data.CustomId.StartsWith(CreateCustomId("counthistory")))
+            {
+                return await ExecuteMapRelatedCommandFromButtonAsync<HistoryCommand.RecordCount.Map>(messageComponent, mapUid);
+            }
+
+            return null;
+        }
+
+        private async Task<DiscordBotMessage> ExecuteMapRelatedCommandFromButtonAsync<T>(SocketInteraction messageComponent, string mapUid) where T : MapRelatedWithUidCommand
+        {
+            using var scope = _tmwrDiscordBotService.CreateCommand(out T? mapRelatedCommand);
+
+            if (mapRelatedCommand is null)
+            {
+                throw new Exception();
+            }
+
+            mapRelatedCommand.MapUid = mapUid;
+
+            var message = await mapRelatedCommand.ExecuteAsync(messageComponent);
+
+            return message with { AlwaysPostAsNewMessage = true, Ephemeral = true };
         }
     }
 }

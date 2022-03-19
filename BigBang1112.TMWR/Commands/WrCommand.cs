@@ -50,12 +50,11 @@ public class WrCommand : MapRelatedWithUidCommand
         if (wr is null)
         {
             builder.Footer = null;
+            return;
         }
-        else
-        {
-            builder.AddField("Driven on", wr.DrivenOn.ToTimestampTag(TimestampTagStyles.LongDateTime));
-            builder.Timestamp = DateTime.SpecifyKind(wr.DrivenOn, DateTimeKind.Utc);
-            builder.WithBotFooter(wr.Guid.ToString());
-        }
+
+        builder.AddField("Driven on", wr.DrivenOn.ToTimestampTag(TimestampTagStyles.LongDateTime));
+        builder.Timestamp = DateTime.SpecifyKind(wr.DrivenOn, DateTimeKind.Utc);
+        builder.WithBotFooter(wr.Guid.ToString());
     }
 }

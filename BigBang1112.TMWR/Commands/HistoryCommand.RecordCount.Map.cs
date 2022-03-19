@@ -77,7 +77,7 @@ public partial class HistoryCommand
 
             protected override Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
             {
-                builder.Title = map.GetHumanizedDeformattedName();
+                builder.Title = $"Record count on {map.GetHumanizedDeformattedName()}";
 
                 return Task.CompletedTask;
             }

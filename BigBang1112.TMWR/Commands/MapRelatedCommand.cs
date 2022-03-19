@@ -46,7 +46,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
         return await _repo.GetMapAuthorLoginsAsync(value);
     }
 
-    public override async Task<DiscordBotMessage> ExecuteAsync(SocketSlashCommand slashCommand)
+    public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand)
     {
         var maps = await _repo.GetMapsByMultipleParamsAsync(MapName, Environment, TitlePack, AuthorLogin);
 
@@ -153,7 +153,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
 
     private async Task<DiscordBotMessage> SelectMenuMapAsync(SocketMessageComponent messageComponent, string customIdMap)
     {
-        if (messageComponent.User.Id != messageComponent.Message.Interaction.User.Id)
+        if (messageComponent.Message.Interaction is not null && messageComponent.User.Id != messageComponent.Message.Interaction.User.Id)
         {
             return new DiscordBotMessage(new EmbedBuilder().WithDescription("You don't have permissions to change the select menu of a map.").Build(),
                 ephemeral: true, alwaysPostAsNewMessage: true);

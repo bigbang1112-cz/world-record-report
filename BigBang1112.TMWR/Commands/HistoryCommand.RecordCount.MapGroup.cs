@@ -16,7 +16,7 @@ public partial class HistoryCommand
 
             }
 
-            public override Task<DiscordBotMessage> ExecuteAsync(SocketSlashCommand slashCommand)
+            public override Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand)
             {
                 throw new NotImplementedException();
             }

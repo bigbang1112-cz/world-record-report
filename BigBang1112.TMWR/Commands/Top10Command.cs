@@ -124,15 +124,15 @@ public class Top10Command : MapRelatedWithUidCommand
     {
         var customIdRec = CreateCustomId("rec");
 
-        if (messageComponent.Data.CustomId == customIdRec)
+        if (messageComponent.Data.CustomId != customIdRec)
         {
-            var embed = new EmbedBuilder()
-                .WithTitle(messageComponent.Data.Values.First())
-                .Build();
-
-            return new DiscordBotMessage(embed, ephemeral: true, alwaysPostAsNewMessage: true);
+            return await base.SelectMenuAsync(messageComponent);
         }
 
-        return await base.SelectMenuAsync(messageComponent);
+        var embed = new EmbedBuilder()
+            .WithTitle(messageComponent.Data.Values.First())
+            .Build();
+
+        return new DiscordBotMessage(embed, ephemeral: true, alwaysPostAsNewMessage: true);
     }
 }
