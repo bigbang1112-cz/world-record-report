@@ -57,6 +57,12 @@ public partial class HistoryCommand
                 return baseStr;
             }));
 
+            if (map.TitlePack is not null)
+            {
+                var historyStartDate = await _repo.GetStartingDateOfHistoryTrackingAsync(map.TitlePack);
+                desc += $"\n\nHistory is tracked since {historyStartDate.ToTimestampTag(TimestampTagStyles.ShortDate)}.";
+            }
+
             builder.Description = desc;
 
             var thumbnailUrl = map.GetThumbnailUrl();

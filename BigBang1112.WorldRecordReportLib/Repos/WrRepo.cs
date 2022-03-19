@@ -338,9 +338,22 @@ public class WrRepo : IWrRepo
     {
         return (await _db.TitlePacks
             .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
+            .OrderBy(x => x.Id)
+            .Take(limit)
             .ToListAsync(cancellationToken))
             .Select(x => $"{x.Name}@{x.Author.Name}")
             .ToList();
+    }
+
+    public async Task<List<string>> GetMapAuthorLoginsAsync(string value, int limit = 25, CancellationToken cancellationToken = default)
+    {
+        return await _db.Maps.Select(x => x.Author.Name)
+            .Where(x => x.Contains(value))
+            .Distinct()
+            .OrderBy(x => x)
+            .Take(limit)
+            .Cacheable()
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<List<MapModel>> GetMapsByNameAsync(string mapName, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
@@ -353,7 +366,7 @@ public class WrRepo : IWrRepo
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<MapModel>> GetMapsByMultipleParamsAsync(string? mapName = null, string? env = null, string? title = null, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
+    public async Task<List<MapModel>> GetMapsByMultipleParamsAsync(string? mapName = null, string? env = null, string? title = null, string? authorLogin = null, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
     {
         var queryable = _db.Maps.AsQueryable();
 
@@ -372,6 +385,11 @@ public class WrRepo : IWrRepo
             var split = title.Split('@');
 
             queryable = queryable.Where(x => x.TitlePack!.Name.Contains(split[0]) && x.TitlePack!.Author.Name.Contains(split[1]));
+        }
+
+        if (authorLogin is not null)
+        {
+            queryable = queryable.Where(x => x.Author.Name.Contains(authorLogin));
         }
 
         return await queryable.OrderBy(x => x.DeformattedName)
@@ -425,5 +443,16 @@ public class WrRepo : IWrRepo
             .GroupBy(x => x.Before)
             .Select(x => x.First())
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<DateTime> GetStartingDateOfHistoryTrackingAsync(TitlePackModel titlePack, CancellationToken cancellationToken = default)
+    {
+        return await _db.WorldRecords
+            .Include(x => x.Map)
+            .Where(x => x.Map.TitlePack == titlePack && x.PreviousWorldRecord != null && !x.Ignored)
+            .OrderBy(x => x.DrivenOn)
+            .Select(x => x.DrivenOn)
+            .Cacheable()
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

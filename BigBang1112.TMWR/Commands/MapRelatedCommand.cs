@@ -38,9 +38,17 @@ public abstract class MapRelatedCommand : DiscordBotCommand
         return await _repo.GetTitlePacksAsync(value);
     }
 
+    [DiscordBotCommandOption("author", ApplicationCommandOptionType.String, "Author login of the map.")]
+    public string? AuthorLogin { get; set; }
+
+    public async Task<IEnumerable<string>> AutocompleteAuthorLoginAsync(string value)
+    {
+        return await _repo.GetMapAuthorLoginsAsync(value);
+    }
+
     public override async Task<DiscordBotMessage> ExecuteAsync(SocketSlashCommand slashCommand)
     {
-        var maps = await _repo.GetMapsByMultipleParamsAsync(MapName, Environment, TitlePack);
+        var maps = await _repo.GetMapsByMultipleParamsAsync(MapName, Environment, TitlePack, AuthorLogin);
 
         if (maps.Any())
         {
