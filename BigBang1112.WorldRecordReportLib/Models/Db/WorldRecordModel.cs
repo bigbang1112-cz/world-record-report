@@ -86,6 +86,11 @@ public class WorldRecordModel
 
     public string GetTimeFormattedToGame()
     {
+        if (Map.IsStuntsMode())
+        {
+            return Time.ToString();
+        }
+
         return TimeInt32.ToString(useHundredths: Map.Game.IsTMUF());
     }
 }
