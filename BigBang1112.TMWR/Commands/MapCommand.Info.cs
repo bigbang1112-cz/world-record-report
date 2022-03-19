@@ -80,7 +80,7 @@ public partial class MapCommand
 
             if (lastTop10Change is not null)
             {
-                recordSet = await AddLastTop10ActivityAsync(map, builder, lastTop10Change, recordSet);
+                recordSet = await AddLastTop10ActivityAsync(map, builder, lastTop10Change);
             }
 
             if (recordSet is null)
@@ -95,9 +95,8 @@ public partial class MapCommand
         }
 
         private async Task<RecordSet?> AddLastTop10ActivityAsync(MapModel map,
-                                                                                  EmbedBuilder builder,
-                                                                                  RecordSetDetailedChangeModel lastTop10Change,
-                                                                                  RecordSet? recordSet)
+                                                                 EmbedBuilder builder,
+                                                                 RecordSetDetailedChangeModel lastTop10Change)
         {
             if (lastTop10Change.DrivenBefore.HasValue)
             {
@@ -125,31 +124,56 @@ public partial class MapCommand
                 _ => "Unknown activity"
             };
 
-            var time = default(TimeInt32?);
-            var rank = "?";
+            var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+
+            var activityText = "No details available";
 
             if (lastTop10Change.Type == RecordSetDetailedChangeType.New)
             {
-                recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
-
                 if (recordSet is not null)
                 {
                     var record = recordSet.Records.FirstOrDefault(x => x.Login == lastTop10Change.Login.Name);
 
                     if (record is not null)
                     {
-                        time = new TimeInt32(record.Time);
-                        rank = record.Rank.ToString();
+                        var time = new TimeInt32(record.Time);
+                        var rank = record.Rank;
+
+                        activityText = $"{rank}) {time.ToString(useHundredths: map.Game.IsTMUF())} by {lastTop10Change.Login.GetDeformattedNickname()}";
+                    }
+                }
+            }
+            else if (lastTop10Change.Type == RecordSetDetailedChangeType.Improvement)
+            {
+                var prevTime = new TimeInt32(lastTop10Change.Time.GetValueOrDefault());
+                var prevRank = lastTop10Change.Rank.GetValueOrDefault().ToString();
+
+                if (recordSet is null)
+                {
+                    activityText = $"{prevTime.ToString(useHundredths: map.Game.IsTMUF())} (rank: {prevRank}) to [unknown] by {lastTop10Change.Login.GetDeformattedNickname()}";
+                }
+                else
+                {
+                    var record = recordSet.Records.FirstOrDefault(x => x.Login == lastTop10Change.Login.Name);
+
+                    if (record is not null)
+                    {
+                        var time = new TimeInt32(record.Time);
+                        var rank = record.Rank;
+
+                        activityText = $"From: {prevTime.ToString(useHundredths: map.Game.IsTMUF())} (rank: {prevRank})\nTo: {time.ToString(useHundredths: map.Game.IsTMUF())} (rank: {rank})\nBy: {lastTop10Change.Login.GetDeformattedNickname()}";
                     }
                 }
             }
             else
             {
-                time = new TimeInt32(lastTop10Change.Time.GetValueOrDefault());
-                rank = lastTop10Change.Rank.GetValueOrDefault().ToString();
+                var time = new TimeInt32(lastTop10Change.Time.GetValueOrDefault());
+                var rank = lastTop10Change.Rank.GetValueOrDefault().ToString();
+
+                activityText = $"{rank}) {time.ToString(useHundredths: map.Game.IsTMUF())} by {lastTop10Change.Login.GetDeformattedNickname()}";
             }
             
-            builder.AddField($"Last Top 10 activity  ➡️  {typeOfActivity}", $"{rank}) {time.ToTmString(useHundredths: map.Game.IsTMUF())} by {lastTop10Change.Login.GetDeformattedNickname()}");
+            builder.AddField($"Last Top 10 activity  ➡️  {typeOfActivity}", activityText);
             
             return recordSet;
         }
