@@ -29,13 +29,8 @@ public class Top10Command : MapRelatedWithUidCommand
 
         builder.Title = map.GetHumanizedDeformattedName();
         builder.Description = desc;
-
-        var thumbnailUrl = map.GetThumbnailUrl();
-
-        if (thumbnailUrl is not null)
-        {
-            builder.ThumbnailUrl = thumbnailUrl;
-        }
+        builder.Url = map.GetTmxUrl();
+        builder.ThumbnailUrl = map.GetThumbnailUrl();
 
         if (recordSet is not null)
         {

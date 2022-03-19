@@ -18,6 +18,13 @@ public partial class MapCommand
         {
             builder.Title = map.MapUid;
             builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname()}";
+            
+            var tmxUrl = map.GetTmxUrl();
+
+            if (tmxUrl is not null)
+            {
+                builder.Description = $"[{builder.Description}]({tmxUrl})";
+            }
 
             return Task.CompletedTask;
         }

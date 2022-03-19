@@ -30,6 +30,7 @@ public interface IWrRepo
     Task<RecordSetChangeModel?> GetLastRecordSetChangeOnMapAsync(MapModel map, CancellationToken cancellationToken = default);
     Task<RecordSetDetailedChangeModel?> GetLastRecordSetDetailedChangeOnMapAsync(MapModel map, CancellationToken cancellationToken = default);
     Task AddWorldRecordAsync(WorldRecordModel wr, CancellationToken cancellationToken = default);
+    Task<DateTime?> GetStartingDateOfRecordCountTrackingAsync(MapModel map, CancellationToken cancellationToken = default);
     Task<RefreshModel?> GetRefreshByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<List<MapModel>> GetMapsByNameAsync(string mapName, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task AddReportAsync(ReportModel report, CancellationToken cancellationToken = default);

@@ -1,4 +1,5 @@
 ﻿using BigBang1112.DiscordBot.Attributes;
+using BigBang1112.Extensions;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
@@ -75,11 +76,21 @@ public partial class HistoryCommand
                 return ms;
             }
 
-            protected override Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
+            protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
             {
-                builder.Title = $"Record count on {map.GetHumanizedDeformattedName()}";
+                var date = await _repo.GetStartingDateOfRecordCountTrackingAsync(map);
 
-                return Task.CompletedTask;
+                builder.Title = $"{map.GetHumanizedDeformattedName()}";
+                builder.Url = map.GetTmxUrl();
+
+                if (date.HasValue)
+                {
+                    builder.Description = $"This is a record count history tracked since {date.Value.ToTimestampTag(TimestampTagStyles.ShortDate)}.";
+                }
+                else
+                {
+                    builder.Description = $"There is no tracked record count history.";
+                }
             }
         }
     }

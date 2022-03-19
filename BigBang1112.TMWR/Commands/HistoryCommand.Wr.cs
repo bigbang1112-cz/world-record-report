@@ -64,13 +64,8 @@ public partial class HistoryCommand
             }
 
             builder.Description = desc;
-
-            var thumbnailUrl = map.GetThumbnailUrl();
-
-            if (thumbnailUrl is not null)
-            {
-                builder.ThumbnailUrl = thumbnailUrl;
-            }
+            builder.ThumbnailUrl = map.GetThumbnailUrl();
+            builder.Url = map.GetTmxUrl();
 
             builder.Footer = null;
         }

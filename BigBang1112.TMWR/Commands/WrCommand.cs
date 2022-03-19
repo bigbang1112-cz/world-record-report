@@ -53,6 +53,13 @@ public class WrCommand : MapRelatedWithUidCommand
             return;
         }
 
+        var tmxUrl = map.GetTmxUrl();
+
+        if (tmxUrl is not null)
+        {
+            builder.Description = $"[{builder.Description}]({tmxUrl})";
+        }
+
         builder.AddField("Driven on", wr.DrivenOn.ToTimestampTag(TimestampTagStyles.LongDateTime));
         builder.Timestamp = DateTime.SpecifyKind(wr.DrivenOn, DateTimeKind.Utc);
         builder.WithBotFooter(wr.Guid.ToString());

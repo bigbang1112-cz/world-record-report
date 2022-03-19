@@ -18,6 +18,7 @@ public partial class MapCommand
         {
             builder.Title = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname()}";
             builder.ImageUrl = map.GetThumbnailUrl();
+            builder.Url = map.GetTmxUrl();
 
             return Task.CompletedTask;
         }

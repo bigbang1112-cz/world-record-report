@@ -455,4 +455,13 @@ public class WrRepo : IWrRepo
             .Cacheable()
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+    public async Task<DateTime?> GetStartingDateOfRecordCountTrackingAsync(MapModel map, CancellationToken cancellationToken = default)
+    {
+        return await _db.RecordCounts.Where(x => x.Map == map)
+            .OrderBy(x => x.Before)
+            .Select(x => (DateTime?)x.Before)
+            .Cacheable()
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 }
