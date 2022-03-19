@@ -34,7 +34,7 @@ public partial class HistoryCommand
             {
                 var time = isStunts ? x.Time.ToString() : x.TimeInt32.ToString(useHundredths: isTMUF);
 
-                var baseStr = $"{wrs.Count - i}. **{time}**";
+                var baseStr = $"{wrs.Count - i}) **{time}**";
 
                 if (!HideNicknames && !HideTimestamps)
                 {
