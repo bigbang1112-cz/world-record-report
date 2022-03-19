@@ -153,6 +153,12 @@ public abstract class MapRelatedCommand : DiscordBotCommand
 
     private async Task<DiscordBotMessage> SelectMenuMapAsync(SocketMessageComponent messageComponent, string customIdMap)
     {
+        if (messageComponent.User.Id != messageComponent.Message.Interaction.User.Id)
+        {
+            return new DiscordBotMessage(new EmbedBuilder().WithDescription("You don't have permissions to change the select menu of a map.").Build(),
+                ephemeral: true, alwaysPostAsNewMessage: true);
+        }
+
         var mapUid = messageComponent.Data.Values.First();
 
         var map = await _repo.GetMapByUidAsync(mapUid);
