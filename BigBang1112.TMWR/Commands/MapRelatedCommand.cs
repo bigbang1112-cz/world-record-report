@@ -130,7 +130,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
             var hasMultipleSameNames = lookup[deformattedName].Count() > 1;
 
             var label = hasMultipleSameNames
-                ? $"{deformattedName} [{m.GetTitleUidOrEnvironment()}]"
+                ? $"{deformattedName} [{m.IntendedGame?.Name ?? m.Game.Name}]"
                 : deformattedName;
 
             menuBuilder.AddOption(label, m.MapUid, description: $"by {m.Author.GetDeformattedNickname()}");
