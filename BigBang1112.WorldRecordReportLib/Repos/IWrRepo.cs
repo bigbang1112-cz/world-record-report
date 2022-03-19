@@ -38,7 +38,7 @@ public interface IWrRepo
     Task<List<WorldRecordModel>> GetWorldRecordHistoryFromMapGroupAsync(MapGroupModel mapGroup, CancellationToken cancellationToken = default);
     Task<RecordSetDetailedChangeModel?> GetOldestRecordSetDetailedChangeOnMapAsync(MapModel map, CancellationToken cancellationToken = default);
     Task<ReportModel?> GetReportFromWorldRecordAsync(WorldRecordModel wr, CancellationToken cancellationToken = default);
-    Task<List<MapModel>> GetMapsByMultipleParamsAsync(string? mapName = null, string? env = null, string? title = null, string? authorLogin = null, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
+    Task<List<MapModel>> GetMapsByMultipleParamsAsync(string? mapName = null, string? env = null, string? title = null, string? authorLogin = null, string? authorNickname = null, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task<List<WorldRecordModel>> GetReportsFromTitlePackAsync(string titleIdPart, string titleAuthorPart, int count, CancellationToken cancellationToken = default);
     Task<TmxSiteModel?> GetTmxSiteByShortNameAsync(string shortName, CancellationToken cancellationToken = default);
     Task<TmxSiteModel> GetUnitedTmxAsync(CancellationToken cancellationToken = default);
@@ -56,6 +56,7 @@ public interface IWrRepo
     Task<List<string>> GetMapUidsAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task<List<string>> GetTitlePacksAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task<List<string>> GetMapAuthorLoginsAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
+    Task<List<string>> GetMapAuthorNicknamesAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task<WorldRecordModel?> GetWorldRecordAsync(MapModel map, CancellationToken cancellationToken = default);
     Task AddNicknameChangeAsync(NicknameChangeModel nicknameChangeModel, CancellationToken cancellationToken = default);
     Task<NicknameChangeModel?> GetLatestNicknameChangeByLoginAsync(LoginModel loginModel, CancellationToken cancellationToken = default);

@@ -356,6 +356,17 @@ public class WrRepo : IWrRepo
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<string>> GetMapAuthorNicknamesAsync(string value, int limit = 25, CancellationToken cancellationToken = default)
+    {
+        return await _db.Maps.Select(x => x.Author.Nickname!)
+            .Where(x => x != null && x.Contains(value))
+            .Distinct()
+            .OrderBy(x => x)
+            .Take(limit)
+            .Cacheable()
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<MapModel>> GetMapsByNameAsync(string mapName, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
     {
         return await _db.Maps
@@ -366,7 +377,13 @@ public class WrRepo : IWrRepo
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<MapModel>> GetMapsByMultipleParamsAsync(string? mapName = null, string? env = null, string? title = null, string? authorLogin = null, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
+    public async Task<List<MapModel>> GetMapsByMultipleParamsAsync(string? mapName = null,
+                                                                   string? env = null,
+                                                                   string? title = null,
+                                                                   string? authorLogin = null,
+                                                                   string? authorNickname = null,
+                                                                   int limit = DiscordConsts.OptionLimit,
+                                                                   CancellationToken cancellationToken = default)
     {
         var queryable = _db.Maps.AsQueryable();
 
@@ -390,6 +407,11 @@ public class WrRepo : IWrRepo
         if (authorLogin is not null)
         {
             queryable = queryable.Where(x => x.Author.Name.Contains(authorLogin));
+        }
+
+        if (authorNickname is not null)
+        {
+            queryable = queryable.Where(x => x.Author.Nickname!.Contains(authorNickname));
         }
 
         return await queryable.OrderBy(x => x.DeformattedName)

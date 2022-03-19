@@ -38,7 +38,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
         return await _repo.GetTitlePacksAsync(value);
     }
 
-    [DiscordBotCommandOption("author", ApplicationCommandOptionType.String, "Author login of the map.")]
+    [DiscordBotCommandOption("authorlogin", ApplicationCommandOptionType.String, "Author login of the map.")]
     public string? AuthorLogin { get; set; }
 
     public async Task<IEnumerable<string>> AutocompleteAuthorLoginAsync(string value)
@@ -46,9 +46,17 @@ public abstract class MapRelatedCommand : DiscordBotCommand
         return await _repo.GetMapAuthorLoginsAsync(value);
     }
 
+    [DiscordBotCommandOption("authornickname", ApplicationCommandOptionType.String, "Author nickname of the map.")]
+    public string? AuthorNickname { get; set; }
+
+    public async Task<IEnumerable<string>> AutocompleteAuthorNicknameAsync(string value)
+    {
+        return await _repo.GetMapAuthorNicknamesAsync(value);
+    }
+
     public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand, Deferer deferer)
     {
-        var maps = await _repo.GetMapsByMultipleParamsAsync(MapName, Environment, TitlePack, AuthorLogin);
+        var maps = await _repo.GetMapsByMultipleParamsAsync(MapName, Environment, TitlePack, AuthorLogin, AuthorNickname);
 
         if (maps.Any())
         {
