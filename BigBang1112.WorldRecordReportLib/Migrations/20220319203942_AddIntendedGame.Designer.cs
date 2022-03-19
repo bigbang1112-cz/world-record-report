@@ -3,6 +3,7 @@ using System;
 using BigBang1112.WorldRecordReportLib.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BigBang1112.WorldRecordReportLib.Migrations
 {
     [DbContext(typeof(WrContext))]
-    partial class WrContextModelSnapshot : ModelSnapshot
+    [Migration("20220319203942_AddIntendedGame")]
+    partial class AddIntendedGame
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,7 +46,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.HasIndex("WorldRecordId")
                         .IsUnique();
 
-                    b.ToTable("AltReplays", (string)null);
+                    b.ToTable("AltReplays");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.AssociatedAccountModel", b =>
@@ -58,7 +60,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AssociatedAccounts", (string)null);
+                    b.ToTable("AssociatedAccounts");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.DiscordWebhookMessageModel", b =>
@@ -94,7 +96,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("WebhookId");
 
-                    b.ToTable("DiscordWebhookMessages", (string)null);
+                    b.ToTable("DiscordWebhookMessages");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.DiscordWebhookModel", b =>
@@ -129,7 +131,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("AccountId");
 
-                    b.ToTable("DiscordWebhooks", (string)null);
+                    b.ToTable("DiscordWebhooks");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.EnvModel", b =>
@@ -158,7 +160,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Environments", (string)null);
+                    b.ToTable("Environments");
 
                     b.HasData(
                         new
@@ -249,7 +251,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Games", (string)null);
+                    b.ToTable("Games");
 
                     b.HasData(
                         new
@@ -299,7 +301,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("MapId");
 
-                    b.ToTable("IgnoredLoginsFromMaps", (string)null);
+                    b.ToTable("IgnoredLoginsFromMaps");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.IgnoredLoginFromRemovedRecordReportModel", b =>
@@ -315,7 +317,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("IgnoredLoginsFromRemovedRecordReport", (string)null);
+                    b.ToTable("IgnoredLoginsFromRemovedRecordReport");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.IgnoredLoginModel", b =>
@@ -334,7 +336,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("LoginId");
 
-                    b.ToTable("IgnoredLogins", (string)null);
+                    b.ToTable("IgnoredLogins");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.LoginModel", b =>
@@ -365,7 +367,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("GameId");
 
-                    b.ToTable("Logins", (string)null);
+                    b.ToTable("Logins");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.MapGroupModel", b =>
@@ -387,7 +389,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("TitlePackId");
 
-                    b.ToTable("MapGroups", (string)null);
+                    b.ToTable("MapGroups");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.MapModel", b =>
@@ -472,7 +474,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("TmxAuthorId");
 
-                    b.ToTable("Maps", (string)null);
+                    b.ToTable("Maps");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.MapModeModel", b =>
@@ -488,7 +490,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MapModes", (string)null);
+                    b.ToTable("MapModes");
 
                     b.HasData(
                         new
@@ -524,7 +526,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("LoginId");
 
-                    b.ToTable("NicknameChanges", (string)null);
+                    b.ToTable("NicknameChanges");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.RecordCountModel", b =>
@@ -546,7 +548,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("MapId");
 
-                    b.ToTable("RecordCounts", (string)null);
+                    b.ToTable("RecordCounts");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.RecordChangeModel", b =>
@@ -571,7 +573,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("RecordSetChangeId");
 
-                    b.ToTable("RecordChanges", (string)null);
+                    b.ToTable("RecordChanges");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.RecordSetDetailedChangeModel", b =>
@@ -611,7 +613,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("MapId");
 
-                    b.ToTable("RecordSetDetailedChanges", (string)null);
+                    b.ToTable("RecordSetDetailedChanges");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.RecordSetChangeModel", b =>
@@ -633,7 +635,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("MapId");
 
-                    b.ToTable("RecordSetChanges", (string)null);
+                    b.ToTable("RecordSetChanges");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.RefreshLoopModel", b =>
@@ -656,7 +658,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("StartingRefreshId");
 
-                    b.ToTable("RefreshLoops", (string)null);
+                    b.ToTable("RefreshLoops");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.RefreshModel", b =>
@@ -696,7 +698,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("TmxLoginId");
 
-                    b.ToTable("Refreshes", (string)null);
+                    b.ToTable("Refreshes");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.ReportModel", b =>
@@ -726,7 +728,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("WorldRecordId");
 
-                    b.ToTable("Reports", (string)null);
+                    b.ToTable("Reports");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.TitlePackModel", b =>
@@ -751,7 +753,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("AuthorId");
 
-                    b.ToTable("TitlePacks", (string)null);
+                    b.ToTable("TitlePacks");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.TmxInitModel", b =>
@@ -775,7 +777,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("LoginId");
 
-                    b.ToTable("TmxInits", (string)null);
+                    b.ToTable("TmxInits");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.TmxLoginModel", b =>
@@ -804,7 +806,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("SiteId");
 
-                    b.ToTable("TmxLogins", (string)null);
+                    b.ToTable("TmxLogins");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.TmxSiteModel", b =>
@@ -826,7 +828,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TmxSites", (string)null);
+                    b.ToTable("TmxSites");
 
                     b.HasData(
                         new
@@ -917,7 +919,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("TmxPlayerId");
 
-                    b.ToTable("WorldRecords", (string)null);
+                    b.ToTable("WorldRecords");
                 });
 
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.AltReplayModel", b =>

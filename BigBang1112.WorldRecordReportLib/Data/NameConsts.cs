@@ -6,6 +6,10 @@ public static class NameConsts
     public const string GameTM2DisplayName = "Trackmania²";
     public const string GameTMUFName = "TMUF";
     public const string GameTMUFDisplayName = "Trackmania United Forever";
+    public const string GameTMNFName = "TMNF";
+    public const string GameTMNFDisplayName = "Trackmania Nations Forever";
+    public const string GameTMUName = "TMU";
+    public const string GameTMUDisplayName = "Trackmania United";
 
     public const string LoginNadeoName = "nadeo";
     public const string LoginNadeoNickname = "Nadeo";

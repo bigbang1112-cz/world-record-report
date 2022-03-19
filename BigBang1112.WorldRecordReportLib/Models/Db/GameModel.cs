@@ -15,7 +15,6 @@ public class GameModel
     public string? DisplayName { get; set; }
 
     public virtual ICollection<LoginModel> Logins { get; set; } = default!;
-    public virtual ICollection<MapModel> Maps { get; set; } = default!;
 
     public override string ToString()
     {

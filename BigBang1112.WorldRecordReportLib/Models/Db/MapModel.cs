@@ -1,4 +1,5 @@
 ﻿using BigBang1112.WorldRecordReportLib.Data;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -12,6 +13,7 @@ public class MapModel
     [MaxLength(32)] // 27 chars
     public string MapUid { get; set; } = default!;
 
+    // Should specify the major game versions (TMUF, TM2, TMTURBO or TM2020)
     [Required]
     public virtual GameModel Game { get; set; } = default!;
 
@@ -53,6 +55,9 @@ public class MapModel
     public virtual TmxLoginModel? TmxAuthor { get; set; }
 
     public virtual MapModeModel? Mode { get; set; }
+
+    // Can specify the game where the map was originally made, or where it can be played. Should be different than Game or NULL.
+    public virtual GameModel? IntendedGame { get; set; }
 
     public virtual ICollection<WorldRecordModel> WorldRecords { get; set; } = default!;
     public virtual ICollection<RecordSetChangeModel> RecordSetChanges { get; set; } = default!;

@@ -41,10 +41,9 @@ public partial class MapCommand
             builder.ThumbnailUrl = map.GetThumbnailUrl();
             builder.Url = map.GetTmxUrl();
 
-
             if (map.TitlePack is null)
             {
-                builder.AddField("Game", map.Game, inline: true);
+                builder.AddField("Game", map.IntendedGame ?? map.Game, inline: true);
             }
             else
             { 
@@ -81,54 +80,7 @@ public partial class MapCommand
 
             if (lastTop10Change is not null)
             {
-                if (lastTop10Change.DrivenBefore.HasValue)
-                {
-                    var oldestChange = (await _repo.GetOldestRecordSetDetailedChangeOnMapAsync(map))?.DrivenBefore;
-
-                    var drivenBefore = lastTop10Change.DrivenBefore.Value;
-
-                    var timestampTag = drivenBefore.ToTimestampTag(TimestampTagStyles.Relative).ToString();
-
-                    if (oldestChange is not null && drivenBefore - oldestChange.Value < TimeSpan.FromDays(1))
-                    {
-                        timestampTag += "+";
-                    }
-
-                    builder.AddField("Last Top 10 activity", timestampTag, inline: true);
-                }
-
-                var typeOfActivity = lastTop10Change.Type switch
-                {
-                    RecordSetDetailedChangeType.New => "New record",
-                    RecordSetDetailedChangeType.Improvement => "Improved record",
-                    RecordSetDetailedChangeType.Removed => "Removed record",
-                    RecordSetDetailedChangeType.Worsen => "Worsen record",
-                    RecordSetDetailedChangeType.PushedOff => "Pushed off record",
-                    _ => "Unknown activity"
-                };
-
-                var time = default(TimeInt32?);
-
-                if (lastTop10Change.Type == RecordSetDetailedChangeType.New)
-                {
-                    recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
-
-                    if (recordSet is not null)
-                    {
-                        var record = recordSet.Records.FirstOrDefault(x => x.Login == lastTop10Change.Login.Name);
-
-                        if (record is not null)
-                        {
-                            time = new TimeInt32(record.Time);
-                        }
-                    }
-                }
-                else
-                {
-                    time = new TimeInt32(lastTop10Change.Time.GetValueOrDefault());
-                }
-
-                builder.AddField($"Last Top 10 activity - {typeOfActivity}", $"{time.ToTmString(useHundredths: map.Game.IsTMUF())} by {lastTop10Change.Login.GetDeformattedNickname()}");
+                recordSet = await AddLastTop10ActivityAsync(map, builder, lastTop10Change, recordSet);
             }
 
             if (recordSet is null)
@@ -140,6 +92,66 @@ public partial class MapCommand
             {
                 builder.AddField("Record count", recordSet.GetRecordCount().ToString("N0"));
             }
+        }
+
+        private async Task<RecordSet?> AddLastTop10ActivityAsync(MapModel map,
+                                                                                  EmbedBuilder builder,
+                                                                                  RecordSetDetailedChangeModel lastTop10Change,
+                                                                                  RecordSet? recordSet)
+        {
+            if (lastTop10Change.DrivenBefore.HasValue)
+            {
+                var oldestChange = (await _repo.GetOldestRecordSetDetailedChangeOnMapAsync(map))?.DrivenBefore;
+
+                var drivenBefore = lastTop10Change.DrivenBefore.Value;
+
+                var timestampTag = drivenBefore.ToTimestampTag(TimestampTagStyles.Relative).ToString();
+
+                if (oldestChange is not null && drivenBefore - oldestChange.Value < TimeSpan.FromDays(1))
+                {
+                    timestampTag += "+";
+                }
+
+                builder.AddField("Last Top 10 activity", timestampTag, inline: true);
+            }
+
+            var typeOfActivity = lastTop10Change.Type switch
+            {
+                RecordSetDetailedChangeType.New => "New record",
+                RecordSetDetailedChangeType.Improvement => "Improved record",
+                RecordSetDetailedChangeType.Removed => "Removed record",
+                RecordSetDetailedChangeType.Worsen => "Worsen record",
+                RecordSetDetailedChangeType.PushedOff => "Pushed off record",
+                _ => "Unknown activity"
+            };
+
+            var time = default(TimeInt32?);
+            var rank = "?";
+
+            if (lastTop10Change.Type == RecordSetDetailedChangeType.New)
+            {
+                recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+
+                if (recordSet is not null)
+                {
+                    var record = recordSet.Records.FirstOrDefault(x => x.Login == lastTop10Change.Login.Name);
+
+                    if (record is not null)
+                    {
+                        time = new TimeInt32(record.Time);
+                        rank = record.Rank.ToString();
+                    }
+                }
+            }
+            else
+            {
+                time = new TimeInt32(lastTop10Change.Time.GetValueOrDefault());
+                rank = lastTop10Change.Rank.GetValueOrDefault().ToString();
+            }
+            
+            builder.AddField($"Last Top 10 activity - {typeOfActivity}", $"{rank}) {time.ToTmString(useHundredths: map.Game.IsTMUF())} by {lastTop10Change.Login.GetDeformattedNickname()}");
+            
+            return recordSet;
         }
 
         public override async Task<DiscordBotMessage?> ExecuteButtonAsync(SocketMessageComponent messageComponent)
