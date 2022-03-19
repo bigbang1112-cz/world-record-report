@@ -19,6 +19,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BigBang1112.WorldRecordRepo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BigBang1112.DiscordBot", "BigBang1112.Essentials\BigBang1112.DiscordBot\BigBang1112.DiscordBot.csproj", "{B74BDE02-D208-4AFB-BA6D-F9233E43D3A7}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{BA3CDFB2-916C-4E16-9517-6B2C27394E6C}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
