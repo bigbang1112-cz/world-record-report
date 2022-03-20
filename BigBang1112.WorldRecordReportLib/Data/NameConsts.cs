@@ -13,7 +13,7 @@ public static class NameConsts
     public const string GameTMSName = "TMS";
     public const string GameTMSDisplayName = "Trackmania Sunrise";
     public const string GameTMNName = "TMN";
-    public const string GameTMNDisplayName = "TrackMania Nations ESWC";
+    public const string GameTMNDisplayName = "Trackmania Nations ESWC";
     public const string GameTMOName = "TMO";
     public const string GameTMODisplayName = "Trackmania Original";
 
