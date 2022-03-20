@@ -92,6 +92,8 @@ public partial class MapCommand
             {
                 builder.AddField("Record count", recordSet.GetRecordCount().ToString("N0"));
             }
+
+            builder.Timestamp = DateTimeOffset.UtcNow;
         }
 
         private async Task<RecordSet?> AddLastTop10ActivityAsync(MapModel map,
