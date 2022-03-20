@@ -69,7 +69,10 @@ public class WrContext : DbContext
             new GameModel { Id = 1, Name = NameConsts.GameTM2Name, DisplayName = NameConsts.GameTM2DisplayName },
             new GameModel { Id = 2, Name = NameConsts.GameTMUFName, DisplayName = NameConsts.GameTMUFDisplayName },
             new GameModel { Id = 3, Name = NameConsts.GameTMNFName, DisplayName = NameConsts.GameTMNFDisplayName },
-            new GameModel { Id = 4, Name = NameConsts.GameTMUName, DisplayName = NameConsts.GameTMUDisplayName }
+            new GameModel { Id = 4, Name = NameConsts.GameTMUName, DisplayName = NameConsts.GameTMUDisplayName },
+            new GameModel { Id = 5, Name = NameConsts.GameTMSName, DisplayName = NameConsts.GameTMSDisplayName },
+            new GameModel { Id = 6, Name = NameConsts.GameTMNName, DisplayName = NameConsts.GameTMNDisplayName },
+            new GameModel { Id = 7, Name = NameConsts.GameTMOName, DisplayName = NameConsts.GameTMODisplayName }
             );
 
         modelBuilder.Entity<EnvModel>().HasData(
