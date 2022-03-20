@@ -1,4 +1,5 @@
-﻿using BigBang1112.WorldRecordReportLib.Models.Db;
+﻿using BigBang1112.Extensions;
+using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using BigBang1112.WorldRecordReportLib.Services;
 using Discord;
