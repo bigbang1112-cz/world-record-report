@@ -486,4 +486,9 @@ public class WrRepo : IWrRepo
             .Cacheable()
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+    public async Task<TmxLoginModel?> GetTmxLoginAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        return await _db.TmxLogins.FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
+    }
 }

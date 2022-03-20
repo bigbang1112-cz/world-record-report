@@ -1,8 +1,12 @@
-﻿using BigBang1112.WorldRecordReportLib.Data;
+﻿using BigBang1112.Services;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
+using Mapster;
 using Microsoft.Extensions.Logging;
+using System.IO.Compression;
+using System.Text.Json;
 using TmExchangeApi;
 using TmExchangeApi.Models;
 
@@ -13,13 +17,22 @@ public class TmxReportService
     private readonly ITmxService _tmxService;
     private readonly IWrRepo _repo;
     private readonly IDiscordWebhookService _discordWebhookService;
+    private readonly IFileHostService _fileHostService;
+    private readonly ITmxRecordSetService _tmxRecordSetService;
     private readonly ILogger<TmxReportService> _logger;
 
-    public TmxReportService(ITmxService tmxService, IWrRepo repo, IDiscordWebhookService discordWebhookService, ILogger<TmxReportService> logger)
+    public TmxReportService(ITmxService tmxService,
+                            IWrRepo repo,
+                            IDiscordWebhookService discordWebhookService,
+                            IFileHostService fileHostService,
+                            ITmxRecordSetService tmxRecordSetService,
+                            ILogger<TmxReportService> logger)
     {
         _tmxService = tmxService;
         _repo = repo;
         _discordWebhookService = discordWebhookService;
+        _fileHostService = fileHostService;
+        _tmxRecordSetService = tmxRecordSetService;
         _logger = logger;
     }
 
@@ -27,76 +40,6 @@ public class TmxReportService
     {
         var lastTmxWrs = await _repo.GetLastWorldRecordsInTMUFAsync(5);
         await CleanupWorldRecordsAsync(lastTmxWrs, false);
-    }
-
-    internal async Task CleanupWorldRecordsAsync(IEnumerable<WorldRecordModel> lastTmxWrs, bool onlyOneUser)
-    {
-        foreach (var wr in lastTmxWrs)
-        {
-            if (wr.TmxPlayer is null)
-            {
-                continue;
-            }
-
-            var site = wr.TmxPlayer.Site;
-
-            var map = wr.Map;
-
-            if (!map.MxId.HasValue)
-            {
-                throw new Exception();
-            }
-
-            var tmxId = map.MxId.Value;
-            var siteEnum = site.GetSiteEnum();
-
-            var replays = await _tmxService.GetReplaysAsync(siteEnum, tmxId);
-
-            if (map.Mode?.Name == NameConsts.MapModeStunts)
-            {
-                // TODO
-                continue;
-            }
-
-            var tmxWrs = _tmxService.GetWrHistory(replays).Reverse();
-            var tmxWr = tmxWrs.FirstOrDefault();
-
-            if (tmxWr is not null && tmxWr.ReplayTime <= wr.Time)
-            {
-                continue;
-            }
-
-            // The record was removed and there are no more records
-            // or the TMX record is slower than WR in the database
-
-            wr.Ignored = true;
-
-            var report = await _repo.GetReportFromWorldRecordAsync(wr);
-
-            if (report is null)
-            {
-                throw new Exception();
-            }
-
-            foreach (var msg in report.DiscordWebhookMessages)
-            {
-                await _discordWebhookService.DeleteMessageAsync(msg);
-            }
-
-            if (!onlyOneUser)
-            {
-                await _repo.SaveAsync();
-
-                var otherWrsByThisUser = await _repo.GetWorldRecordsByTmxPlayerAsync(wr.TmxPlayer);
-
-                if (otherWrsByThisUser.Count > 0)
-                {
-                    await CleanupWorldRecordsAsync(otherWrsByThisUser, true);
-                }
-            }
-
-            await _repo.SaveAsync();
-        }
     }
 
     public async Task UpdateWorldRecordsAsync(TmxSite site, LeaderboardType leaderboardType)
@@ -154,6 +97,23 @@ public class TmxReportService
             return false;
         }
 
+        if (!_tmxRecordSetService.RecordSetExists(tmxSite, map))
+        {
+            var firstRecordSet = await _tmxService.GetReplaysAsync(tmxSite, tmxTrack.TrackId);
+            
+            if (firstRecordSet.Results.Length == 0)
+            {
+                return false;
+            }
+
+            await _tmxRecordSetService.SaveRecordSetAsync(tmxSite, map, firstRecordSet);
+
+            await Task.Delay(500); // Give some breathing to TMX API
+
+            // return false indicating that further files should get checked for creation
+            return false;
+        }
+
         if (map.LastActivityOn is not null && tmxTrack.ActivityAt.Ticks - (tmxTrack.ActivityAt.Ticks % TimeSpan.TicksPerSecond) <= map.LastActivityOn.Value.Ticks)
         {
             return true;
@@ -173,12 +133,22 @@ public class TmxReportService
 
         await Task.Delay(500);
 
-        var replays = await _tmxService.GetReplaysAsync(tmxSite.GetSiteEnum(), tmxTrack.TrackId);
+        var replays = await _tmxService.GetReplaysAsync(tmxSite, tmxTrack.TrackId);
 
         if (replays.Results.Length == 0)
         {
             return false;
         }
+
+        var recordSet = replays.Results.Adapt<TmxReplay[]>();
+        var prevRecordSet = await _tmxRecordSetService.GetRecordSetAsync(tmxSite, map);
+
+        // check for leaderboard changes
+        // ...
+        FindChangesInRecordSets(prevRecordSet, recordSet);
+
+        // create a .json.gz file from replays.Results
+        await _tmxRecordSetService.SaveRecordSetAsync(tmxSite, map, recordSet);
 
         var currentWr = map.WorldRecords
             .Where(x => !x.Ignored)
@@ -247,6 +217,11 @@ public class TmxReportService
         }
 
         return false;
+    }
+
+    private void FindChangesInRecordSets(TmxReplay[] prevRecordSet, TmxReplay[] recordSet)
+    {
+        
     }
 
     private async Task<WorldRecordModel> ProcessNewWorldRecordAsync(TmxSiteModel tmxSite,
@@ -381,6 +356,76 @@ public class TmxReportService
                 ModifiedOn = DateTime.UtcNow,
                 Webhook = webhook
             }, embeds: Enumerable.Repeat(embed, 1));
+        }
+    }
+
+    internal async Task CleanupWorldRecordsAsync(IEnumerable<WorldRecordModel> lastTmxWrs, bool onlyOneUser)
+    {
+        foreach (var wr in lastTmxWrs)
+        {
+            if (wr.TmxPlayer is null)
+            {
+                continue;
+            }
+
+            var site = wr.TmxPlayer.Site;
+
+            var map = wr.Map;
+
+            if (!map.MxId.HasValue)
+            {
+                throw new Exception();
+            }
+
+            var tmxId = map.MxId.Value;
+            var siteEnum = site.GetSiteEnum();
+
+            var replays = await _tmxService.GetReplaysAsync(siteEnum, tmxId);
+
+            if (map.Mode?.Name == NameConsts.MapModeStunts)
+            {
+                // TODO
+                continue;
+            }
+
+            var tmxWrs = _tmxService.GetWrHistory(replays).Reverse();
+            var tmxWr = tmxWrs.FirstOrDefault();
+
+            if (tmxWr is not null && tmxWr.ReplayTime <= wr.Time)
+            {
+                continue;
+            }
+
+            // The record was removed and there are no more records
+            // or the TMX record is slower than WR in the database
+
+            wr.Ignored = true;
+
+            var report = await _repo.GetReportFromWorldRecordAsync(wr);
+
+            if (report is null)
+            {
+                throw new Exception();
+            }
+
+            foreach (var msg in report.DiscordWebhookMessages)
+            {
+                await _discordWebhookService.DeleteMessageAsync(msg);
+            }
+
+            if (!onlyOneUser)
+            {
+                await _repo.SaveAsync();
+
+                var otherWrsByThisUser = await _repo.GetWorldRecordsByTmxPlayerAsync(wr.TmxPlayer);
+
+                if (otherWrsByThisUser.Count > 0)
+                {
+                    await CleanupWorldRecordsAsync(otherWrsByThisUser, true);
+                }
+            }
+
+            await _repo.SaveAsync();
         }
     }
 }

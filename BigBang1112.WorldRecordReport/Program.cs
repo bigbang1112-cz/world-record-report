@@ -8,6 +8,7 @@ using Quartz;
 using BigBang1112.WorldRecordReportLib.Repos;
 using BigBang1112.DiscordBot.Data;
 using System.Globalization;
+using BigBang1112.WorldRecordReportLib;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
@@ -21,7 +22,8 @@ var options = new EssentialsOptions
 {
     Title = "World Record Report",
     Assembly = assembly,
-    Config = config
+    Config = config,
+    Mapper = new WrMapper()
 };
 
 // Add services to the container.
@@ -41,6 +43,7 @@ builder.Services.AddScoped<ITM2ReportService, TM2ReportService>();
 builder.Services.AddScoped<WrAuthService>();
 builder.Services.AddScoped<ITmxService, TmxService>();
 builder.Services.AddScoped<TmxReportService>();
+builder.Services.AddScoped<ITmxRecordSetService, TmxRecordSetService>();
 
 builder.Services.AddScoped<IGhostService, GhostService>();
 

@@ -1,4 +1,5 @@
-﻿using BigBang1112.WorldRecordReportLib.Comparers;
+﻿using BigBang1112.Services;
+using BigBang1112.WorldRecordReportLib.Comparers;
 using BigBang1112.WorldRecordReportLib.Converters.Json;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
@@ -18,7 +19,7 @@ public class RecordSetService : IRecordSetService
     public static readonly string StorageFolder = Path.Combine("api", "v1", "records", "tm2");
 
     private readonly ILogger<RecordSetService> _logger;
-    private readonly IWebHostEnvironment _env;
+    private readonly IFileHostService _fileHostService;
     private readonly IWrRepo _repo;
     private readonly IMemoryCache _cache;
     private readonly IDiscordWebhookService _discordWebhookService;
@@ -37,7 +38,7 @@ public class RecordSetService : IRecordSetService
     }
 
     public RecordSetService(ILogger<RecordSetService> logger,
-                            IWebHostEnvironment env,
+                            IFileHostService fileHostService,
                             IWrRepo repo,
                             IMemoryCache cache,
                             IDiscordWebhookService discordWebhookService,
@@ -45,7 +46,7 @@ public class RecordSetService : IRecordSetService
                             HttpClient http)
     {
         _logger = logger;
-        _env = env;
+        _fileHostService = fileHostService;
         _repo = repo;
         _cache = cache;
         _discordWebhookService = discordWebhookService;
@@ -56,7 +57,7 @@ public class RecordSetService : IRecordSetService
     public void GetFilePaths(string zone, string mapUid,
         out string path, out string fileName, out string fullFileName, out string subDirFileName)
     {
-        path = Path.Combine(_env.WebRootPath, StorageFolder, zone);
+        path = Path.Combine(_fileHostService.GetWebRootPath(), StorageFolder, zone);
         fileName = $"{mapUid}.json.gz";
         fullFileName = Path.Combine(path, fileName);
         subDirFileName = Path.Combine(StorageFolder, zone, fileName);
@@ -70,7 +71,7 @@ public class RecordSetService : IRecordSetService
             out string _,
             out string subDirFileName);
 
-        return _env.WebRootFileProvider.GetFileInfo(subDirFileName);
+        return _fileHostService.GetFileInfo(subDirFileName);
     }
 
     public async Task UpdateRecordSetAsync(string zone, string mapUid, RecordSet recordSet, Dictionary<string, string> nicknameDictionary)
@@ -83,7 +84,7 @@ public class RecordSetService : IRecordSetService
 
         Directory.CreateDirectory(path);
 
-        var file = _env.WebRootFileProvider.GetFileInfo(subDirFileName);
+        var file = _fileHostService.GetFileInfo(subDirFileName);
 
         if (!file.Exists)
         {
@@ -362,7 +363,7 @@ public class RecordSetService : IRecordSetService
             out string fullFileName,
             out string subDirFileName);
 
-        var file = _env.WebRootFileProvider.GetFileInfo(subDirFileName);
+        var file = _fileHostService.GetFileInfo(subDirFileName);
 
         if (!file.Exists)
         {

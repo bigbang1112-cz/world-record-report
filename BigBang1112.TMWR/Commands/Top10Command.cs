@@ -1,4 +1,5 @@
 ﻿using BigBang1112.Extensions;
+using BigBang1112.TMWR.Models;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -13,86 +14,189 @@ public class Top10Command : MapRelatedWithUidCommand
 {
     private readonly IWrRepo _repo;
     private readonly IRecordSetService _recordSetService;
+    private readonly ITmxRecordSetService _tmxRecordSetService;
 
-    public Top10Command(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo, IRecordSetService recordSetService) : base(tmwrDiscordBotService, repo)
+    public Top10Command(TmwrDiscordBotService tmwrDiscordBotService,
+                        IWrRepo repo,
+                        IRecordSetService recordSetService,
+                        ITmxRecordSetService tmxRecordSetService) : base(tmwrDiscordBotService, repo)
     {
         _repo = repo;
         _recordSetService = recordSetService;
+        _tmxRecordSetService = tmxRecordSetService;
     }
 
     protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
     {
-        var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
-
-        var desc = recordSet is null
-            ? "No leaderboard found."
-            : await CreateTop10DescAsync(recordSet, map.Game.IsTMUF());
-
         builder.Title = map.GetHumanizedDeformattedName();
-        builder.Description = desc;
         builder.Url = map.GetTmxUrl();
         builder.ThumbnailUrl = map.GetThumbnailUrl();
 
+        var embedContent = await CreateTop10EmbedContentAsync(map);
+
+        if (embedContent.HasValue)
+        {
+            builder.Description = embedContent.Value.desc;
+
+            if (embedContent.Value.recordCount.HasValue)
+            {
+                builder.AddField("Record count", embedContent.Value.recordCount.Value.ToString("N0"));
+            }
+        }
+        else
+        {
+            builder.Description = "No leaderboard found.";
+        }
+    }
+
+    private async Task<(string desc, int? recordCount)?> CreateTop10EmbedContentAsync(MapModel map)
+    {
+        var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+
         if (recordSet is not null)
         {
-            builder.AddField("Record count", recordSet.GetRecordCount().ToString("N0"));
+            return await CreateTop10EmbedContentFromTM2Async(map, recordSet);
+        }
+
+        if (map.TmxAuthor is null)
+        {
+            return null;
+        }
+
+        var recordSetTmx = await _tmxRecordSetService.GetRecordSetAsync(map.TmxAuthor.Site, map);
+
+        if (recordSetTmx is null)
+        {
+            return null;
+        }
+
+        return await CreateTop10EmbedContentFromTmxAsync(map, recordSetTmx);
+    }
+
+    private async Task<(string desc, int? recordCount)?> CreateTop10EmbedContentFromTmxAsync(MapModel map, TmxReplay[] recordSetTmx)
+    {
+        var tmxLoginDictionary = await FetchTmxLoginModelsAsync(recordSetTmx);
+        var miniRecords = GetMiniRecordsFromTmxReplays(recordSetTmx, tmxLoginDictionary, map.IsStuntsMode());
+        var miniRecordStrings = ConvertMiniRecordsToStrings(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
+
+        var desc = string.Join('\n', miniRecordStrings);
+
+        return (desc, null);
+    }
+
+    private async Task<(string desc, int? recordCount)?> CreateTop10EmbedContentFromTM2Async(MapModel map, RecordSet recordSet)
+    {
+        var loginDictionary = await FetchLoginModelsAsync(recordSet);
+        var miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, loginDictionary);
+        var miniRecordStrings = ConvertMiniRecordsToStrings(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
+
+        var desc = string.Join('\n', miniRecordStrings);
+
+        return (desc, recordSet.GetRecordCount());
+    }
+
+    private static IEnumerable<MiniRecord> GetMiniRecordsFromTmxReplays(TmxReplay[] records, Dictionary<int, TmxLoginModel> tmxLoginDictionary, bool isStunts)
+    {
+        foreach (var record in records.Where(x => x.Rank is not null).Take(10))
+        {
+            var userId = record.UserId;
+
+            var displayName = tmxLoginDictionary.TryGetValue(userId, out TmxLoginModel? loginModel)
+                ? loginModel.Nickname?.EscapeDiscord() ?? loginModel.UserId.ToString()
+                : userId.ToString();
+
+            yield return new MiniRecord(record.Rank.GetValueOrDefault(), isStunts ? record.ReplayScore : record.ReplayTime, displayName);
+        }
+    }
+
+    private static IEnumerable<MiniRecord> GetMiniRecordsFromRecordSet(IEnumerable<RecordSetDetailedRecord> records, IDictionary<string, LoginModel> loginDictionary)
+    {
+        foreach (var record in records)
+        {
+            var displayName = record.Login;
+
+            if (loginDictionary.TryGetValue(displayName, out LoginModel? loginModel))
+            {
+                displayName = loginModel.GetDeformattedNickname().EscapeDiscord();
+            }
+
+            yield return new MiniRecord(record.Rank, record.Time, displayName);
         }
     }
 
     protected override async Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, bool isModified)
     {
         var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
-        
+
+        IEnumerable<MiniRecord> miniRecords;
+
         if (recordSet is null)
         {
-            if (isModified)
+            if (map.TmxAuthor is null)
             {
                 return new ComponentBuilder();
             }
 
-            return null;
+            var recordSetTmx = await _tmxRecordSetService.GetRecordSetAsync(map.TmxAuthor.Site, map);
+
+            if (recordSetTmx is null)
+            {
+                return new ComponentBuilder();
+            }
+
+            var logins = await FetchTmxLoginModelsAsync(recordSetTmx);
+            miniRecords = GetMiniRecordsFromTmxReplays(recordSetTmx, logins, map.IsStuntsMode());
+        }
+        else
+        {
+            var logins = await FetchLoginModelsAsync(recordSet);
+            miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, logins);
         }
 
         var isTMUF = map.Game.IsTMUF();
+        var isStunts = map.IsStuntsMode();
 
-        var logins = await FetchLoginModelsFromRecordSetAsync(recordSet);
+        var selectMenuBuilder = new SelectMenuBuilder
+        {
+            CustomId = CreateCustomId("rec"),
+            Placeholder = "Select a record...",
 
-        var selectMenuBuilder = new SelectMenuBuilder()
-            .WithCustomId(CreateCustomId("rec"))
-            .WithPlaceholder("Select a record...")
-            .WithOptions(recordSet.Records.Select((x, i) =>
+            Options = miniRecords.Select((x, i) =>
             {
-                var nickname = x.Login;
-
-                if (logins.TryGetValue(x.Login, out LoginModel? loginModel))
-                {
-                    nickname = loginModel.GetDeformattedNickname();
-                }
-
-                return new SelectMenuOptionBuilder(new TimeInt32(x.Time).ToString(useHundredths: isTMUF), $"{map.MapUid}-{i}", $"by {nickname}");
-            }).ToList());
+                return new SelectMenuOptionBuilder(isStunts ? x.TimeOrScore.ToString() : new TimeInt32(x.TimeOrScore).ToString(useHundredths: isTMUF),
+                    $"{map.MapUid}-{i}", $"by {x.Nickname}");
+            }).ToList()
+        };
 
         return new ComponentBuilder().WithSelectMenu(selectMenuBuilder);
     }
 
-    private async Task<IEnumerable<string>> CreateTop10EnumerableAsync(RecordSet recordSet, bool isTMUF)
+    private static IEnumerable<string> ConvertMiniRecordsToStrings(IEnumerable<MiniRecord> records, bool isTMUF, bool isStunts)
     {
-        var loginDictionary = await FetchLoginModelsFromRecordSetAsync(recordSet);
-
-        return recordSet.Records.Select(x =>
+        foreach (var record in records)
         {
-            var login = x.Login;
-
-            if (loginDictionary.TryGetValue(login, out LoginModel? loginModel))
-            {
-                login = loginModel.GetDeformattedNickname().EscapeDiscord();
-            }
-
-            return $"{x.Rank}) **{new TimeInt32(x.Time).ToString(useHundredths: isTMUF)}** by {login}";
-        });
+            yield return $"{record.Rank}) **{(isStunts ? record.TimeOrScore : new TimeInt32(record.TimeOrScore).ToString(useHundredths: isTMUF))}** by {record.Nickname}";
+        }
     }
 
-    private async Task<Dictionary<string, LoginModel>> FetchLoginModelsFromRecordSetAsync(RecordSet recordSet)
+    private async Task<Dictionary<int, TmxLoginModel>> FetchTmxLoginModelsAsync(TmxReplay[] recordSetTmx)
+    {
+        var loginDictionary = new Dictionary<int, TmxLoginModel>();
+
+        foreach (var userId in recordSetTmx.Select(x => x.UserId))
+        {
+            var loginModel = await _repo.GetTmxLoginAsync(userId);
+
+            if (loginModel is not null)
+            {
+                loginDictionary[userId] = loginModel;
+            }
+        }
+
+        return loginDictionary;
+    }
+
+    private async Task<Dictionary<string, LoginModel>> FetchLoginModelsAsync(RecordSet recordSet)
     {
         var loginDictionary = new Dictionary<string, LoginModel>();
 
@@ -100,20 +204,13 @@ public class Top10Command : MapRelatedWithUidCommand
         {
             var loginModel = await _repo.GetLoginAsync(login);
 
-            if (loginModel is null)
+            if (loginModel is not null)
             {
-                continue;
+                loginDictionary[login] = loginModel;
             }
-
-            loginDictionary[login] = loginModel;
         }
 
         return loginDictionary;
-    }
-
-    private async Task<string> CreateTop10DescAsync(RecordSet recordSet, bool isTMUF)
-    {
-        return string.Join('\n', await CreateTop10EnumerableAsync(recordSet, isTMUF));
     }
 
     public override async Task<DiscordBotMessage?> SelectMenuAsync(SocketMessageComponent messageComponent, Deferer deferer)
