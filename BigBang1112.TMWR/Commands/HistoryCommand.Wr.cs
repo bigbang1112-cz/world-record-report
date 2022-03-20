@@ -40,6 +40,10 @@ public partial class HistoryCommand
                 {
                     baseStr = $"{baseStr} by {x.GetPlayerNicknameDeformatted()} ({x.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
                 }
+                else if (HideNicknames && HideTimestamps)
+                {
+
+                }
                 else if (HideTimestamps)
                 {
                     baseStr = $"{baseStr} by {x.GetPlayerNicknameDeformatted()}";
