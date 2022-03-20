@@ -179,6 +179,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
                 .Build(), ephemeral: true, alwaysPostAsNewMessage: true);
         }
 
+        var embedResponse = await CreateEmbedResponseAsync(map);
         var componentBuilder = await CreateComponentsAsync(map, isModified: true);
 
         if (componentBuilder is not null)
@@ -197,6 +198,6 @@ public abstract class MapRelatedCommand : DiscordBotCommand
 
         var attachment = await CreateAttachmentAsync(map, deferrer);
 
-        return new DiscordBotMessage(await CreateEmbedResponseAsync(map), componentBuilder?.Build(), attachment: attachment);
+        return new DiscordBotMessage(embedResponse, componentBuilder?.Build(), attachment: attachment);
     }
 }
