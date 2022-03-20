@@ -161,7 +161,7 @@ public partial class MapCommand
                         var time = new TimeInt32(record.Time);
                         var rank = record.Rank;
 
-                        activityText = $"From: {prevTime.ToString(useHundredths: map.Game.IsTMUF())} (rank: {prevRank})\nTo: {time.ToString(useHundredths: map.Game.IsTMUF())} (rank: {rank})\nBy: {lastTop10Change.Login.GetDeformattedNickname()}";
+                        activityText = $"**From:** {prevTime.ToString(useHundredths: map.Game.IsTMUF())} (rank: {prevRank})\n**To:** {time.ToString(useHundredths: map.Game.IsTMUF())} (rank: {rank})\n**By:** {lastTop10Change.Login.GetDeformattedNickname()}";
                     }
                 }
             }
