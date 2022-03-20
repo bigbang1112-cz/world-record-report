@@ -571,7 +571,7 @@ public class TM2ReportService : ITM2ReportService
     private async Task UpdateRecordSetAsync(MapLeaderBoard lb, Dictionary<string, string> nicknameDictionary)
     {
         var recordList = new List<RecordSetDetailedRecord>(lb.Records.Count);
-
+        
         foreach (var record in lb.Records)
         {
             nicknameDictionary[record.Login] = record.Nickname;
@@ -605,7 +605,7 @@ public class TM2ReportService : ITM2ReportService
         var embeds = new List<Discord.Embed> { embed };
 
         var login = report.WorldRecord.GetPlayerLogin();
-        var nickname = report.WorldRecord.GetPlayerNicknameDeformatted();
+        var nickname = report.WorldRecord.GetPlayerNicknameDeformatted().EscapeDiscord();
 
         embeds.AddRange(ApplyAdditionalEmbeds(login, nickname));
 

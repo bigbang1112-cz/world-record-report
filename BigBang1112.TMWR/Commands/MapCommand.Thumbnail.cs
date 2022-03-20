@@ -1,4 +1,5 @@
-﻿using BigBang1112.WorldRecordReportLib.Models.Db;
+﻿using BigBang1112.Extensions;
+using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
 
@@ -16,7 +17,7 @@ public partial class MapCommand
 
         protected override Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
         {
-            builder.Title = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname()}";
+            builder.Title = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
             builder.ImageUrl = map.GetThumbnailUrl();
             builder.Url = map.GetTmxUrl();
 

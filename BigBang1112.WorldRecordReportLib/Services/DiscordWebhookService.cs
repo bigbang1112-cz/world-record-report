@@ -158,14 +158,14 @@ public class DiscordWebhookService : IDiscordWebhookService
                 map.Environment.Color[2]))
             .AddField("Map", map.DeformattedName, true)
             .AddField("Time", time, true)
-            .AddField("By", previousWr.GetPlayerNicknameDeformatted(), true);
+            .AddField("By", previousWr.GetPlayerNicknameDeformatted().EscapeDiscord(), true);
 
         var currentWr = removedWr.Current;
 
         if (currentWr is not null)
         {
             var prevTime = currentWr.TimeInt32.ToString();
-            var prevNickname = currentWr.GetPlayerNicknameDeformatted();
+            var prevNickname = currentWr.GetPlayerNicknameDeformatted().EscapeDiscord();
 
             builder
                 .AddField("New time", prevTime, true)

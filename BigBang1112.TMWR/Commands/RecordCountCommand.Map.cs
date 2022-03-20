@@ -38,7 +38,7 @@ public partial class RecordCountCommand
                 builder.Title = $"{recordSet.GetRecordCount():N0} records";
             }
 
-            builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname()}";
+            builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
 
             var tmxUrl = map.GetTmxUrl();
 

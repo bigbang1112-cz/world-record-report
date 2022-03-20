@@ -38,7 +38,7 @@ public partial class HistoryCommand
 
                 if (!HideNicknames && !HideTimestamps)
                 {
-                    baseStr = $"{baseStr} by {x.GetPlayerNicknameDeformatted()} ({x.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
+                    baseStr = $"{baseStr} by {x.GetPlayerNicknameDeformatted().EscapeDiscord()} ({x.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
                 }
                 else if (HideNicknames && HideTimestamps)
                 {
@@ -46,7 +46,7 @@ public partial class HistoryCommand
                 }
                 else if (HideTimestamps)
                 {
-                    baseStr = $"{baseStr} by {x.GetPlayerNicknameDeformatted()}";
+                    baseStr = $"{baseStr} by {x.GetPlayerNicknameDeformatted().EscapeDiscord()}";
                 }
                 else if (HideNicknames)
                 {

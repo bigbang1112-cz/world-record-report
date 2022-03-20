@@ -43,9 +43,9 @@ public class WrCommand : MapRelatedWithUidCommand
 
         builder.Title = wr is null
             ? "No world record!"
-            : $"{wr.GetTimeFormattedToGame()} by {wr.GetPlayerNicknameDeformatted()}";
+            : $"{wr.GetTimeFormattedToGame()} by {wr.GetPlayerNicknameDeformatted().EscapeDiscord()}";
 
-        builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname()}";
+        builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
 
         if (wr is null)
         {

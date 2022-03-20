@@ -1,4 +1,5 @@
-﻿using BigBang1112.WorldRecordReportLib.Models;
+﻿using BigBang1112.Extensions;
+using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using BigBang1112.WorldRecordReportLib.Services;
@@ -84,7 +85,7 @@ public class Top10Command : MapRelatedWithUidCommand
 
             if (loginDictionary.TryGetValue(login, out LoginModel? loginModel))
             {
-                login = loginModel.GetDeformattedNickname();
+                login = loginModel.GetDeformattedNickname().EscapeDiscord();
             }
 
             return $"{x.Rank}) **{new TimeInt32(x.Time).ToString(useHundredths: isTMUF)}** by {login}";
