@@ -163,7 +163,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
     {
         if (messageComponent.Message.Interaction is not null && messageComponent.User.Id != messageComponent.Message.Interaction.User.Id)
         {
-            return new DiscordBotMessage(new EmbedBuilder().WithDescription($"You don't have permissions to change the map selection menu of a command execution made by {messageComponent.Message.Interaction.User.Mention}.").Build(),
+            return new DiscordBotMessage(new EmbedBuilder().WithDescription($"You don't have permissions to change the map of a command execution made by {messageComponent.Message.Interaction.User.Mention}.").Build(),
                 ephemeral: true, alwaysPostAsNewMessage: true);
         }
 
