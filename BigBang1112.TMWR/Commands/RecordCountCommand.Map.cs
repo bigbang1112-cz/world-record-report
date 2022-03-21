@@ -13,9 +13,6 @@ public partial class RecordCountCommand
     {
         private readonly IRecordSetService _recordSetService;
 
-        [DiscordBotCommandOption("historygraph", ApplicationCommandOptionType.Boolean, "Shows the record count \"over time\" graph instead.")]
-        public bool HistoryGraph { get; set; }
-
         public Map(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo, IRecordSetService recordSetService) : base(tmwrDiscordBotService, repo)
         {
             _recordSetService = recordSetService;
@@ -23,11 +20,6 @@ public partial class RecordCountCommand
 
         protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
         {
-            if (HistoryGraph)
-            {
-                return;
-            }
-
             var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
 
             if (recordSet is null)
