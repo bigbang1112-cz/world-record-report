@@ -92,7 +92,7 @@ public class RecordCommand : MapRelatedWithUidCommand
 
             var loginModel = await _repo.GetLoginAsync(record.Login);
             
-            nickname = loginModel?.Nickname ?? record.Login;
+            nickname = loginModel?.GetDeformattedNickname() ?? record.Login;
 
             builder.Title = $"{record.Rank}) {new TimeInt32(record.Time).ToString(useHundredths: map.Game.IsTMUF())} by {nickname}";
         }
