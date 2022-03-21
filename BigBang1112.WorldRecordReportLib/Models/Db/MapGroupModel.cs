@@ -11,8 +11,9 @@ public class MapGroupModel
 
     public string? DisplayName { get; set; }
 
-    [Required]
-    public virtual TitlePackModel TitlePack { get; set; } = default!; // verification needs
+    public virtual TitlePackModel? TitlePack { get; set; }
+
+    public virtual GameModel? Game { get; set; }
 
     public virtual ICollection<MapModel> Maps { get; set; } = default!;
 

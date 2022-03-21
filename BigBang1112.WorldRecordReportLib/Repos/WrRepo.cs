@@ -367,6 +367,17 @@ public class WrRepo : IWrRepo
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IEnumerable<string>> GetMapGroupNamesAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
+    {
+        return await _db.MapGroups.Select(x => x.DisplayName!)
+            .Where(x => x != null && x.Contains(value))
+            .Distinct()
+            .OrderBy(x => x)
+            .Take(limit)
+            .Cacheable()
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<MapModel>> GetMapsByNameAsync(string mapName, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
     {
         return await _db.Maps

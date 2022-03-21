@@ -15,6 +15,7 @@ public interface IWrRepo
     Task<List<LoginModel>> GetLoginsInTM2Async(CancellationToken cancellationToken = default);
     Task<GameModel> GetTM2GameAsync(CancellationToken cancellationToken = default);
     Task<List<RecordCountModel>> GetRecordCountsOnMapAsync(MapModel map, CancellationToken cancellationToken = default);
+    Task<IEnumerable<string>> GetMapGroupNamesAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task<bool> HasRecordCountAsync(MapModel map, CancellationToken cancellationToken = default);
     Task<int> SaveAsync(CancellationToken cancellationToken = default);
     Task<List<string>> GetIgnoredLoginsFromRemovedRecordReportAsync(CancellationToken cancellationToken = default);
