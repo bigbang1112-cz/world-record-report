@@ -57,7 +57,7 @@ public partial class MapCommand
             if (wr is not null)
             {
                 builder.AddField("World record",
-                    $"{wr.GetTimeFormattedToGame()} by {wr.GetPlayerNicknameDeformatted().EscapeDiscord()}");
+                    $"**` {wr.GetTimeFormattedToGame()} `** by **{wr.GetPlayerNicknameDeformatted().EscapeDiscord()}**");
 
                 builder.AddField("World record driven on", wr.DrivenOn.ToTimestampTag(TimestampTagStyles.LongDateTime));
             }
@@ -141,7 +141,7 @@ public partial class MapCommand
                         var time = new TimeInt32(record.Time);
                         var rank = record.Rank;
 
-                        activityText = $"{rank}) {time.ToString(useHundredths: map.Game.IsTMUF())} by {lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}";
+                        activityText = $"` {rank} ` **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** by **{lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}**";
                     }
                 }
             }
@@ -163,7 +163,7 @@ public partial class MapCommand
                         var time = new TimeInt32(record.Time);
                         var rank = record.Rank;
 
-                        activityText = $"**From:** {prevTime.ToString(useHundredths: map.Game.IsTMUF())} (rank: {prevRank})\n**To:** {time.ToString(useHundredths: map.Game.IsTMUF())} (rank: {rank})\n**By:** {lastTop10Change.Login.GetDeformattedNickname()}";
+                        activityText = $"From: **` {prevTime.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {prevRank} `)\nTo: **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {rank} `)\nBy: **{lastTop10Change.Login.GetDeformattedNickname()}**";
                     }
                 }
             }
@@ -172,7 +172,7 @@ public partial class MapCommand
                 var time = new TimeInt32(lastTop10Change.Time.GetValueOrDefault());
                 var rank = lastTop10Change.Rank.GetValueOrDefault().ToString();
 
-                activityText = $"{rank}) {time.ToString(useHundredths: map.Game.IsTMUF())} by {lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}";
+                activityText = $"` {rank} ` **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** by {lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}";
             }
             
             builder.AddField($"Last Top 10 activity  ➡️  {typeOfActivity}", activityText);

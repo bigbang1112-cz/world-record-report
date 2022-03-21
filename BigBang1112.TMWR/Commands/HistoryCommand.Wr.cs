@@ -34,11 +34,11 @@ public partial class HistoryCommand
             {
                 var time = isStunts ? x.Time.ToString() : x.TimeInt32.ToString(useHundredths: isTMUF);
 
-                var baseStr = $"{wrs.Count - i}) **{time}**";
+                var baseStr = $"` {wrs.Count - i} ` **` {time} `**";
 
                 if (!HideNicknames && !HideTimestamps)
                 {
-                    baseStr = $"{baseStr} by {x.GetPlayerNicknameDeformatted().EscapeDiscord()} ({x.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
+                    baseStr = $"{baseStr} by **{x.GetPlayerNicknameDeformatted().EscapeDiscord()}** ({x.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
                 }
                 else if (HideNicknames && HideTimestamps)
                 {
@@ -46,7 +46,7 @@ public partial class HistoryCommand
                 }
                 else if (HideTimestamps)
                 {
-                    baseStr = $"{baseStr} by {x.GetPlayerNicknameDeformatted().EscapeDiscord()}";
+                    baseStr = $"{baseStr} by **{x.GetPlayerNicknameDeformatted().EscapeDiscord()}**";
                 }
                 else if (HideNicknames)
                 {

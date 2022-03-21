@@ -184,7 +184,7 @@ public class Top10Command : MapRelatedWithUidCommand
     {
         foreach (var record in records)
         {
-            yield return $"{record.Rank}) **{(isStunts ? record.TimeOrScore : new TimeInt32(record.TimeOrScore).ToString(useHundredths: isTMUF))}** by {record.Nickname}";
+            yield return $"` {record.Rank:00} ` **` {(isStunts ? record.TimeOrScore : new TimeInt32(record.TimeOrScore).ToString(useHundredths: isTMUF))} `** by **{record.Nickname}**";
         }
     }
 
