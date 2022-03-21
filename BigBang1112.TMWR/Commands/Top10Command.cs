@@ -71,8 +71,9 @@ public class Top10Command : MapRelatedWithUidCommand
                 return new ComponentBuilder();
             }
 
-            var logins = await FetchTmxLoginModelsAsync(recordSetTmx);
-            miniRecords = GetMiniRecordsFromTmxReplays(recordSetTmx, logins, map.IsStuntsMode());
+            var top10records = GetTop10(recordSetTmx);
+            var logins = await FetchTmxLoginModelsAsync(top10records);
+            miniRecords = GetMiniRecordsFromTmxReplays(top10records, logins, map.IsStuntsMode());
         }
         else
         {
@@ -124,13 +125,19 @@ public class Top10Command : MapRelatedWithUidCommand
 
     private async Task<(string desc, int? recordCount)?> CreateTop10EmbedContentFromTmxAsync(MapModel map, TmxReplay[] recordSetTmx)
     {
-        var tmxLoginDictionary = await FetchTmxLoginModelsAsync(recordSetTmx);
-        var miniRecords = GetMiniRecordsFromTmxReplays(recordSetTmx, tmxLoginDictionary, map.IsStuntsMode());
+        var top10records = GetTop10(recordSetTmx);
+        var tmxLoginDictionary = await FetchTmxLoginModelsAsync(top10records);
+        var miniRecords = GetMiniRecordsFromTmxReplays(top10records, tmxLoginDictionary, map.IsStuntsMode());
         var miniRecordStrings = ConvertMiniRecordsToStrings(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
 
         var desc = string.Join('\n', miniRecordStrings);
 
         return (desc, null);
+    }
+
+    private static IEnumerable<TmxReplay> GetTop10(IEnumerable<TmxReplay> recordSetTmx)
+    {
+        return recordSetTmx.Where(x => x.Rank is not null).Take(10);
     }
 
     private async Task<(string desc, int? recordCount)?> CreateTop10EmbedContentFromTM2Async(MapModel map, RecordSet recordSet)
@@ -144,9 +151,9 @@ public class Top10Command : MapRelatedWithUidCommand
         return (desc, recordSet.GetRecordCount());
     }
 
-    private static IEnumerable<MiniRecord> GetMiniRecordsFromTmxReplays(TmxReplay[] records, Dictionary<int, TmxLoginModel> tmxLoginDictionary, bool isStunts)
+    private static IEnumerable<MiniRecord> GetMiniRecordsFromTmxReplays(IEnumerable<TmxReplay> records, Dictionary<int, TmxLoginModel> tmxLoginDictionary, bool isStunts)
     {
-        foreach (var record in records.Where(x => x.Rank is not null).Take(10))
+        foreach (var record in records)
         {
             var userId = record.UserId;
 
@@ -181,7 +188,7 @@ public class Top10Command : MapRelatedWithUidCommand
         }
     }
 
-    private async Task<Dictionary<int, TmxLoginModel>> FetchTmxLoginModelsAsync(TmxReplay[] recordSetTmx)
+    private async Task<Dictionary<int, TmxLoginModel>> FetchTmxLoginModelsAsync(IEnumerable<TmxReplay> recordSetTmx)
     {
         var loginDictionary = new Dictionary<int, TmxLoginModel>();
 
