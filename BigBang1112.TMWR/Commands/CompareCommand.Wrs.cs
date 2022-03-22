@@ -15,8 +15,6 @@ public partial class CompareCommand
     public class Wrs : MapRelatedWithUidCommand
     {
         private readonly IWrRepo _repo;
-        private readonly IRecordSetService _recordSetService;
-        private readonly ITmxRecordSetService _tmxRecordSetService;
 
         [DiscordBotCommandOption("guid1", ApplicationCommandOptionType.String,
             "GUID of the world record to select for comparison.",
@@ -38,14 +36,9 @@ public partial class CompareCommand
             return await _repo.GetWorldRecordGuidsAsync(value);
         }
 
-        public Wrs(TmwrDiscordBotService tmwrDiscordBotService,
-                       IWrRepo repo,
-                       IRecordSetService recordSetService,
-                       ITmxRecordSetService tmxRecordSetService) : base(tmwrDiscordBotService, repo)
+        public Wrs(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo) : base(tmwrDiscordBotService, repo)
         {
             _repo = repo;
-            _recordSetService = recordSetService;
-            _tmxRecordSetService = tmxRecordSetService;
         }
 
         protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
