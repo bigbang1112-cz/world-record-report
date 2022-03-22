@@ -57,10 +57,10 @@ public class WrCommand : MapRelatedWithUidCommand
         }
 
         return new ComponentBuilder()
-            .WithButton("Checkpoints", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-checkpoints"), ButtonStyle.Secondary, disabled: true)
-            .WithButton("Inputs", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-inputs"), ButtonStyle.Secondary, disabled: true)
             .WithButton("Previous", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-prev"), ButtonStyle.Secondary)
-            .WithButton("Compare with previous", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-compareprev"), ButtonStyle.Secondary);
+            .WithButton("Compare with previous", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-compareprev"), ButtonStyle.Secondary)
+            .WithButton("Checkpoints", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-checkpoints"), ButtonStyle.Secondary, disabled: true)
+            .WithButton("Inputs", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-inputs"), ButtonStyle.Secondary, disabled: true);
     }
 
     protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
