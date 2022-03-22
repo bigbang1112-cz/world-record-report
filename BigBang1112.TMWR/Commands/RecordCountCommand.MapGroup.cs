@@ -17,7 +17,7 @@ public partial class RecordCountCommand
         [DiscordBotCommandOption("campaign", ApplicationCommandOptionType.String, "Campaign to use.", IsRequired = true)]
         public string Campaign { get; set; } = default!;
 
-        [DiscordBotCommandOption("groupname", ApplicationCommandOptionType.String, "Map group to use.", IsDefault = true)]
+        [DiscordBotCommandOption("groupname", ApplicationCommandOptionType.String, "Map group to use.")]
         public string GroupName { get; set; } = default!;
 
         public async Task<IEnumerable<string>> AutocompleteGroupNameAsync(string value)
