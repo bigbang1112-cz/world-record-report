@@ -1,5 +1,10 @@
 ﻿using BigBang1112.DiscordBot;
 using BigBang1112.Attributes;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using BigBang1112.DiscordBot.Models.Db;
+using BigBang1112.DiscordBot.Data;
+using Discord;
 
 namespace BigBang1112.TMWR;
 
@@ -9,7 +14,7 @@ public class TmwrDiscordBotService : DiscordBotService
 {
     public TmwrDiscordBotService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
-        
+
     }
 
     protected override async Task ReadyAsync()
@@ -24,7 +29,7 @@ public class TmwrDiscordBotService : DiscordBotService
 
     protected override async Task SlashCommandExecutedAsync(SocketSlashCommand slashCommand)
     {
-        if (slashCommand.IsDMInteraction)
+        if (slashCommand.IsDMInteraction && slashCommand.User.Id != GetOwnerDiscordSnowflake())
         {
             await slashCommand.RespondAsync("DM interactions are temporarily disabled.");
             return;
