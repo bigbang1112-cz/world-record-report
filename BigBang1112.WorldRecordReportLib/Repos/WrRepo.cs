@@ -378,6 +378,17 @@ public class WrRepo : IWrRepo
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<string>> GetWorldRecordGuidsAsync(string value, int limit = 25, CancellationToken cancellationToken = default)
+    {
+        return await _db.WorldRecords.Select(x => x.Guid.ToString())
+            .Where(x => x.StartsWith(value))
+            .Distinct()
+            .OrderBy(x => x)
+            .Take(limit)
+            .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<MapModel>> GetMapsByNameAsync(string mapName, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
     {
         return await _db.Maps

@@ -59,6 +59,7 @@ public interface IWrRepo
     Task<List<string>> GetTitlePacksAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task<List<string>> GetMapAuthorLoginsAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task<List<string>> GetMapAuthorNicknamesAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
+    Task<List<string>> GetWorldRecordGuidsAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task<WorldRecordModel?> GetWorldRecordAsync(MapModel map, CancellationToken cancellationToken = default);
     Task AddNicknameChangeAsync(NicknameChangeModel nicknameChangeModel, CancellationToken cancellationToken = default);
     Task<NicknameChangeModel?> GetLatestNicknameChangeByLoginAsync(LoginModel loginModel, CancellationToken cancellationToken = default);
