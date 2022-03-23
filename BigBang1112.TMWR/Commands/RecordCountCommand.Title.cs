@@ -1,4 +1,5 @@
 ﻿using BigBang1112.DiscordBot;
+using BigBang1112.Extensions;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -28,17 +29,6 @@ public partial class RecordCountCommand
         {
             return await _repo.GetTitlePacksAsync(value);
         }
-
-        [DiscordBotCommandOption("groupname", ApplicationCommandOptionType.String, "Map group to use.", IsDefault = true)]
-        public string GroupName { get; set; } = default!;
-
-        public async Task<IEnumerable<string>> AutocompleteGroupNameAsync(string value)
-        {
-            return await _repo.GetMapGroupNamesAsync(value);
-        }
-
-        [DiscordBotCommandOption("groupnum", ApplicationCommandOptionType.Integer, "Map group to use.")]
-        public string GroupNum { get; set; } = default!;
 
         public Title(DiscordBotService discordBotService,
                      IWrRepo repo,
@@ -87,7 +77,7 @@ public partial class RecordCountCommand
 
             var strBuilder = new StringBuilder();
 
-            foreach (var (mapGroup, count) in mapGroupRecordCounts)
+            foreach (var (mapGroup, count) in mapGroupRecordCounts.OrderBy(x => x.Key.Number))
             {
                 strBuilder.AppendLine($"{mapGroup.DisplayName ?? "TODO ID"}: **{count:N0}**");
             }
@@ -95,6 +85,7 @@ public partial class RecordCountCommand
             var embed = new EmbedBuilder()
                 .WithTitle($"{totalRecordCount:N0} records")
                 .WithDescription(strBuilder.ToString())
+                .WithBotFooter(TitlePack)
                 .Build();
 
             return new DiscordBotMessage(embed);

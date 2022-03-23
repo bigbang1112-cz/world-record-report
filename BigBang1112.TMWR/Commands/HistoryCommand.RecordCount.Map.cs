@@ -20,6 +20,7 @@ public partial class HistoryCommand
     public partial class RecordCount
     {
         [DiscordBotSubCommand("map", "Gets the history of the record count increase on a map.")]
+        [UnfinishedDiscordBotCommand]
         public class Map : MapRelatedWithUidCommand
         {
             private readonly IWrRepo _repo;

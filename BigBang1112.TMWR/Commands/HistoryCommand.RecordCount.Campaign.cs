@@ -7,6 +7,7 @@ public partial class HistoryCommand
     public partial class RecordCount
     {
         [DiscordBotSubCommand("campaign")]
+        [UnfinishedDiscordBotCommand]
         public class Campaign : DiscordBotCommand
         {
             public Campaign(TmwrDiscordBotService tmwrDiscordBotService) : base(tmwrDiscordBotService)

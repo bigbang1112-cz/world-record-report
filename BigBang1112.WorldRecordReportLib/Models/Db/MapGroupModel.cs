@@ -9,6 +9,8 @@ public class MapGroupModel
     [Required]
     public Guid Guid { get; set; }
 
+    public int Number { get; set; }
+
     public string? DisplayName { get; set; }
 
     public virtual TitlePackModel? TitlePack { get; set; }
