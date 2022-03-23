@@ -50,7 +50,8 @@ builder.Services.AddScoped<ITmxRecordSetService, TmxRecordSetService>();
 
 builder.Services.AddScoped<IGhostService, GhostService>();
 
-builder.Services.AddHostedService<TmwrDiscordBotService>();
+builder.Services.AddSingleton<TmwrDiscordBotService>();
+builder.Services.AddHostedService(x => x.GetRequiredService<TmwrDiscordBotService>());
 
 builder.Services.AddQuartz(q =>
 {

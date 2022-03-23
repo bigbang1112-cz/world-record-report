@@ -5,6 +5,7 @@
 
 @inject IWrRepo _repo
 @inject IDiscordWebhookService _discordWebhookService
+@inject TMWR.TmwrDiscordBotService _tmwr
 
 <h3>Admin</h3>
 
@@ -44,12 +45,15 @@
             case "report":
                 await ReportAsync(partsEnumerator);
                 break;
+            case "commandoverride":
+                await _tmwr.OverwriteApplicationCommandsAsync();
+                break;
         }
     }
 
     private async Task ReportAsync(IEnumerator partsEnumerator)
     {
-         if (!partsEnumerator.MoveNext())
+        if (!partsEnumerator.MoveNext())
         {
             return;
         }
