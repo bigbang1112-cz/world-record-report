@@ -513,4 +513,16 @@ public class WrRepo : IWrRepo
     {
         return await _db.TmxLogins.FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
     }
+
+    public async Task<TitlePackModel?> GetTitlePackAsync(string titleId, CancellationToken cancellationToken = default)
+    {
+        var split = titleId.Split('@');
+
+        return await _db.TitlePacks.FirstOrDefaultAsync(x => x.Name == split[0] && x.Author.Name == split[1], cancellationToken);
+    }
+
+    public async Task<MapGroupModel?> GetMapGroupAsync(TitlePackModel titlePack, string groupName, CancellationToken cancellationToken = default)
+    {
+        return await _db.MapGroups.FirstOrDefaultAsync(x => x.TitlePack == titlePack && x.DisplayName != null && x.DisplayName.Contains(groupName) == true, cancellationToken);
+    }
 }

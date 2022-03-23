@@ -7,14 +7,23 @@ namespace BigBang1112.TMWR.Commands;
 public partial class RecordCountCommand
 {
     [DiscordBotSubCommand("mapgroup", "Shows the amount of records on each map in map group plus the map group overall.")]
+    [UnfinishedDiscordBotCommand]
     public class MapGroup : DiscordBotCommand
     {
         private readonly IWrRepo _repo;
 
-        [DiscordBotCommandOption("graph", ApplicationCommandOptionType.Boolean, "Shows the record count \"as the map group progresses\" graph instead.")]
-        public bool Graph { get; set; }
+        //[DiscordBotCommandOption("graph", ApplicationCommandOptionType.Boolean, "Shows the record count \"as the map group progresses\" graph instead.")]
+        //public bool Graph { get; set; }
 
-        [DiscordBotCommandOption("campaign", ApplicationCommandOptionType.String, "Campaign to use.", IsRequired = true)]
+        [DiscordBotCommandOption("title", ApplicationCommandOptionType.String, "Title pack to use.")]
+        public string TitlePack { get; set; } = default!;
+
+        public async Task<IEnumerable<string>> AutocompleteTitlePackAsync(string value)
+        {
+            return await _repo.GetTitlePacksAsync(value);
+        }
+
+        [DiscordBotCommandOption("campaign", ApplicationCommandOptionType.String, "Campaign to use.")]
         public string Campaign { get; set; } = default!;
 
         [DiscordBotCommandOption("groupname", ApplicationCommandOptionType.String, "Map group to use.")]

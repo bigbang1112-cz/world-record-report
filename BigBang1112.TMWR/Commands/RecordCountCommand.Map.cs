@@ -22,14 +22,9 @@ public partial class RecordCountCommand
         {
             var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
 
-            if (recordSet is null)
-            {
-                builder.Title = "Cannot determine the record count (yet)";
-            }
-            else
-            {
-                builder.Title = $"{recordSet.GetRecordCount():N0} records";
-            }
+            builder.Title = recordSet is null
+                ? "Cannot determine the record count (yet)"
+                : $"{recordSet.GetRecordCount():N0} records";
 
             builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
 

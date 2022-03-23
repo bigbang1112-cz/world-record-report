@@ -16,6 +16,7 @@ public interface IWrRepo
     Task<GameModel> GetTM2GameAsync(CancellationToken cancellationToken = default);
     Task<List<RecordCountModel>> GetRecordCountsOnMapAsync(MapModel map, CancellationToken cancellationToken = default);
     Task<IEnumerable<string>> GetMapGroupNamesAsync(string value, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
+    Task<TitlePackModel?> GetTitlePackAsync(string titleId, CancellationToken cancellationToken = default);
     Task<bool> HasRecordCountAsync(MapModel map, CancellationToken cancellationToken = default);
     Task<int> SaveAsync(CancellationToken cancellationToken = default);
     Task<List<string>> GetIgnoredLoginsFromRemovedRecordReportAsync(CancellationToken cancellationToken = default);
@@ -23,6 +24,7 @@ public interface IWrRepo
     Task<AssociatedAccountModel> GetOrCreateAssociatedAccountAsync(Guid accountGuid, CancellationToken cancellationToken = default);
     Task<List<DiscordWebhookModel>> GetDiscordWebhooksAsync(CancellationToken cancellationToken = default);
     Task AddRecordCountAsync(RecordCountModel recordCount, CancellationToken cancellationToken = default);
+    Task<MapGroupModel?> GetMapGroupAsync(TitlePackModel titlePack, string groupName, CancellationToken cancellationToken = default);
     Task AddRecordSetChangeAsync(RecordSetChangeModel recordSetChange, CancellationToken cancellationToken = default);
     Task AddRecordChangesAsync(IEnumerable<RecordChangeModel> recordChanges, CancellationToken cancellationToken = default);
     Task AddDiscordWebhookMessageAsync(DiscordWebhookMessageModel msg);

@@ -5,7 +5,8 @@ namespace BigBang1112.TMWR.Commands;
 
 public partial class RecordCountCommand
 {
-    [DiscordBotSubCommand("campaign", "Shows the amount of records on each map in a campaign plus the campaign overall.")]
+    [DiscordBotSubCommand("campaign", "Shows the amount of records on each map group plus the campaign overall.")]
+    [UnfinishedDiscordBotCommand]
     public class Campaign : DiscordBotCommand
     {
         [DiscordBotCommandOption("historygraph", ApplicationCommandOptionType.Boolean, "Shows the record count \"over time\" graph instead.")]
