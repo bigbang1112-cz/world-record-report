@@ -1,14 +1,12 @@
 ﻿using BigBang1112.DiscordBot;
 using BigBang1112.Attributes;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
-using BigBang1112.DiscordBot.Models.Db;
-using BigBang1112.DiscordBot.Data;
-using Discord;
 
 namespace BigBang1112.TMWR;
 
-[DiscordBot("e7593b6b-d8f1-4caa-b950-01a8437662d0", name: "TMWR", GitRepoUrl = "https://github.com/bigbang1112-cz/world-record-report")]
+[DiscordBot("e7593b6b-d8f1-4caa-b950-01a8437662d0", name: "TMWR",
+    Punchline = "The Ultimate Trackmania World Record Discord Bot",
+    Description = "With this bot, you can quickly check any world records, history of world records, graphs, or replay parameters in the future.",
+    GitRepoUrl = "https://github.com/bigbang1112-cz/world-record-report")]
 [SecretAppsettingsPath("DiscordBots:TMWR:Secret")]
 public class TmwrDiscordBotService : DiscordBotService
 {

@@ -6,7 +6,7 @@ namespace BigBang1112.TMWR.Commands;
 
 public partial class RecordCountCommand
 {
-    [DiscordBotSubCommand("mapgroup", "Shows the amount of records on each map in map groups plus the map group overall.")]
+    [DiscordBotSubCommand("mapgroup", "Shows the amount of records on each map in map group plus the map group overall.")]
     public class MapGroup : DiscordBotCommand
     {
         private readonly IWrRepo _repo;

@@ -11,7 +11,7 @@ namespace BigBang1112.TMWR.Commands;
 
 public partial class CompareCommand
 {
-    [DiscordBotSubCommand("records")]
+    [DiscordBotSubCommand("records", "Compare two records with each other.")]
     public class Records : MapRelatedWithUidCommand
     {
         private readonly IWrRepo _repo;

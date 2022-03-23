@@ -1,5 +1,4 @@
-﻿using BigBang1112.DiscordBot.Attributes;
-using BigBang1112.Extensions;
+﻿using BigBang1112.Extensions;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
@@ -20,7 +19,7 @@ public partial class HistoryCommand
 {
     public partial class RecordCount
     {
-        [DiscordBotSubCommand("map")]
+        [DiscordBotSubCommand("map", "Gets the history of the record count increase on a map.")]
         public class Map : MapRelatedWithUidCommand
         {
             private readonly IWrRepo _repo;

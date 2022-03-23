@@ -1,14 +1,10 @@
-﻿using BigBang1112.DiscordBot.Attributes;
-using BigBang1112.DiscordBot.Models;
-using Discord.WebSocket;
-
-namespace BigBang1112.TMWR.Commands;
+﻿namespace BigBang1112.TMWR.Commands;
 
 public partial class HistoryCommand
 {
     public partial class RecordCount
     {
-        [DiscordBotSubCommand("mapgroup")]
+        [DiscordBotSubCommand("mapgroup", "Gets the history of the record count increase in a map group.")]
         public class MapGroup : DiscordBotCommand
         {
             public MapGroup(TmwrDiscordBotService tmwrDiscordBotService) : base(tmwrDiscordBotService)

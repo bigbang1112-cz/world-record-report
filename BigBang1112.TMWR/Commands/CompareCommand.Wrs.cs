@@ -1,17 +1,13 @@
 ﻿using BigBang1112.Extensions;
-using BigBang1112.TMWR.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
-using BigBang1112.WorldRecordReportLib.Services;
 using Discord;
-using System.Text.RegularExpressions;
-using TmEssentials;
 
 namespace BigBang1112.TMWR.Commands;
 
 public partial class CompareCommand
 {
-    [DiscordBotSubCommand("wrs")]
+    [DiscordBotSubCommand("wrs", "Compare two world records with each other.")]
     public class Wrs : MapRelatedWithUidCommand
     {
         private readonly IWrRepo _repo;

@@ -3,6 +3,7 @@
 public partial class InputsCommand
 {
     [DiscordBotSubCommand("record")]
+    [UnfinishedDiscordBotCommand]
     public class Record : DiscordBotCommand
     {
         public Record(TmwrDiscordBotService tmwrDiscordBotService) : base(tmwrDiscordBotService)

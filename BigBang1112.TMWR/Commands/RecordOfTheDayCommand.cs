@@ -1,6 +1,7 @@
 ﻿namespace BigBang1112.TMWR.Commands;
 
-[DiscordBotCommand("recordoftheday")]
+[DiscordBotCommand("recordoftheday", "Shows the current record of the day.")]
+[UnfinishedDiscordBotCommand]
 public class RecordOfTheDayCommand : DiscordBotCommand
 {
     public RecordOfTheDayCommand(TmwrDiscordBotService tmwrDiscordBotService) : base(tmwrDiscordBotService)
