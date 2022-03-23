@@ -16,6 +16,8 @@ public static class NameConsts
     public const string GameTMNDisplayName = "Trackmania Nations ESWC";
     public const string GameTMOName = "TMO";
     public const string GameTMODisplayName = "Trackmania Original";
+    public const string GameTM2020Name = "TM2020";
+    public const string GameTM2020DisplayName = "Trackmania®";
 
     public const string LoginNadeoName = "nadeo";
     public const string LoginNadeoNickname = "Nadeo";
