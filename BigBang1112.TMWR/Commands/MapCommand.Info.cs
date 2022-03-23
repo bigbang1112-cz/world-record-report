@@ -29,8 +29,8 @@ public partial class MapCommand
             var builder = new ComponentBuilder()
                 .WithButton("Top 10", CreateCustomId($"top10-{map.MapUid}"), ButtonStyle.Secondary, disabled: false)
                 .WithButton("World record", CreateCustomId($"wrdetails-{map.MapUid}"), ButtonStyle.Secondary, disabled: false)
-                .WithButton("World record history", CreateCustomId($"wrhistory-{map.MapUid}"), ButtonStyle.Secondary, disabled: false)
-                .WithButton("Record count history", CreateCustomId($"counthistory-{map.MapUid}"), ButtonStyle.Secondary, disabled: false);
+                .WithButton("World record history", CreateCustomId($"wrhistory-{map.MapUid}"), ButtonStyle.Secondary, disabled: false);
+                //.WithButton("Record count history", CreateCustomId($"counthistory-{map.MapUid}"), ButtonStyle.Secondary, disabled: false);
 
             return Task.FromResult(builder)!;
         }
