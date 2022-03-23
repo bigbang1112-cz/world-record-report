@@ -10,7 +10,10 @@ using BigBang1112.DiscordBot.Data;
 using System.Globalization;
 using BigBang1112.WorldRecordReportLib;
 
-CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+var cultureInfo = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+cultureInfo.NumberFormat.NumberGroupSeparator = " ";
+
+CultureInfo.CurrentCulture = cultureInfo;
 
 var assembly = typeof(Program).Assembly;
 
