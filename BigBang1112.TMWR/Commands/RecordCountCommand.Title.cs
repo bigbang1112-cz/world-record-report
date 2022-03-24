@@ -46,10 +46,10 @@ public partial class RecordCountCommand
 
             if (titlePack is null)
             {
-                return new DiscordBotMessage(new EmbedBuilder().WithDescription("No title pack was found.").Build(), ephemeral: true);
+                return new DiscordBotMessage(new EmbedBuilder().WithDescription("No title pack was found. Make sure you've entered the whole title ID, as shortcuts aren't supported at the moment.").Build(), ephemeral: true);
             }
 
-            var mapGroupRecordCounts = await _memoryCache.GetOrCreateAsync<Dictionary<MapGroupModel, int>>($"RecordCount_TitlePack_{titlePack.GetTitleUid()}", async entry =>
+            var mapGroupRecordCounts = await _memoryCache.GetOrCreateAsync($"RecordCount_TitlePack_{titlePack.GetTitleUid()}", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
 

@@ -118,9 +118,9 @@ public class RecordSetService : IRecordSetService
             return;
         }
 
-        var noCountExists = await _repo.HasRecordCountAsync(map);
+        var hasCount = await _repo.HasRecordCountAsync(map);
 
-        if (noCountExists)
+        if (!hasCount)
         {
             await SaveRecordCountToDatabaseAsync(File.GetLastWriteTimeUtc(fullFileName), map, recordSetPrev.GetRecordCount());
         }
@@ -129,7 +129,7 @@ public class RecordSetService : IRecordSetService
 
         if (timeChanges is not null)
         {
-            await ApplyChangesAsync(recordSet, fullFileName, recordSetChanges, timeChanges, cacheKey, map, noCountExists, nicknameDictionary);
+            await ApplyChangesAsync(recordSet, fullFileName, recordSetChanges, cacheKey, map, hasCount, nicknameDictionary);
         }
 
         _cache.Set(cacheKey, DateTime.UtcNow);
@@ -152,7 +152,7 @@ public class RecordSetService : IRecordSetService
         }
     }
 
-    private async Task ApplyChangesAsync(RecordSet recordSet, string fullFileName, RecordSetDetailedRecordChanges? recordSetChanges, RecordSetChanges timeChanges, string cacheKey, MapModel map, bool noCountExists, Dictionary<string, string> nicknameDictionary)
+    private async Task ApplyChangesAsync(RecordSet recordSet, string fullFileName, RecordSetDetailedRecordChanges? recordSetChanges, string cacheKey, MapModel map, bool hasCount, Dictionary<string, string> nicknameDictionary)
     {
         var drivenAfter = _cache.GetOrCreate(cacheKey, entry =>
         {
@@ -161,14 +161,14 @@ public class RecordSetService : IRecordSetService
 
         await SaveRecordSetAsync(fullFileName, recordSet);
 
-        var drivenBefore = DateTime.UtcNow;
+        var drivenBefore = File.GetLastWriteTimeUtc(fullFileName);
 
-        if (!noCountExists)
+        if (hasCount)
         {
             await SaveRecordCountToDatabaseAsync(drivenBefore, map, recordSet.GetRecordCount());
         }
 
-        await SaveChangesToDatabaseAsync(drivenBefore, map, drivenAfter, timeChanges);
+        //await SaveChangesToDatabaseAsync(drivenBefore, map, drivenAfter, timeChanges);
 
         if (recordSetChanges is null)
         {
@@ -320,6 +320,7 @@ public class RecordSetService : IRecordSetService
         await _repo.SaveAsync();
     }
 
+    [Obsolete("Record set changes are no longer supported")]
     private async Task SaveChangesToDatabaseAsync(DateTime drivenBefore, MapModel map, DateTime drivenAfter, RecordSetChanges timeChanges)
     {
         var recordSetChange = new RecordSetChangeModel

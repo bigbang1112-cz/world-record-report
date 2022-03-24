@@ -26,7 +26,7 @@ public class WrRepo : IWrRepo
 
     public async Task<bool> HasRecordCountAsync(MapModel map, CancellationToken cancellationToken = default)
     {
-        return await _db.RecordCounts.Cacheable().AnyAsync(x => x.Map == map, cancellationToken);
+        return await _db.RecordCounts2.Cacheable().AnyAsync(x => x.Map == map, cancellationToken);
     }
 
     public async Task<GameModel> GetTM2GameAsync(CancellationToken cancellationToken = default)
@@ -78,7 +78,7 @@ public class WrRepo : IWrRepo
 
     public async Task AddRecordCountAsync(RecordCountModel recordCount, CancellationToken cancellationToken = default)
     {
-        await _db.RecordCounts.AddAsync(recordCount, cancellationToken);
+        await _db.RecordCounts2.AddAsync(recordCount, cancellationToken);
     }
 
     public async Task AddRecordSetChangeAsync(RecordSetChangeModel recordSetChange, CancellationToken cancellationToken = default)
@@ -482,7 +482,7 @@ public class WrRepo : IWrRepo
 
     public async Task<List<RecordCountModel>> GetRecordCountsOnMapAsync(MapModel map, CancellationToken cancellationToken = default)
     {
-        return await _db.RecordCounts.Where(x => x.Map == map)
+        return await _db.RecordCounts2.Where(x => x.Map == map)
             .OrderBy(x => x.Before)
             .GroupBy(x => x.Before)
             .Select(x => x.First())
@@ -502,7 +502,7 @@ public class WrRepo : IWrRepo
 
     public async Task<DateTime?> GetStartingDateOfRecordCountTrackingAsync(MapModel map, CancellationToken cancellationToken = default)
     {
-        return await _db.RecordCounts.Where(x => x.Map == map)
+        return await _db.RecordCounts2.Where(x => x.Map == map)
             .OrderBy(x => x.Before)
             .Select(x => (DateTime?)x.Before)
             .Cacheable()

@@ -35,7 +35,7 @@ public class WrContext : DbContext
     public DbSet<RecordChangeModel> RecordChanges { get; set; } = default!;
     public DbSet<RecordSetChangeModel> RecordSetChanges { get; set; } = default!;
     public DbSet<RecordSetDetailedChangeModel> RecordSetDetailedChanges { get; set; } = default!;
-    public DbSet<RecordCountModel> RecordCounts { get; set; } = default!;
+    public DbSet<RecordCountModel> RecordCounts2 { get; set; } = default!;
     public DbSet<NicknameChangeModel> NicknameChanges { get; set; } = default!;
 
     public WrContext(DbContextOptions<WrContext> options, IConfiguration config) : base(options)
