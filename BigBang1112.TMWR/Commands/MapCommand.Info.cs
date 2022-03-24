@@ -29,8 +29,8 @@ public partial class MapCommand
             var builder = new ComponentBuilder()
                 .WithButton("Top 10", CreateCustomId($"top10-{map.MapUid}"), ButtonStyle.Secondary, disabled: false)
                 .WithButton("World record", CreateCustomId($"wrdetails-{map.MapUid}"), ButtonStyle.Secondary, disabled: false)
-                .WithButton("World record history", CreateCustomId($"wrhistory-{map.MapUid}"), ButtonStyle.Secondary, disabled: false);
-                //.WithButton("Record count history", CreateCustomId($"counthistory-{map.MapUid}"), ButtonStyle.Secondary, disabled: false);
+                .WithButton("World record history", CreateCustomId($"wrhistory-{map.MapUid}"), ButtonStyle.Secondary, disabled: false)
+                .WithButton("Record count history", CreateCustomId($"counthistory-{map.MapUid}"), ButtonStyle.Secondary, disabled: true);
 
             return Task.FromResult(builder)!;
         }
@@ -64,14 +64,11 @@ public partial class MapCommand
 
             if (map.LastActivityOn.HasValue)
             {
-                builder.AddField("Last TMX activity", map.LastActivityOn.Value.ToTimestampTag(TimestampTagStyles.Relative), inline: true);
-            }
+                var label = map.TmxAuthor is null
+                    ? "Last activity"
+                    : "Last TMX activity";
 
-            var lastChange = await _repo.GetLastRecordSetChangeOnMapAsync(map);
-
-            if (lastChange is not null)
-            {
-                builder.AddField("Last activity", lastChange.DrivenBefore.ToTimestampTag(TimestampTagStyles.Relative), inline: true);
+                builder.AddField(label, map.LastActivityOn.Value.ToTimestampTag(TimestampTagStyles.Relative), inline: true);
             }
 
             var lastTop10Change = await _repo.GetLastRecordSetDetailedChangeOnMapAsync(map);
