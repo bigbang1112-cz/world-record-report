@@ -307,7 +307,8 @@ public class WrRepo : IWrRepo
         return await _db.Maps.Select(x => x.DeformattedName!)
             .Where(x => x.Contains(value))
             .Distinct()
-            .OrderBy(x => x)
+            .OrderByDescending(x => x.StartsWith(value))
+            .ThenBy(x => x)
             .Take(limit)
             .Cacheable()
             .ToListAsync(cancellationToken);
@@ -317,7 +318,8 @@ public class WrRepo : IWrRepo
     {
         return await _db.Environments
             .Where(x => x.Name.Contains(value))
-            .OrderBy(x => x.Id)
+            .OrderByDescending(x => x.Name.StartsWith(value))
+            .ThenBy(x => x.Id)
             .Select(x => x.Name)
             .Take(limit)
             .Cacheable()
@@ -328,7 +330,8 @@ public class WrRepo : IWrRepo
     {
         return await _db.Maps.Select(x => x.MapUid)
             .Where(x => x.Contains(value))
-            .OrderBy(x => x)
+            .OrderByDescending(x => x.StartsWith(value))
+            .ThenBy(x => x)
             .Take(limit)
             .Cacheable()
             .ToListAsync(cancellationToken);
@@ -338,7 +341,8 @@ public class WrRepo : IWrRepo
     {
         return (await _db.TitlePacks
             .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
-            .OrderBy(x => x.Id)
+            .OrderByDescending(x => x.Name.StartsWith(value))
+            .ThenBy(x => x.Id)
             .Take(limit)
             .ToListAsync(cancellationToken))
             .Select(x => $"{x.Name}@{x.Author.Name}")
@@ -350,7 +354,8 @@ public class WrRepo : IWrRepo
         return await _db.Maps.Select(x => x.Author.Name)
             .Where(x => x.Contains(value))
             .Distinct()
-            .OrderBy(x => x)
+            .OrderByDescending(x => x.StartsWith(value))
+            .ThenBy(x => x)
             .Take(limit)
             .Cacheable()
             .ToListAsync(cancellationToken);
@@ -361,7 +366,8 @@ public class WrRepo : IWrRepo
         return await _db.Maps.Select(x => x.Author.Nickname!)
             .Where(x => x != null && x.Contains(value))
             .Distinct()
-            .OrderBy(x => x)
+            .OrderByDescending(x => x.StartsWith(value))
+            .ThenBy(x => x)
             .Take(limit)
             .Cacheable()
             .ToListAsync(cancellationToken);
@@ -372,7 +378,8 @@ public class WrRepo : IWrRepo
         return await _db.MapGroups.Select(x => x.DisplayName!)
             .Where(x => x != null && x.Contains(value))
             .Distinct()
-            .OrderBy(x => x)
+            .OrderByDescending(x => x.StartsWith(value))
+            .ThenBy(x => x)
             .Take(limit)
             .Cacheable()
             .ToListAsync(cancellationToken);
@@ -383,19 +390,10 @@ public class WrRepo : IWrRepo
         return await _db.WorldRecords.Select(x => x.Guid.ToString())
             .Where(x => x.StartsWith(value))
             .Distinct()
-            .OrderBy(x => x)
+            .OrderByDescending(x => x.StartsWith(value))
+            .ThenBy(x => x)
             .Take(limit)
             .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<List<MapModel>> GetMapsByNameAsync(string mapName, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default)
-    {
-        return await _db.Maps
-            .Where(x => x.DeformattedName.Contains(mapName))
-            .OrderBy(x => x.DeformattedName)
-            .Take(limit)
-            .Cacheable()
             .ToListAsync(cancellationToken);
     }
 

@@ -36,7 +36,6 @@ public interface IWrRepo
     Task<TmxLoginModel?> GetTmxLoginAsync(int userId, CancellationToken cancellationToken = default);
     Task<DateTime?> GetStartingDateOfRecordCountTrackingAsync(MapModel map, CancellationToken cancellationToken = default);
     Task<RefreshModel?> GetRefreshByIdAsync(int id, CancellationToken cancellationToken = default);
-    Task<List<MapModel>> GetMapsByNameAsync(string mapName, int limit = DiscordConsts.OptionLimit, CancellationToken cancellationToken = default);
     Task AddReportAsync(ReportModel report, CancellationToken cancellationToken = default);
     Task<RefreshLoopModel?> GetRefreshLoopByGuidAsync(Guid guid, CancellationToken cancellationToken = default);
     Task<List<WorldRecordModel>> GetWorldRecordHistoryFromMapGroupAsync(MapGroupModel mapGroup, CancellationToken cancellationToken = default);
