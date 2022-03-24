@@ -102,6 +102,13 @@ public class RecordSetService : IRecordSetService
 
         await DownloadMissingGhostsAsync(mapUid, recordSet);
 
+        var map = await _repo.GetMapByUidAsync(mapUid);
+
+        if (map is null)
+        {
+            return;
+        }
+
         var recordSetChanges = CompareTop10(recordSet, recordSetPrev);
         var timeChanges = CompareTimes(recordSet, recordSetPrev);
 
@@ -109,13 +116,8 @@ public class RecordSetService : IRecordSetService
         {
             _logger.LogInformation("New records on {Map}: {Records}", mapUid,
                 string.Join(", ", timeChanges.NewRecords.Select(x => $"{new TimeInt32(x.Key)} {x.Value}x")));
-        }
 
-        var map = await _repo.GetMapByUidAsync(mapUid);
-
-        if (map is null)
-        {
-            return;
+            map.LastActivityOn = DateTime.UtcNow;
         }
 
         var hasCount = await _repo.HasRecordCountAsync(map);
