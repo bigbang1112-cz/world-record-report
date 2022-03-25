@@ -122,9 +122,7 @@ public class RecordCommand : MapRelatedWithUidCommand
                 ? record.ReplayScore.ToString()
                 : new TimeInt32(record.ReplayTime).ToString(useHundredths: map.Game.IsTMUF());
 
-            var tmxLoginModel = await _repo.GetTmxLoginAsync(record.UserId);
-
-            nickname = tmxLoginModel?.Nickname ?? record.UserId.ToString();
+            nickname = record.UserName ?? record.UserId.ToString();
 
             builder.Title = $"{record.Rank}) {score} by {nickname}";
         }
