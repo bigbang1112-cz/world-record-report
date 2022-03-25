@@ -11,7 +11,7 @@ public class WrCommand : MapRelatedWithUidCommand
     private readonly TmwrDiscordBotService _tmwrDiscordBotService;
     private readonly IWrRepo _repo;
 
-    [DiscordBotCommandOption("rank",
+    [DiscordBotCommandOption("guid",
         ApplicationCommandOptionType.String,
         "GUID of the world record.")]
     public string? Guid { get; set; }
