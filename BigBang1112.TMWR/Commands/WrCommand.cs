@@ -56,11 +56,34 @@ public class WrCommand : MapRelatedWithUidCommand
             return null;
         }
 
-        return new ComponentBuilder()
+        var builder = new ComponentBuilder();
+
+        if (map.Game.IsTM2())
+        {
+            var downloadUrl = wr.ReplayUrl;
+
+            builder = builder.WithButton("Download ghost",
+                customId: downloadUrl is null ? "download-disabled" : null,
+                style: downloadUrl is null ? ButtonStyle.Secondary : ButtonStyle.Link,
+                url: downloadUrl,
+                disabled: downloadUrl is null);
+        }
+        else if (map.Game.IsTMUF())
+        {
+            builder = builder.WithButton("Download replay",
+                customId: wr.ReplayId is null ? "download-disabled" : null,
+                style: wr.ReplayId is null ? ButtonStyle.Secondary : ButtonStyle.Link,
+                url: wr.ReplayId is not null && map.TmxAuthor is not null ? $"{map.TmxAuthor.Site.Url}recordgbx/{wr.ReplayId}" : null,
+                disabled: wr.ReplayId is null);
+        }
+
+        builder = builder
             .WithButton("Previous", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-prev"), ButtonStyle.Secondary)
             .WithButton("Compare with previous", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-compareprev"), ButtonStyle.Secondary)
             .WithButton("Checkpoints", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-checkpoints"), ButtonStyle.Secondary, disabled: true)
             .WithButton("Inputs", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-inputs"), ButtonStyle.Secondary, disabled: true);
+
+        return builder;
     }
 
     protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
