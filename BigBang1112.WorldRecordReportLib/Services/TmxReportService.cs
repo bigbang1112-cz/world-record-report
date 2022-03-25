@@ -143,9 +143,12 @@ public class TmxReportService
         var recordSet = replays.Results.Adapt<TmxReplay[]>();
         var prevRecordSet = await _tmxRecordSetService.GetRecordSetAsync(tmxSite, map);
 
-        // check for leaderboard changes
-        // ...
-        FindChangesInRecordSets(prevRecordSet, recordSet);
+        if (prevRecordSet is not null)
+        {
+            // check for leaderboard changes
+            // ...
+            FindChangesInRecordSets(prevRecordSet, recordSet);
+        }
 
         // create a .json.gz file from replays.Results
         await _tmxRecordSetService.SaveRecordSetAsync(tmxSite, map, recordSet);

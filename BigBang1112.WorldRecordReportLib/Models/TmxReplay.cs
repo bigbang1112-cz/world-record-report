@@ -1,6 +1,4 @@
-﻿using Mapster;
-using TmEssentials;
-using TmExchangeApi.Models;
+﻿using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Models;
 
@@ -16,6 +14,7 @@ public class TmxReplay
     public int? Score { get; init; }
     public bool IsCompPatch { get; init; } // Validated
     public int UserId { get; init; } // User.UserId
+    public string? UserName { get; init; }
 
     public override string ToString()
     {

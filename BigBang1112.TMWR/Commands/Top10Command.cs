@@ -157,11 +157,11 @@ public class Top10Command : MapRelatedWithUidCommand
         {
             var userId = record.UserId;
 
-            var displayName = tmxLoginDictionary.TryGetValue(userId, out TmxLoginModel? loginModel)
-                ? loginModel.Nickname?.EscapeDiscord() ?? loginModel.UserId.ToString()
-                : userId.ToString();
+            /*var displayName = tmxLoginDictionary.TryGetValue(userId, out TmxLoginModel? loginModel)
+                ? loginModel.Nickname?.EscapeDiscord() ?? record.UserName ?? userId.ToString()
+                : record.UserName ?? userId.ToString();*/
 
-            yield return new MiniRecord(record.Rank.GetValueOrDefault(), isStunts ? record.ReplayScore : record.ReplayTime, displayName);
+            yield return new MiniRecord(record.Rank.GetValueOrDefault(), isStunts ? record.ReplayScore : record.ReplayTime, record.UserName?.EscapeDiscord() ?? userId.ToString());
         }
     }
 
