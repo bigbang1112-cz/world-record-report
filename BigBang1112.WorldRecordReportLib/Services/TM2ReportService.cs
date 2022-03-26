@@ -408,7 +408,13 @@ public class TM2ReportService : ITM2ReportService
 
                 foreach (var msg in report.DiscordWebhookMessages)
                 {
-                    using var client = new Discord.Webhook.DiscordWebhookClient(msg.Webhook.Url);
+                    using var client = _discordWebhookService.CreateWebhookClient(msg.Webhook.Url);
+
+                    if (client is null)
+                    {
+                        continue;
+                    }
+
                     await client.ModifyMessageAsync(msg.MessageId, func => func.Embeds = embeds);
                 }
             }

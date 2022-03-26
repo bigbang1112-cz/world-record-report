@@ -24,44 +24,28 @@ public class DiscordWebhookService : IDiscordWebhookService
 
     public async Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook, Func<ulong, DiscordWebhookMessageModel>? message = null, string? text = null, IEnumerable<Discord.Embed>? embeds = null)
     {
-        try
+        using var webhookClient = CreateWebhookClient(webhook.Url);
+
+        if (webhookClient is null)
         {
-            using var webhookClient = new DiscordWebhookClient(webhook.Url);
-
-            var msgId = await webhookClient.SendMessageAsync(text, embeds: embeds);
-
-            if (message is null)
-            {
-                return null;
-            }
-
-            var msg = message.Invoke(msgId);
-
-            await _repo.AddDiscordWebhookMessageAsync(msg);
-
-            return msg;
-        }
-        catch (ArgumentException)
-        {
-
-        }
-        catch (Discord.Net.HttpException)
-        {
-
-        }
-        catch (InvalidOperationException)
-        {
-            // Could not find a webhook with the supplied credentials.
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError("Unknown exception when validating Discord webhook URL: {ex}", ex);
+            return null;
         }
 
-        return null;
+        var msgId = await webhookClient.SendMessageAsync(text, embeds: embeds);
+
+        if (message is null)
+        {
+            return null;
+        }
+
+        var msg = message.Invoke(msgId);
+
+        await _repo.AddDiscordWebhookMessageAsync(msg);
+
+        return msg;
     }
 
-    public DiscordWebhookClient? ValidateWebhookUrl(string webhookUrl)
+    public DiscordWebhookClient? CreateWebhookClient(string webhookUrl)
     {
         try
         {
@@ -74,6 +58,10 @@ public class DiscordWebhookService : IDiscordWebhookService
         catch (Discord.Net.HttpException)
         {
 
+        }
+        catch (InvalidOperationException)
+        {
+            // Could not find a webhook with the supplied credentials.
         }
         catch (Exception e)
         {
@@ -227,7 +215,12 @@ public class DiscordWebhookService : IDiscordWebhookService
 
     public async Task DeleteMessageAsync(DiscordWebhookMessageModel msg)
     {
-        using var webhookClient = new DiscordWebhookClient(msg.Webhook.Url);
+        using var webhookClient = CreateWebhookClient(msg.Webhook.Url);
+
+        if (webhookClient is null)
+        {
+            return;
+        }
 
         try
         {
