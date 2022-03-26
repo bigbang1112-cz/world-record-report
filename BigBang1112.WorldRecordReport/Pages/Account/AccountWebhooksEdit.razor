@@ -221,7 +221,7 @@
             return;
         }
 
-        using var client = _discordWebhookService.ValidateWebhookUrl(webhook.Url);
+        using var client = _discordWebhookService.CreateWebhookClient(webhook.Url);
 
         if (client is null)
         {
