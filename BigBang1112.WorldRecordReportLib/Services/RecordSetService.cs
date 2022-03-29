@@ -17,6 +17,7 @@ namespace BigBang1112.WorldRecordReportLib.Services;
 public class RecordSetService : IRecordSetService
 {
     public static readonly string StorageFolder = Path.Combine("api", "v1", "records", "tm2");
+    public static readonly string SnapshotFolder = Path.Combine("api", "v1", "top10-snapshots", "tm2");
 
     private readonly ILogger<RecordSetService> _logger;
     private readonly IFileHostService _fileHostService;
@@ -55,12 +56,13 @@ public class RecordSetService : IRecordSetService
     }
 
     public void GetFilePaths(string zone, string mapUid,
-        out string path, out string fileName, out string fullFileName, out string subDirFileName)
+        out string path, out string fileName, out string fullFileName, out string subDirFileName, out string fullSnapshotFileName)
     {
         path = Path.Combine(_fileHostService.GetWebRootPath(), StorageFolder, zone);
         fileName = $"{mapUid}.json.gz";
         fullFileName = Path.Combine(path, fileName);
         subDirFileName = Path.Combine(StorageFolder, zone, fileName);
+        fullSnapshotFileName = Path.Combine(_fileHostService.GetWebRootPath(), SnapshotFolder, zone, $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}_{mapUid}.json.gz");
     }
 
     public IFileInfo GetFileInfo(string zone, string mapUid)
@@ -69,7 +71,8 @@ public class RecordSetService : IRecordSetService
             out string _,
             out string _,
             out string _,
-            out string subDirFileName);
+            out string subDirFileName,
+            out string _);
 
         return _fileHostService.GetFileInfo(subDirFileName);
     }
@@ -80,7 +83,8 @@ public class RecordSetService : IRecordSetService
             out string path,
             out string _,
             out string fullFileName,
-            out string subDirFileName);
+            out string subDirFileName,
+            out string fullSnapshotFileName);
 
         Directory.CreateDirectory(path);
 
@@ -88,7 +92,7 @@ public class RecordSetService : IRecordSetService
 
         if (!file.Exists)
         {
-            await SaveRecordSetAsync(fullFileName, recordSet);
+            await SaveToGZipFileAsync(fullFileName, recordSet);
             return;
         }
 
@@ -131,6 +135,11 @@ public class RecordSetService : IRecordSetService
 
         if (timeChanges is not null || recordSetChanges is not null)
         {
+            if (recordSetChanges is not null)
+            {
+                await SaveToGZipFileAsync(fullSnapshotFileName, recordSetPrev.Records);
+            }
+            
             await ApplyChangesAsync(recordSet, fullFileName, recordSetChanges, cacheKey, map, hasCount, nicknameDictionary);
         }
 
@@ -161,7 +170,7 @@ public class RecordSetService : IRecordSetService
             return File.GetLastWriteTimeUtc(fullFileName);
         });
 
-        await SaveRecordSetAsync(fullFileName, recordSet);
+        await SaveToGZipFileAsync(fullFileName, recordSet);
 
         var drivenBefore = File.GetLastWriteTimeUtc(fullFileName);
 
@@ -363,7 +372,8 @@ public class RecordSetService : IRecordSetService
             out string _,
             out string _,
             out string fullFileName,
-            out string subDirFileName);
+            out string subDirFileName,
+            out string _);
 
         var file = _fileHostService.GetFileInfo(subDirFileName);
 
@@ -404,11 +414,13 @@ public class RecordSetService : IRecordSetService
         return await reader.ReadToEndAsync();
     }
 
-    private static async Task SaveRecordSetAsync(string fullFileName, RecordSet recordSet)
+    private static async Task SaveToGZipFileAsync<T>(string fullFileName, T obj)
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(fullFileName) ?? throw new Exception("Invalid directory"));
+        
         using var stream = File.Open(fullFileName, FileMode.Create);
         using var gzip = new GZipStream(stream, CompressionMode.Compress);
-        await JsonSerializer.SerializeAsync(gzip, recordSet, jsonSerializerOptions);
+        await JsonSerializer.SerializeAsync(gzip, obj, jsonSerializerOptions);
     }
 
     private static RecordSetChanges? CompareTimes(RecordSet recordSet, RecordSet recordSetPrev)
