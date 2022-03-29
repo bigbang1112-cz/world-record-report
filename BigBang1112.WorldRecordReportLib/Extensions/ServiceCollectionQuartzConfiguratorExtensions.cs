@@ -8,19 +8,24 @@ public static class ServiceCollectionQuartzConfiguratorExtensions
 {
     private const string ContainerKey = "Schedule";
 
-    public static void AddJobAndTrigger<T>(this IServiceCollectionQuartzConfigurator quartz,
+    public static void AddIntervalTrigger<T>(this IServiceCollectionQuartzConfigurator quartz,
         IConfiguration config, TimeSpan offset = default) where T : IJob
     {
-        string jobName = typeof(T).Name;
+        var jobName = typeof(T).Name;
 
-        var enabled = config.GetValue<bool>(ContainerKey + ":" + jobName + ":" + "Enabled");
+        var enabled = config.GetValue<bool>($"{ContainerKey}:{jobName}:Enabled");
 
-        if (!enabled) return;
+        if (!enabled)
+        {
+            return;
+        }
 
-        var timeStr = config[ContainerKey + ":" + jobName + ":" + "Interval"];
+        var timeStr = config[$"{ContainerKey}:{jobName}:Interval"];
 
         if (string.IsNullOrEmpty(timeStr))
+        {
             throw new Exception($"No schedule found for job in configuration at '{jobName}'");
+        }
 
         var time = ParseTime(jobName, timeStr);
 
@@ -39,6 +44,31 @@ public static class ServiceCollectionQuartzConfiguratorExtensions
             .StartAt(DateTimeOffset.Now + offset + TimeSpan.FromSeconds(10)));
 
         //quartz.AddTriggerListener<RefreshTriggerListener>();
+    }
+
+    public static void AddDailyTrigger<T>(this IServiceCollectionQuartzConfigurator quartz, TimeOfDay timeOfDay,
+        IConfiguration config, TimeSpan offset = default) where T : IJob
+    {
+        var jobName = typeof(T).Name;
+
+        var jobKey = new JobKey(jobName);
+        quartz.AddJob<T>(opts => opts.WithIdentity(jobKey));
+
+        quartz.AddTrigger(opts => opts
+            .ForJob(jobKey)
+            .WithIdentity(jobName + "-trigger-first")
+            .WithSimpleSchedule(builder => builder.WithRepeatCount(0))
+            .StartAt(DateTimeOffset.Now + offset + TimeSpan.FromSeconds(10)));
+        
+        quartz.AddTrigger(opts => opts
+            .ForJob(jobKey)
+            .WithIdentity(jobName + "-trigger")
+            .WithDailyTimeIntervalSchedule(builder => builder.WithIntervalInHours(24)
+                .OnEveryDay()
+                .StartingDailyAt(timeOfDay)
+                .InTimeZone(TimeZoneInfo.Local)
+            )
+            .StartAt(DateTimeOffset.Now + offset + TimeSpan.FromSeconds(10)));
     }
 
     private static TimeSpan ParseTime(string jobName, string timeStr)

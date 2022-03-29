@@ -1,7 +1,7 @@
 ﻿using BigBang1112.WorldRecordReportLib.Services;
 using Quartz;
 
-namespace BigBang1112.WorldRecordReport.Jobs;
+namespace BigBang1112.WorldRecordReportLib.Jobs;
 
 [DisallowConcurrentExecution]
 public class CleanupTmxRemovedWorldRecordsJob : IJob

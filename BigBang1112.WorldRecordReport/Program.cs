@@ -2,7 +2,7 @@ using BigBang1112;
 using BigBang1112.TMWR;
 using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Extensions;
-using BigBang1112.WorldRecordReport.Jobs;
+using BigBang1112.WorldRecordReportLib.Jobs;
 using BigBang1112.WorldRecordReportLib.Services;
 using Quartz;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -57,9 +57,10 @@ builder.Services.AddQuartz(q =>
 {
     q.UseMicrosoftDependencyInjectionJobFactory();
 
-    q.AddJobAndTrigger<RefreshTM2OfficialJob>(config);
-    q.AddJobAndTrigger<RefreshTmxOfficialJob>(config);
-    q.AddJobAndTrigger<CleanupTmxRemovedWorldRecordsJob>(config);
+    q.AddIntervalTrigger<RefreshTM2OfficialJob>(config);
+    q.AddIntervalTrigger<RefreshTmxOfficialJob>(config);
+    q.AddIntervalTrigger<CleanupTmxRemovedWorldRecordsJob>(config);
+    q.AddDailyTrigger<AcquireNewOfficialCampaignsJob>(TimeOfDay.HourAndMinuteOfDay(17, 2), config);
 });
 
 // ASP.NET Core hosting
