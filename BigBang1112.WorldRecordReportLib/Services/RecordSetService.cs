@@ -129,7 +129,7 @@ public class RecordSetService : IRecordSetService
 
         var cacheKey = $"RecordSet_{mapUid}";
 
-        if (timeChanges is not null)
+        if (timeChanges is not null || recordSetChanges is not null)
         {
             await ApplyChangesAsync(recordSet, fullFileName, recordSetChanges, cacheKey, map, hasCount, nicknameDictionary);
         }
@@ -246,10 +246,9 @@ public class RecordSetService : IRecordSetService
         }
 
         await _repo.AddRecordSetDetailedChangesAsync(changes);
+        await _repo.SaveAsync();
 
         await ReportRemovedRecordsAsync(changes);
-
-        await _repo.SaveAsync();
     }
 
     private async Task ReportRemovedRecordsAsync(IEnumerable<RecordSetDetailedChangeModel> changes)
