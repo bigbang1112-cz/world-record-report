@@ -3,14 +3,14 @@ using BigBang1112.WorldRecordReportLib.Models;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
-public class Top10ChangeDetectionService
+public static class LeaderboardComparer
 {
     /// <summary>
     /// Compares two leaderboards and returns their differences.
     /// </summary>
     /// <param name="records">Current leaderboard.</param>
     /// <param name="recordsPrev">Previous leaderboard.</param>
-    internal static Top10Changes<TPlayerId>? Compare<TPlayerId>(IEnumerable<IRecord<TPlayerId>> records, IEnumerable<IRecord<TPlayerId>> recordsPrev)
+    public static Top10Changes<TPlayerId>? Compare<TPlayerId>(IEnumerable<IRecord<TPlayerId>> records, IEnumerable<IRecord<TPlayerId>> recordsPrev)
         where TPlayerId : notnull
     {
         // Compares equality based on everything except rank

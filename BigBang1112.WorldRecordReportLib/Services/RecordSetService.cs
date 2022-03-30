@@ -113,7 +113,7 @@ public class RecordSetService : IRecordSetService
             return;
         }
 
-        var recordSetChanges = CompareTop10(recordSet, recordSetPrev);
+        var recordSetChanges = LeaderboardComparer.Compare(recordSet.Records, recordSetPrev.Records);
         var timeChanges = CompareTimes(recordSet, recordSetPrev);
 
         if (timeChanges is not null && timeChanges.NewRecords.Count > 0)
@@ -163,7 +163,7 @@ public class RecordSetService : IRecordSetService
         }
     }
 
-    private async Task ApplyChangesAsync(RecordSet recordSet, string fullFileName, RecordSetDetailedRecordChanges? recordSetChanges, string cacheKey, MapModel map, bool hasCount, Dictionary<string, string> nicknameDictionary)
+    private async Task ApplyChangesAsync(RecordSet recordSet, string fullFileName, Top10Changes<string>? recordSetChanges, string cacheKey, MapModel map, bool hasCount, Dictionary<string, string> nicknameDictionary)
     {
         var drivenAfter = _cache.GetOrCreate(cacheKey, entry =>
         {
@@ -193,11 +193,11 @@ public class RecordSetService : IRecordSetService
 
         var allPossibleRecordChanges = new Dictionary<RecordSetDetailedChangeType, IEnumerable<RecordSetDetailedRecord>>
         {
-            { RecordSetDetailedChangeType.New, recordSetChanges.NewRecords.Select(login => new RecordSetDetailedRecord(rank: 0, login, time: 0)) },
-            { RecordSetDetailedChangeType.Improvement, recordSetChanges.ImprovedRecords },
-            { RecordSetDetailedChangeType.Removed, recordSetChanges.RemovedRecords },
-            { RecordSetDetailedChangeType.Worsen, recordSetChanges.WorsenRecords },
-            { RecordSetDetailedChangeType.PushedOff, recordSetChanges.PushedOffRecords }
+            { RecordSetDetailedChangeType.New, recordSetChanges.NewRecords.Cast<RecordSetDetailedRecord>() },
+            { RecordSetDetailedChangeType.Improvement, recordSetChanges.ImprovedRecords.Cast<RecordSetDetailedRecord>() },
+            { RecordSetDetailedChangeType.Removed, recordSetChanges.RemovedRecords.Cast<RecordSetDetailedRecord>() },
+            { RecordSetDetailedChangeType.Worsen, recordSetChanges.WorsenRecords.Cast<RecordSetDetailedRecord>() },
+            { RecordSetDetailedChangeType.PushedOff, recordSetChanges.PushedOffRecords.Cast<RecordSetDetailedRecord>() }
         };
 
         foreach (var (changeType, recordChanges) in allPossibleRecordChanges)
@@ -523,6 +523,7 @@ public class RecordSetService : IRecordSetService
         return new RecordSetChanges(newRecords, removedRecords);
     }
 
+    [Obsolete("Use LeaderboardComparer.Compare instead")]
     internal static RecordSetDetailedRecordChanges? CompareTop10(RecordSet recordSet, RecordSet recordSetPrev)
     {
         return CompareTop10(recordSet.Records, recordSetPrev.Records);
@@ -533,6 +534,7 @@ public class RecordSetService : IRecordSetService
     /// </summary>
     /// <param name="records">Current record set.</param>
     /// <param name="recordsPrev">Previous record set.</param>
+    [Obsolete("Use LeaderboardComparer.Compare instead")]
     internal static RecordSetDetailedRecordChanges? CompareTop10(
         IEnumerable<RecordSetDetailedRecord> records,
         IEnumerable<RecordSetDetailedRecord> recordsPrev)

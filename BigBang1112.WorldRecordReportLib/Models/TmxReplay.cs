@@ -2,7 +2,7 @@
 
 namespace BigBang1112.WorldRecordReportLib.Models;
 
-public class TmxReplay
+public class TmxReplay : IRecord<int>
 {
     public int ReplayId { get; init; }
     public int ReplayTime { get; init; }
@@ -15,6 +15,18 @@ public class TmxReplay
     public bool IsCompPatch { get; init; } // Validated
     public int UserId { get; init; } // User.UserId
     public string? UserName { get; init; }
+    
+    int IRecord<int>.PlayerId
+    {
+        get => UserId;
+        init => UserId = value;
+    }
+    
+    int IRecord<int>.Time
+    {
+        get => ReplayTime;
+        init => ReplayTime = value;
+    }
 
     public override string ToString()
     {

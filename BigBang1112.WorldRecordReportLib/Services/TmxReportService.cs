@@ -224,7 +224,7 @@ public class TmxReportService
 
     private void FindChangesInRecordSets(TmxReplay[] prevRecordSet, TmxReplay[] recordSet)
     {
-        
+        var changes = LeaderboardComparer.Compare(recordSet, prevRecordSet);
     }
 
     private async Task<WorldRecordModel> ProcessNewWorldRecordAsync(TmxSiteModel tmxSite,

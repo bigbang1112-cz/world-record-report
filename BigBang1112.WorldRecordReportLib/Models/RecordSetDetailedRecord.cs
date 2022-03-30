@@ -1,14 +1,19 @@
-﻿using System.Text.Json.Serialization;
-using TmEssentials;
+﻿using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Models;
 
-public class RecordSetDetailedRecord
+public class RecordSetDetailedRecord : IRecord<string>
 {
     public int Rank { get; init; }
     public string Login { get; init; }
     public int Time { get; init; }
     public string? ReplayUrl { get; init; }
+    
+    string IRecord<string>.PlayerId
+    {
+        get => Login;
+        init => Login = value;
+    }
 
     public RecordSetDetailedRecord(int rank, string login, int time, string? replayUrl = null)
     {
