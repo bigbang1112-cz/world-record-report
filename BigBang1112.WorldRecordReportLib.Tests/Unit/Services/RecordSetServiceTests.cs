@@ -1,10 +1,10 @@
 ﻿using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Services;
-using System.Linq;
 using Xunit;
 
-namespace BigBang1112.WorldRecordReportLib.Tests.Integration.Services;
+namespace BigBang1112.WorldRecordReportLib.Tests.Unit.Services;
 
+[Obsolete("CompareTop10 has been deprecated")]
 public class RecordSetServiceTests
 {
     [Fact]
