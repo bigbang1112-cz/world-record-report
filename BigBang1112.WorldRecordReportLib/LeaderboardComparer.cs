@@ -1,7 +1,7 @@
 ﻿using BigBang1112.WorldRecordReportLib.Comparers;
 using BigBang1112.WorldRecordReportLib.Models;
 
-namespace BigBang1112.WorldRecordReportLib.Services;
+namespace BigBang1112.WorldRecordReportLib;
 
 public static class LeaderboardComparer
 {
