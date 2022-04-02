@@ -1,4 +1,5 @@
-﻿using BigBang1112.Extensions;
+﻿using System.Text;
+using BigBang1112.Extensions;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -40,17 +41,25 @@ public partial class MapCommand
             builder.Title = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
             builder.ThumbnailUrl = map.GetThumbnailUrl();
             builder.Url = map.GetInfoUrl();
+            builder.Timestamp = DateTimeOffset.UtcNow;
+
+            builder.Description = string.Join(" | ", EnumerateLinks(map));
 
             if (map.TitlePack is null)
             {
                 builder.AddField("Game", map.IntendedGame ?? map.Game, inline: true);
             }
             else
-            { 
+            {
                 builder.AddField("Game / Title pack", map.TitlePack, inline: true);
             }
 
             builder.AddField("Environment", map.Environment, inline: true);
+
+            if (map.Campaign is not null)
+            {
+                builder.AddField("Campaign", map.Campaign.Name, inline: true);
+            }
 
             var wr = await _repo.GetWorldRecordAsync(map);
 
@@ -94,8 +103,23 @@ public partial class MapCommand
             {
                 builder.AddField("Last modified on", map.FileLastModifiedOn.Value.ToTimestampTag());
             }
+        }
 
-            builder.Timestamp = DateTimeOffset.UtcNow;
+        private static IEnumerable<string> EnumerateLinks(MapModel map)
+        {
+            var tmxUrl = map.GetTmxUrl();
+
+            if (tmxUrl is not null)
+            {
+                yield return $"[TMX]({tmxUrl})";
+            }
+
+            var tmIoUrl = map.GetTrackmaniaIoUrl();
+
+            if (tmIoUrl is not null)
+            {
+                yield return $"[TM.IO]({tmIoUrl})";
+            }
         }
 
         private async Task<RecordSet?> AddLastTop10ActivityAsync(MapModel map,
