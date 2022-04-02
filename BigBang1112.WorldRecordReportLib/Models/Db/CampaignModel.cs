@@ -1,5 +1,4 @@
-﻿using BigBang1112.Models.Db;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
@@ -13,4 +12,6 @@ public class CampaignModel : DbModel
 
     [StringLength(255)]
     public string? LeaderboardUid { get; set; }
+
+    public bool IsOver { get; set; }
 }
