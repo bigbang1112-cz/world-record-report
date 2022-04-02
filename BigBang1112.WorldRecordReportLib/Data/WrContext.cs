@@ -1,9 +1,16 @@
-﻿using BigBang1112.WorldRecordReportLib.Models.Db;
+﻿using BigBang1112.Exceptions;
+using BigBang1112.WorldRecordReportLib.Attributes;
+using BigBang1112.WorldRecordReportLib.Enums;
+using BigBang1112.WorldRecordReportLib.Exceptions;
+using BigBang1112.WorldRecordReportLib.Models.Db;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.DataEncryption;
 using Microsoft.EntityFrameworkCore.DataEncryption.Providers;
 using Microsoft.Extensions.Configuration;
+using System.Reflection;
 using System.Text;
+
+using ThisShouldNotHappenException = BigBang1112.WorldRecordReportLib.Exceptions.ThisShouldNotHappenException;
 
 namespace BigBang1112.WorldRecordReportLib.Data;
 
@@ -37,6 +44,7 @@ public class WrContext : DbContext
     public DbSet<RecordSetDetailedChangeModel> RecordSetDetailedChanges { get; set; } = default!;
     public DbSet<RecordCountModel> RecordCounts2 { get; set; } = default!;
     public DbSet<NicknameChangeModel> NicknameChanges { get; set; } = default!;
+    public DbSet<CampaignModel> Campaigns { get; set; } = default!;
 
     public WrContext(DbContextOptions<WrContext> options, IConfiguration config) : base(options)
     {
@@ -65,41 +73,30 @@ public class WrContext : DbContext
             .WithMany(x => x.DiscordWebhookMessages)
             .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<GameModel>().HasData(
-            new GameModel { Id = 1, Name = NameConsts.GameTM2Name, DisplayName = NameConsts.GameTM2DisplayName },
-            new GameModel { Id = 2, Name = NameConsts.GameTMUFName, DisplayName = NameConsts.GameTMUFDisplayName },
-            new GameModel { Id = 3, Name = NameConsts.GameTMNFName, DisplayName = NameConsts.GameTMNFDisplayName },
-            new GameModel { Id = 4, Name = NameConsts.GameTMUName, DisplayName = NameConsts.GameTMUDisplayName },
-            new GameModel { Id = 5, Name = NameConsts.GameTMSName, DisplayName = NameConsts.GameTMSDisplayName },
-            new GameModel { Id = 6, Name = NameConsts.GameTMNName, DisplayName = NameConsts.GameTMNDisplayName },
-            new GameModel { Id = 7, Name = NameConsts.GameTMOName, DisplayName = NameConsts.GameTMODisplayName },
-            new GameModel { Id = 8, Name = NameConsts.GameTM2020Name, DisplayName = NameConsts.GameTM2020DisplayName }
-            );
+        modelBuilder.Entity<GameModel>().HasEnumData<GameModel, Game, GameAttribute>(att => new GameModel
+        {
+            Name = att.Name,
+            DisplayName = att.DisplayName
+        });
 
-        modelBuilder.Entity<EnvModel>().HasData(
-            new EnvModel { Id = 1, Name = "Desert", Name2 = "Speed", Color = OfficialColors.EnvDesert },
-            new EnvModel { Id = 2, Name = "Snow", Name2 = "Alpine", Color = OfficialColors.EnvSnow },
-            new EnvModel { Id = 3, Name = "Rally", Color = OfficialColors.EnvRally },
-            new EnvModel { Id = 4, Name = "Island", Color = OfficialColors.EnvIsland },
-            new EnvModel { Id = 5, Name = "Bay", Color = OfficialColors.EnvBay },
-            new EnvModel { Id = 6, Name = "Coast", Color = OfficialColors.EnvCoast },
-            new EnvModel { Id = 7, Name = "Stadium", Color = OfficialColors.EnvStadium },
-            new EnvModel { Id = 8, Name = "Canyon", Color = OfficialColors.EnvCanyon },
-            new EnvModel { Id = 9, Name = "Valley", Color = OfficialColors.EnvValley },
-            new EnvModel { Id = 10, Name = "Lagoon", Color = OfficialColors.EnvLagoon },
-            new EnvModel { Id = 11, Name = "Stadium2020", DisplayName = "Stadium 2020", Color = OfficialColors.EnvStadium2020 });
+        modelBuilder.Entity<EnvModel>().HasEnumData<EnvModel, Env, EnvAttribute>(att => new EnvModel
+        {
+            Name = att.Name,
+            Name2 = att.Name2,
+            DisplayName = att.DisplayName,
+            Color = new byte[] { att.ColorR, att.ColorG, att.ColorB }
+        });
 
-        modelBuilder.Entity<TmxSiteModel>().HasData(
-            new TmxSiteModel { Id = 1, ShortName = NameConsts.TMXSiteNations, Url = "http://nations.tm-exchange.com/" },
-            new TmxSiteModel { Id = 2, ShortName = NameConsts.TMXSiteUnited, Url = "https://united.tm-exchange.com/" },
-            new TmxSiteModel { Id = 3, ShortName = NameConsts.TMXSiteTMNF, Url = "https://tmnforever.tm-exchange.com/" },
-            new TmxSiteModel { Id = 4, ShortName = NameConsts.TMXSiteTM2, Url = "https://tm.mania-exchange.com/" },
-            new TmxSiteModel { Id = 5, ShortName = NameConsts.TMXSiteTrackmania, Url = "https://trackmania.exchange/" });
+        modelBuilder.Entity<TmxSiteModel>().HasEnumData<TmxSiteModel, TmxSite, TmxSiteAttribute>(att => new TmxSiteModel
+        {
+            ShortName = att.ShortName,
+            Url = att.Url
+        });
 
-        modelBuilder.Entity<MapModeModel>().HasData(
-            new MapModeModel { Id = 1, Name = NameConsts.MapModeRace },
-            new MapModeModel { Id = 2, Name = NameConsts.MapModeStunts }
-            );
+        modelBuilder.Entity<MapModeModel>().HasEnumData<MapModeModel, MapMode, MapModeAttribute>(att => new MapModeModel
+        {
+            Name = att.Name
+        });
 
         modelBuilder.Entity<RecordSetDetailedChangeModel>()
             .Property(e => e.Type)

@@ -3,6 +3,7 @@ using System;
 using BigBang1112.WorldRecordReportLib.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BigBang1112.WorldRecordReportLib.Migrations
 {
     [DbContext(typeof(WrContext))]
-    partial class WrContextModelSnapshot : ModelSnapshot
+    [Migration("20220401115210_FixStringLengths")]
+    partial class FixStringLengths
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -413,8 +415,6 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("GameId");
 
-                    b.HasIndex("Name");
-
                     b.ToTable("Logins");
                 });
 
@@ -472,14 +472,8 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
-                    b.Property<Guid?>("DownloadGuid")
-                        .HasColumnType("char(36)");
-
                     b.Property<int>("EnvironmentId")
                         .HasColumnType("int");
-
-                    b.Property<DateTime?>("FileLastModifiedOn")
-                        .HasColumnType("datetime");
 
                     b.Property<int>("GameId")
                         .HasColumnType("int");
@@ -492,14 +486,6 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.Property<DateTime?>("LastActivityOn")
                         .HasColumnType("datetime");
-
-                    b.Property<string>("MapStyle")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<string>("MapType")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("MapUid")
                         .IsRequired()
@@ -542,8 +528,6 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.HasIndex("GroupId");
 
                     b.HasIndex("IntendedGameId");
-
-                    b.HasIndex("MapUid");
 
                     b.HasIndex("ModeId");
 

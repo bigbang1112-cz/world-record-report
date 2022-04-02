@@ -1,13 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using BigBang1112.Models.Db;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class LoginModel
+[Index(nameof(Name))]
+public class LoginModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     public virtual GameModel Game { get; set; } = default!;
 

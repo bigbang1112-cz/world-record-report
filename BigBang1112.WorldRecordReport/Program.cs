@@ -1,4 +1,4 @@
-using BigBang1112;
+﻿using BigBang1112;
 using BigBang1112.TMWR;
 using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Extensions;
@@ -35,13 +35,20 @@ builder.Services.AddEssentials(options);
 builder.Services.AddDbContext2<WrContext>(options.Config, "WrDb");
 builder.Services.AddDbContext2<DiscordBotContext>(options.Config, "DiscordBotDb");
 
+builder.Services.AddScoped<IWrUnitOfWork, WrUnitOfWork>();
+
 builder.Services.AddScoped<IWrRepo, WrRepo>();
 builder.Services.AddScoped<IDiscordBotRepo, DiscordBotRepo>();
+builder.Services.AddScoped<ICampaignRepo, CampaignRepo>();
+builder.Services.AddScoped<IGameRepo, GameRepo>();
+builder.Services.AddScoped<IMapRepo, MapRepo>();
+builder.Services.AddScoped<ILoginRepo, LoginRepo>();
 
 builder.Services.AddScoped<IRecordSetService, RecordSetService>();
 builder.Services.AddScoped<IDiscordWebhookService, DiscordWebhookService>();
 builder.Services.AddScoped<ILeaderboardsManialinkService, LeaderboardsManialinkService>();
 builder.Services.AddScoped<ITM2ReportService, TM2ReportService>();
+builder.Services.AddScoped<TM2020ReportService>();
 
 builder.Services.AddScoped<WrAuthService>();
 builder.Services.AddScoped<ITmxService, TmxService>();
@@ -60,7 +67,7 @@ builder.Services.AddQuartz(q =>
     q.AddIntervalTrigger<RefreshTM2OfficialJob>(config);
     q.AddIntervalTrigger<RefreshTmxOfficialJob>(config);
     q.AddIntervalTrigger<CleanupTmxRemovedWorldRecordsJob>(config);
-    q.AddDailyTrigger<AcquireNewOfficialCampaignsJob>(TimeOfDay.HourAndMinuteOfDay(17, 2), config);
+    q.AddDailyTrigger<AcquireNewOfficialCampaignsJob>(TimeOfDay.HourAndMinuteOfDay(17, 2), config, timezone: TimeZoneInfo.Local);
 });
 
 // ASP.NET Core hosting

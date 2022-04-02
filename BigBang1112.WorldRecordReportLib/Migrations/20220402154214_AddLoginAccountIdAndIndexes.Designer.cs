@@ -3,6 +3,7 @@ using System;
 using BigBang1112.WorldRecordReportLib.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BigBang1112.WorldRecordReportLib.Migrations
 {
     [DbContext(typeof(WrContext))]
-    partial class WrContextModelSnapshot : ModelSnapshot
+    [Migration("20220402154214_AddLoginAccountIdAndIndexes")]
+    partial class AddLoginAccountIdAndIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -391,6 +393,9 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("char(36)");
+
                     b.Property<int>("GameId")
                         .HasColumnType("int");
 
@@ -410,6 +415,8 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                         .HasColumnType("varchar(255)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
 
                     b.HasIndex("GameId");
 
@@ -472,14 +479,8 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
-                    b.Property<Guid?>("DownloadGuid")
-                        .HasColumnType("char(36)");
-
                     b.Property<int>("EnvironmentId")
                         .HasColumnType("int");
-
-                    b.Property<DateTime?>("FileLastModifiedOn")
-                        .HasColumnType("datetime");
 
                     b.Property<int>("GameId")
                         .HasColumnType("int");
@@ -492,14 +493,6 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.Property<DateTime?>("LastActivityOn")
                         .HasColumnType("datetime");
-
-                    b.Property<string>("MapStyle")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<string>("MapType")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("MapUid")
                         .IsRequired()

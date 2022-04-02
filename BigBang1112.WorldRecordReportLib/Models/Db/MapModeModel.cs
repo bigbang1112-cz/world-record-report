@@ -1,11 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using BigBang1112.Models.Db;
+using System.ComponentModel.DataAnnotations;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class MapModeModel
+public class MapModeModel : DbModel
 {
-    public int Id { get; set; }
-
     [StringLength(255)]
     public string Name { get; set; } = default!;
 }

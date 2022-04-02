@@ -1,12 +1,11 @@
-﻿using BigBang1112.WorldRecordReportLib.Data;
+﻿using BigBang1112.Models.Db;
+using BigBang1112.WorldRecordReportLib.Data;
 using System.ComponentModel.DataAnnotations;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class GameModel
+public class GameModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     [StringLength(255)]
     public string Name { get; set; } = default!;

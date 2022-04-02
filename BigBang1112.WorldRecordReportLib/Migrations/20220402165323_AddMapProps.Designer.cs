@@ -3,6 +3,7 @@ using System;
 using BigBang1112.WorldRecordReportLib.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BigBang1112.WorldRecordReportLib.Migrations
 {
     [DbContext(typeof(WrContext))]
-    partial class WrContextModelSnapshot : ModelSnapshot
+    [Migration("20220402165323_AddMapProps")]
+    partial class AddMapProps
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -477,9 +479,6 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.Property<int>("EnvironmentId")
                         .HasColumnType("int");
-
-                    b.Property<DateTime?>("FileLastModifiedOn")
-                        .HasColumnType("datetime");
 
                     b.Property<int>("GameId")
                         .HasColumnType("int");

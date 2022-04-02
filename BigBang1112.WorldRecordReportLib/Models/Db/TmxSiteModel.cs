@@ -1,13 +1,12 @@
-﻿using BigBang1112.WorldRecordReportLib.Data;
+﻿using BigBang1112.Models.Db;
+using BigBang1112.WorldRecordReportLib.Data;
 using System.ComponentModel.DataAnnotations;
 using TmExchangeApi;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class TmxSiteModel
+public class TmxSiteModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     public string Url { get; set; } = default!;
 

@@ -1,14 +1,15 @@
-﻿using BigBang1112.WorldRecordReportLib.Data;
+﻿using BigBang1112.Models.Db;
+using BigBang1112.WorldRecordReportLib.Data;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class MapModel
+[Index(nameof(MapUid))]
+public class MapModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     [MaxLength(32)] // 27 chars
     public string MapUid { get; set; } = default!;
@@ -58,6 +59,19 @@ public class MapModel
 
     // Can specify the game where the map was originally made, or where it can be played. Should be different than Game or NULL.
     public virtual GameModel? IntendedGame { get; set; }
+
+    public virtual CampaignModel? Campaign { get; set; }
+
+    [StringLength(255)]
+    public string? MapType { get; set; }
+    
+    [StringLength(255)]
+    public string? MapStyle { get; set; }
+    
+    public Guid? DownloadGuid { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? FileLastModifiedOn { get; set; }
 
     public virtual ICollection<WorldRecordModel> WorldRecords { get; set; } = default!;
     public virtual ICollection<RecordSetChangeModel> RecordSetChanges { get; set; } = default!;

@@ -47,7 +47,7 @@ public static class ServiceCollectionQuartzConfiguratorExtensions
     }
 
     public static void AddDailyTrigger<T>(this IServiceCollectionQuartzConfigurator quartz, TimeOfDay timeOfDay,
-        IConfiguration config, TimeSpan offset = default) where T : IJob
+        IConfiguration config, TimeSpan offset = default, TimeZoneInfo? timezone = default) where T : IJob
     {
         var jobName = typeof(T).Name;
 
@@ -66,7 +66,7 @@ public static class ServiceCollectionQuartzConfiguratorExtensions
             .WithDailyTimeIntervalSchedule(builder => builder.WithIntervalInHours(24)
                 .OnEveryDay()
                 .StartingDailyAt(timeOfDay)
-                .InTimeZone(TimeZoneInfo.Local)
+                .InTimeZone(timezone ?? TimeZoneInfo.Utc)
             )
             .StartAt(DateTimeOffset.Now + offset + TimeSpan.FromSeconds(10)));
     }

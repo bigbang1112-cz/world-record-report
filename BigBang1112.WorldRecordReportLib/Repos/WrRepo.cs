@@ -1,7 +1,4 @@
-﻿using BigBang1112.Data;
-using BigBang1112.WorldRecordReportLib.Data;
-using BigBang1112.WorldRecordReportLib.Models;
-using BigBang1112.WorldRecordReportLib.Models.Db;
+﻿using BigBang1112.WorldRecordReportLib.Models;
 using EFCoreSecondLevelCacheInterceptor;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

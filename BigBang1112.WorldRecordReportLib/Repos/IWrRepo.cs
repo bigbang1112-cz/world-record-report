@@ -1,8 +1,4 @@
-﻿using BigBang1112.Data;
-using BigBang1112.Models.Db;
-using BigBang1112.WorldRecordReportLib.Models.Db;
-
-namespace BigBang1112.WorldRecordReportLib.Repos;
+﻿namespace BigBang1112.WorldRecordReportLib.Repos;
 
 public interface IWrRepo
 {
