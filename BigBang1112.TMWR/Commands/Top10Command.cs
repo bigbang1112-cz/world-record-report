@@ -31,7 +31,7 @@ public class Top10Command : MapRelatedWithUidCommand
     protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
     {
         builder.Title = map.GetHumanizedDeformattedName();
-        builder.Url = map.GetTmxUrl();
+        builder.Url = map.GetInfoUrl();
         builder.ThumbnailUrl = map.GetThumbnailUrl();
 
         var embedContent = await CreateTop10EmbedContentAsync(map);

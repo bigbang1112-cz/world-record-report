@@ -105,17 +105,17 @@ public class WrCommand : MapRelatedWithUidCommand
 
         builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
 
+        var infoUrl = map.GetInfoUrl();
+
+        if (infoUrl is not null)
+        {
+            builder.Description = $"[{builder.Description}]({infoUrl})";
+        }
+
         if (wr is null)
         {
             builder.Footer = null;
             return;
-        }
-
-        var tmxUrl = map.GetTmxUrl();
-
-        if (tmxUrl is not null)
-        {
-            builder.Description = $"[{builder.Description}]({tmxUrl})";
         }
 
         builder.AddField("Driven on", wr.DrivenOn.ToTimestampTag(TimestampTagStyles.LongDateTime));

@@ -17,9 +17,16 @@ public partial class MapCommand
 
         protected override Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
         {
+            var thumbnailUrl = map.GetThumbnailUrl();
+
             builder.Title = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
-            builder.ImageUrl = map.GetThumbnailUrl();
-            builder.Url = map.GetTmxUrl();
+            builder.ImageUrl = thumbnailUrl;
+            builder.Url = map.GetInfoUrl();
+
+            if (thumbnailUrl is null)
+            {
+                builder.Description = "No thumbnail found.";
+            }
 
             return Task.CompletedTask;
         }

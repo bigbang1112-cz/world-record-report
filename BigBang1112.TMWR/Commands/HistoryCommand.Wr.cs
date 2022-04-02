@@ -27,6 +27,15 @@ public partial class HistoryCommand
             var wrs = await _repo.GetWorldRecordHistoryFromMapAsync(map);
 
             builder.Title = map.GetHumanizedDeformattedName();
+            builder.ThumbnailUrl = map.GetThumbnailUrl();
+            builder.Url = map.GetInfoUrl();
+            builder.Footer = null;
+
+            if (wrs.Count == 0)
+            {
+                builder.Description = "No world records were tracked.";
+                return;
+            }
 
             var isStunts = map.IsStuntsMode();
 
@@ -68,10 +77,6 @@ public partial class HistoryCommand
             }
 
             builder.Description = desc;
-            builder.ThumbnailUrl = map.GetThumbnailUrl();
-            builder.Url = map.GetTmxUrl();
-
-            builder.Footer = null;
         }
     }
 }

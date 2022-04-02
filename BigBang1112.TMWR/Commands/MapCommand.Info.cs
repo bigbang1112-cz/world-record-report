@@ -39,7 +39,7 @@ public partial class MapCommand
         {
             builder.Title = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
             builder.ThumbnailUrl = map.GetThumbnailUrl();
-            builder.Url = map.GetTmxUrl();
+            builder.Url = map.GetInfoUrl();
 
             if (map.TitlePack is null)
             {
@@ -88,6 +88,11 @@ public partial class MapCommand
             if (recordSet is not null)
             {
                 builder.AddField("Record count", recordSet.GetRecordCount().ToString("N0"));
+            }
+
+            if (map.FileLastModifiedOn.HasValue)
+            {
+                builder.AddField("Last modified on", map.FileLastModifiedOn.Value.ToTimestampTag());
             }
 
             builder.Timestamp = DateTimeOffset.UtcNow;
@@ -171,9 +176,9 @@ public partial class MapCommand
 
                 activityText = $"` {rank} ` **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** by {lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}";
             }
-            
+
             builder.AddField($"Last Top 10 activity  ➡️  {typeOfActivity}", activityText);
-            
+
             return recordSet;
         }
 

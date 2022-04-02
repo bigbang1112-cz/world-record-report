@@ -107,6 +107,11 @@ public class MapModel : DbModel
 
     public string? GetThumbnailUrl()
     {
+        if (Game.IsTM2020() && ThumbnailGuid.HasValue)
+        {
+            return $"https://prod.trackmania.core.nadeo.online/storageObjects/{ThumbnailGuid.Value}.jpg";
+        }
+
         if (MxId is null)
         {
             return null;
@@ -160,6 +165,26 @@ public class MapModel : DbModel
             return $"https://tm.mania.exchange/maps/{MxId}";
         }
 
+        if (Game.IsTM2020())
+        {
+            return $"https://trackmania.exchange/s/tr/{MxId}";
+        }
+
         return null;
+    }
+
+    public string? GetTrackmaniaIoUrl()
+    {
+        if (!Game.IsTM2020() || Campaign?.LeaderboardUid is null)
+        {
+            return null;
+        }
+
+        return $"https://trackmania.io/#/campaigns/leaderboard/{Campaign.LeaderboardUid}/{MapUid}";
+    }
+
+    public string? GetInfoUrl()
+    {
+        return GetTrackmaniaIoUrl() ?? GetTmxUrl();
     }
 }

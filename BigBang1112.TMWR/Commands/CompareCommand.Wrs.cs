@@ -78,9 +78,9 @@ public partial class CompareCommand
 
             var mapNameStr = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
 
-            var tmxUrl = map.GetTmxUrl();
+            var infoUrl = map.GetInfoUrl();
 
-            builder.AddField("Map", tmxUrl is null ? mapNameStr : $"[{mapNameStr}]({map.GetTmxUrl()})");
+            builder.AddField("Map", infoUrl is null ? mapNameStr : $"[{mapNameStr}]({infoUrl})");
         }
 
         public override Task<DiscordBotMessage?> SelectMenuAsync(SocketMessageComponent messageComponent, Deferer deferrer)

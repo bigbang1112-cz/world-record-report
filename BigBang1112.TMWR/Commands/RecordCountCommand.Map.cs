@@ -28,11 +28,11 @@ public partial class RecordCountCommand
 
             builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
 
-            var tmxUrl = map.GetTmxUrl();
+            var infoUrl = map.GetInfoUrl();
 
-            if (tmxUrl is not null)
+            if (infoUrl is not null)
             {
-                builder.Description = $"[{builder.Description}]({tmxUrl})";
+                builder.Description = $"[{builder.Description}]({infoUrl})";
             }
         }
     }

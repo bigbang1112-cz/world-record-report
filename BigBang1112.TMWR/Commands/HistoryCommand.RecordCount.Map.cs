@@ -83,7 +83,7 @@ public partial class HistoryCommand
                 var date = await _repo.GetStartingDateOfRecordCountTrackingAsync(map);
 
                 builder.Title = $"{map.GetHumanizedDeformattedName()}";
-                builder.Url = map.GetTmxUrl();
+                builder.Url = map.GetInfoUrl();
 
                 if (date.HasValue)
                 {

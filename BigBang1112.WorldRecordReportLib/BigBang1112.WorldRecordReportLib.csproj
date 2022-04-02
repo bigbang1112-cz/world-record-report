@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>2.3.3</Version>
+    <Version>2.4.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,7 +34,7 @@
     <PackageReference Include="Quartz.AspNetCore" Version="3.4.0" />
     <PackageReference Include="TmExchangeApi.NET" Version="0.1.4" />
     <PackageReference Include="TmXmlRpc" Version="1.1.0" />
-    <PackageReference Include="TrackmaniaIO.NET" Version="1.1.0" />
+    <PackageReference Include="TrackmaniaIO.NET" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>
