@@ -57,6 +57,8 @@ builder.Services.AddScoped<ITmxRecordSetService, TmxRecordSetService>();
 
 builder.Services.AddScoped<IGhostService, GhostService>();
 
+builder.Services.AddSingleton<RefreshScheduleService>();
+
 builder.Services.AddSingleton<TmwrDiscordBotService>();
 builder.Services.AddHostedService(x => x.GetRequiredService<TmwrDiscordBotService>());
 
@@ -64,6 +66,7 @@ builder.Services.AddQuartz(q =>
 {
     q.UseMicrosoftDependencyInjectionJobFactory();
 
+    q.AddIntervalTrigger<RefreshTM2020OfficialJob>(config);
     q.AddIntervalTrigger<RefreshTM2OfficialJob>(config);
     q.AddIntervalTrigger<RefreshTmxOfficialJob>(config);
     q.AddIntervalTrigger<CleanupTmxRemovedWorldRecordsJob>(config);
