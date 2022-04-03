@@ -10,41 +10,39 @@ using Microsoft.Extensions.Configuration;
 using System.Reflection;
 using System.Text;
 
-using ThisShouldNotHappenException = BigBang1112.WorldRecordReportLib.Exceptions.ThisShouldNotHappenException;
-
 namespace BigBang1112.WorldRecordReportLib.Data;
 
 public class WrContext : DbContext
 {
     private readonly IEncryptionProvider encryption;
 
-    public DbSet<AssociatedAccountModel> AssociatedAccounts { get; set; } = default!;
-    public DbSet<WorldRecordModel> WorldRecords { get; set; } = default!;
-    public DbSet<MapModel> Maps { get; set; } = default!;
-    public DbSet<GameModel> Games { get; set; } = default!;
-    public DbSet<LoginModel> Logins { get; set; } = default!;
-    public DbSet<TmxLoginModel> TmxLogins { get; set; } = default!;
-    public DbSet<IgnoredLoginModel> IgnoredLogins { get; set; } = default!;
-    public DbSet<IgnoredLoginFromMapModel> IgnoredLoginsFromMaps { get; set; } = default!;
-    public DbSet<IgnoredLoginFromRemovedRecordReportModel> IgnoredLoginsFromRemovedRecordReport { get; internal set; } = default!;
-    public DbSet<RefreshModel> Refreshes { get; set; } = default!;
-    public DbSet<RefreshLoopModel> RefreshLoops { get; set; } = default!;
-    public DbSet<ReportModel> Reports { get; set; } = default!;
-    public DbSet<TitlePackModel> TitlePacks { get; set; } = default!;
-    public DbSet<EnvModel> Environments { get; set; } = default!;
-    public DbSet<AltReplayModel> AltReplays { get; set; } = default!;
-    public DbSet<MapGroupModel> MapGroups { get; set; } = default!;
-    public DbSet<DiscordWebhookModel> DiscordWebhooks { get; set; } = default!;
-    public DbSet<DiscordWebhookMessageModel> DiscordWebhookMessages { get; set; } = default!;
-    public DbSet<TmxSiteModel> TmxSites { get; set; } = default!;
-    public DbSet<TmxInitModel> TmxInits { get; set; } = default!;
-    public DbSet<MapModeModel> MapModes { get; set; } = default!;
-    public DbSet<RecordChangeModel> RecordChanges { get; set; } = default!;
-    public DbSet<RecordSetChangeModel> RecordSetChanges { get; set; } = default!;
-    public DbSet<RecordSetDetailedChangeModel> RecordSetDetailedChanges { get; set; } = default!;
-    public DbSet<RecordCountModel> RecordCounts2 { get; set; } = default!;
-    public DbSet<NicknameChangeModel> NicknameChanges { get; set; } = default!;
-    public DbSet<CampaignModel> Campaigns { get; set; } = default!;
+    public virtual DbSet<AssociatedAccountModel> AssociatedAccounts { get; set; } = default!;
+    public virtual DbSet<WorldRecordModel> WorldRecords { get; set; } = default!;
+    public virtual DbSet<MapModel> Maps { get; set; } = default!;
+    public virtual DbSet<GameModel> Games { get; set; } = default!;
+    public virtual DbSet<LoginModel> Logins { get; set; } = default!;
+    public virtual DbSet<TmxLoginModel> TmxLogins { get; set; } = default!;
+    public virtual DbSet<IgnoredLoginModel> IgnoredLogins { get; set; } = default!;
+    public virtual DbSet<IgnoredLoginFromMapModel> IgnoredLoginsFromMaps { get; set; } = default!;
+    public virtual DbSet<IgnoredLoginFromRemovedRecordReportModel> IgnoredLoginsFromRemovedRecordReport { get; internal set; } = default!;
+    public virtual DbSet<RefreshModel> Refreshes { get; set; } = default!;
+    public virtual DbSet<RefreshLoopModel> RefreshLoops { get; set; } = default!;
+    public virtual DbSet<ReportModel> Reports { get; set; } = default!;
+    public virtual DbSet<TitlePackModel> TitlePacks { get; set; } = default!;
+    public virtual DbSet<EnvModel> Environments { get; set; } = default!;
+    public virtual DbSet<AltReplayModel> AltReplays { get; set; } = default!;
+    public virtual DbSet<MapGroupModel> MapGroups { get; set; } = default!;
+    public virtual DbSet<DiscordWebhookModel> DiscordWebhooks { get; set; } = default!;
+    public virtual DbSet<DiscordWebhookMessageModel> DiscordWebhookMessages { get; set; } = default!;
+    public virtual DbSet<TmxSiteModel> TmxSites { get; set; } = default!;
+    public virtual DbSet<TmxInitModel> TmxInits { get; set; } = default!;
+    public virtual DbSet<MapModeModel> MapModes { get; set; } = default!;
+    public virtual DbSet<RecordChangeModel> RecordChanges { get; set; } = default!;
+    public virtual DbSet<RecordSetChangeModel> RecordSetChanges { get; set; } = default!;
+    public virtual DbSet<RecordSetDetailedChangeModel> RecordSetDetailedChanges { get; set; } = default!;
+    public virtual DbSet<RecordCountModel> RecordCounts2 { get; set; } = default!;
+    public virtual DbSet<NicknameChangeModel> NicknameChanges { get; set; } = default!;
+    public virtual DbSet<CampaignModel> Campaigns { get; set; } = default!;
 
     public WrContext(DbContextOptions<WrContext> options, IConfiguration config) : base(options)
     {
