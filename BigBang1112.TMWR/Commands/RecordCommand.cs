@@ -1,4 +1,6 @@
 ﻿using BigBang1112.Extensions;
+using BigBang1112.TMWR.Models;
+using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -73,60 +75,6 @@ public class RecordCommand : MapRelatedWithUidCommand
         builder.Footer.Text = $"({Rank}) {builder.Footer.Text}";
         builder.ThumbnailUrl = map.GetThumbnailUrl();
 
-        if (map.Game.IsTM2())
-        {
-            recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
-
-            if (recordSet is null)
-            {
-                return;
-            }
-
-            var record = recordSet.Records.ElementAtOrDefault((int)Rank - 1);
-
-            if (record is null)
-            {
-                builder.Title = "No record found";
-                return;
-            }
-
-            var loginModel = await _repo.GetLoginAsync(record.Login);
-            
-            nickname = loginModel?.GetDeformattedNickname() ?? record.Login;
-
-            builder.Title = $"{record.Rank}) {new TimeInt32(record.Time).ToString(useHundredths: map.Game.IsTMUF())} by {nickname}";
-        }
-        else if (map.Game.IsTMUF())
-        {
-            if (map.TmxAuthor is null)
-            {
-                return;
-            }
-
-            recordSetTmx = await _tmxRecordSetService.GetRecordSetAsync(map.TmxAuthor.Site, map);
-
-            if (recordSetTmx is null)
-            {
-                return;
-            }
-
-            var record = recordSetTmx.Where(x => x.Rank is not null).ElementAtOrDefault((int)Rank - 1);
-
-            if (record is null)
-            {
-                builder.Title = "No record found";
-                return;
-            }
-
-            var score = map.IsStuntsMode()
-                ? record.ReplayScore.ToString()
-                : new TimeInt32(record.ReplayTime).ToString(useHundredths: map.Game.IsTMUF());
-
-            nickname = record.UserName ?? record.UserId.ToString();
-
-            builder.Title = $"{record.Rank}) {score} by {nickname}";
-        }
-
         builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
 
         var infoUrl = map.GetInfoUrl();
@@ -135,6 +83,84 @@ public class RecordCommand : MapRelatedWithUidCommand
         {
             builder.Description = $"[{builder.Description}]({infoUrl})";
         }
+
+        var rec = (WorldRecordReportLib.Enums.Game)map.Game.Id switch
+        {
+            WorldRecordReportLib.Enums.Game.TM2 => await FindMiniRecordFromTM2Async(map),
+            WorldRecordReportLib.Enums.Game.TMUF => await FindMiniRecordFromTMUFAsync(map),
+            WorldRecordReportLib.Enums.Game.TM2020 => await FindMiniRecordFromTM2020Async(map),
+            _ => null
+        };
+
+        if (rec is null)
+        {
+            builder.Title = "No record found";
+            return;
+        }
+
+        var score = map.IsStuntsMode()
+            ? rec.TimeOrScore.ToString()
+            : new TimeInt32(rec.TimeOrScore).ToString(useHundredths: map.Game.IsTMUF());
+
+        builder.Title = $"{rec.Rank}) {score} by {nickname}";
+    }
+
+    private async Task<MiniRecord?> FindMiniRecordFromTM2Async(MapModel map)
+    {
+        recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+
+        if (recordSet is null)
+        {
+            return null;
+        }
+
+        var record = recordSet.Records.ElementAtOrDefault((int)Rank - 1);
+
+        if (record is null)
+        {
+            return null;
+        }
+
+        var loginModel = await _repo.GetLoginAsync(record.Login);
+
+        nickname = loginModel?.GetDeformattedNickname() ?? record.Login;
+
+        return new MiniRecord(record.Rank, record.Time, nickname);
+    }
+
+    private async Task<MiniRecord?> FindMiniRecordFromTMUFAsync(MapModel map)
+    {
+        if (map.TmxAuthor is null)
+        {
+            return null;
+        }
+
+        recordSetTmx = await _tmxRecordSetService.GetRecordSetAsync(map.TmxAuthor.Site, map);
+
+        if (recordSetTmx is null)
+        {
+            return null;
+        }
+
+        var record = recordSetTmx.Where(x => x.Rank is not null).ElementAtOrDefault((int)Rank - 1);
+
+        if (record is null)
+        {
+            return null;
+        }
+
+        var score = map.IsStuntsMode()
+            ? record.ReplayScore.ToString()
+            : new TimeInt32(record.ReplayTime).ToString(useHundredths: map.Game.IsTMUF());
+
+        nickname = record.UserName ?? record.UserId.ToString();
+
+        return new MiniRecord(record.Rank.GetValueOrDefault(), map.IsStuntsMode() ? record.ReplayScore : record.ReplayTime, nickname);
+    }
+
+    private async Task<MiniRecord?> FindMiniRecordFromTM2020Async(MapModel map)
+    {
+        return null;
     }
 
     public override Task<DiscordBotMessage?> SelectMenuAsync(SocketMessageComponent messageComponent, Deferer deferrer)
