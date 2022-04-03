@@ -1,13 +1,184 @@
-﻿using Quartz;
+﻿using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Enums;
+using BigBang1112.WorldRecordReportLib.Models.Db;
+using BigBang1112.WorldRecordReportLib.Repos;
+using Microsoft.Extensions.Logging;
+using Quartz;
+using System.Security.Cryptography;
+using TmEssentials;
+using TrackmaniaIONet;
 
 namespace BigBang1112.WorldRecordReportLib.Jobs;
 
 [DisallowConcurrentExecution]
 public class AcquireNewOfficialCampaignsJob : IJob
 {
-    public Task Execute(IJobExecutionContext context)
+    private readonly IWrUnitOfWork _wrUnitOfWork;
+    private readonly HttpClient _http;
+    private readonly ILogger<AcquireNewOfficialCampaignsJob> _logger;
+
+    public AcquireNewOfficialCampaignsJob(IWrUnitOfWork wrUnitOfWork, HttpClient http, ILogger<AcquireNewOfficialCampaignsJob> logger)
     {
-        return Task.CompletedTask;
-        //throw new NotImplementedException();
+        _wrUnitOfWork = wrUnitOfWork;
+        _http = http;
+        _logger = logger;
+    }
+
+    public async Task Execute(IJobExecutionContext context)
+    {
+        await AcquireNewOfficialCampaignsAsync();
+    }
+
+    private async Task AcquireNewOfficialCampaignsAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Acquiting map data about official campaigns...");
+
+        var campaigns = await TrackmaniaIO.GetCampaignsAsync(cancellationToken: cancellationToken);
+
+        _logger.LogInformation("{count} campaigns found.", campaigns.Count);
+
+        var game = await _wrUnitOfWork.Games.GetAsync(Game.TM2020, cancellationToken);
+        var env = await _wrUnitOfWork.Envs.GetAsync(Env.Stadium2020, cancellationToken);
+        var mode = await _wrUnitOfWork.MapModes.GetAsync(MapMode.Race, cancellationToken);
+
+        foreach (var campaign in campaigns)
+        {
+            if (campaign is not OfficialCampaignItem officialCampaign)
+            {
+                _logger.LogInformation("End of official campaigns.");
+                break;
+            }
+
+            await ProcessOfficialCampaignAsync(officialCampaign, game, env, mode, cancellationToken);
+        }
+    }
+
+    private async Task ProcessOfficialCampaignAsync(OfficialCampaignItem officialCampaign,
+                                                    GameModel game,
+                                                    EnvModel env,
+                                                    MapModeModel mode,
+                                                    CancellationToken cancellationToken = default)
+    {
+        var details = await officialCampaign.GetDetailsAsync(cancellationToken);
+        
+        _logger.LogInformation("{name} campaign details fetched.", details.Name);
+
+        var campaignModel = await _wrUnitOfWork.Campaigns.GetOrAddAsync<CampaignModel>(x => x.LeaderboardUid == details.LeaderboardUid, () => new CampaignModel
+        {
+            Game = game,
+            LeaderboardUid = details.LeaderboardUid,
+            Name = details.Name
+        }, cancellationToken);
+
+        if (campaignModel.IsOver)
+        {
+            _logger.LogInformation("{name} campaign no longer receives updates.", details.Name);
+            return;
+        }
+
+        var loginDictionary = new Dictionary<Guid, LoginModel>();
+
+        foreach (var map in details.Playlist)
+        {
+            if (!loginDictionary.TryGetValue(map.Author, out LoginModel? loginModel))
+            {
+                loginModel = await _wrUnitOfWork.Logins.GetOrAddAsync(game, map.Author.ToString(), map.AuthorPlayer.Name, cancellationToken);
+                loginDictionary.Add(map.Author, loginModel);
+
+                _logger.LogInformation("Login model of '{nickname}' ({name}) received.", loginModel.Nickname, loginModel.Name);
+            }
+
+            var mapModel = await _wrUnitOfWork.Maps.GetOrAddAsync<MapModel>(x => string.Equals(x.MapUid, map.MapUid), () => new MapModel
+            {
+                MapUid = map.MapUid,
+                Game = game,
+                Environment = env,
+                Name = map.Name,
+                DeformattedName = map.Name,
+                Author = loginModel,
+                MxId = map.ExchangeId,
+                Mode = mode,
+                MapType = map.MapType,
+                MapStyle = map.MapStyle,
+                ThumbnailGuid = new Guid(new Uri(map.ThumbnailUrl).Segments.Last()[..36]),
+                DownloadGuid = new Guid(new Uri(map.FileUrl).Segments.Last()),
+                Campaign = campaignModel,
+                AddedOn = DateTime.UtcNow,
+                UpdatedOn = DateTime.UtcNow,
+            }, cancellationToken);
+
+            _logger.LogInformation("{name} map model retrieved/created. Checking the map file...", mapModel.DeformattedName);
+            
+            var mapModelChanged = await CheckMapDataAsync(map, mapModel, cancellationToken);
+
+            if (mapModelChanged)
+            {
+                await _wrUnitOfWork.SaveAsync(cancellationToken);
+            }
+
+            await Task.Delay(500, cancellationToken);
+        }
+    }
+
+    private async Task<bool> CheckMapDataAsync(Map map, MapModel mapModel, CancellationToken cancellationToken)
+    {
+        if (mapModel.FileLastModifiedOn is null)
+        {
+            return await ProcessMapDataAsync(map, mapModel, cancellationToken);
+        }
+        
+        using var headResponse = await _http.HeadAsync(map.FileUrl);
+
+        if (!headResponse.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("{name} map file head check failed ({code}, {url}).", mapModel.DeformattedName, headResponse.StatusCode, map.FileUrl);
+            return false;
+        }
+
+        _logger.LogInformation("{name} map file head check successful.", mapModel.DeformattedName);
+
+        if (headResponse.Content.Headers.LastModified.HasValue)
+        {
+            var lastModified = headResponse.Content.Headers.LastModified.Value;
+
+            if (lastModified.UtcDateTime > mapModel.FileLastModifiedOn)
+            {
+                return await ProcessMapDataAsync(map, mapModel, cancellationToken);
+            }
+        }
+
+        return false;
+    }
+
+    private async Task<bool> ProcessMapDataAsync(Map map, MapModel mapModel, CancellationToken cancellationToken)
+    {
+        using var response = await _http.GetAsync(map.FileUrl, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("{name} map file download failed ({code}, {url}).", mapModel.DeformattedName, response.StatusCode, map.FileUrl);
+            return false;
+        }
+
+        _logger.LogInformation("{name} map file download successful. Calculating checksum...", mapModel.DeformattedName);
+
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var sha256 = SHA256.Create();
+
+        mapModel.Checksum = sha256.ComputeHash(stream);
+
+        _logger.LogInformation("{name} map file checksum: {checksum}", mapModel.DeformattedName, BitConverter.ToString(mapModel.Checksum));
+
+        if (response.Content.Headers.LastModified.HasValue)
+        {
+            mapModel.FileLastModifiedOn = response.Content.Headers.LastModified.Value.UtcDateTime;
+            _logger.LogInformation("{name} map file last modified on: {lastModified}", mapModel.DeformattedName, mapModel.FileLastModifiedOn);
+        }
+        else
+        {
+            _logger.LogWarning("{name} map file last modified on not found.", mapModel.DeformattedName);
+        }
+
+        return true;
     }
 }
