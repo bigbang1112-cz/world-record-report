@@ -1,5 +1,5 @@
 ﻿using BigBang1112.WorldRecordReportLib.Data;
-using TmExchangeApi;
+using ManiaAPI.TMX;
 
 namespace BigBang1112.WorldRecordReportLib.Models;
 

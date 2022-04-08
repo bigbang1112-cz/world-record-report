@@ -1,4 +1,5 @@
 ﻿using BigBang1112.WorldRecordReportLib.Services;
+using ManiaAPI.TMX;
 using Quartz;
 
 namespace BigBang1112.WorldRecordReportLib.Jobs;
@@ -15,8 +16,8 @@ public class RefreshTmxOfficialJob : IJob
 
     public async Task Execute(IJobExecutionContext context)
     {
-        await _tmx.UpdateWorldRecordsAsync(TmExchangeApi.TmxSite.United, TmExchangeApi.LeaderboardType.Nadeo);
-        await _tmx.UpdateWorldRecordsAsync(TmExchangeApi.TmxSite.United, TmExchangeApi.LeaderboardType.Star);
-        await _tmx.UpdateWorldRecordsAsync(TmExchangeApi.TmxSite.TMNForever, TmExchangeApi.LeaderboardType.Nadeo);
+        await _tmx.UpdateWorldRecordsAsync(TmxSite.United, LeaderboardType.Nadeo);
+        await _tmx.UpdateWorldRecordsAsync(TmxSite.United, LeaderboardType.Star);
+        await _tmx.UpdateWorldRecordsAsync(TmxSite.TMNForever, LeaderboardType.Nadeo);
     }
 }

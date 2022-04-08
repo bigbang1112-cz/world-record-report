@@ -1,6 +1,4 @@
-﻿using BigBang1112.WorldRecordReportLib.Models.Db;
-using TmExchangeApi;
-using TmExchangeApi.Models;
+﻿using ManiaAPI.TMX;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 

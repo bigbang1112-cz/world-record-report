@@ -1,5 +1,4 @@
-﻿using TmExchangeApi;
-using TmExchangeApi.Models;
+﻿using ManiaAPI.TMX;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
@@ -7,7 +6,7 @@ public class TmxService : ITmxService
 {
     public async Task<ItemCollection<ReplayItem>> GetReplaysAsync(TmxSite site, int tmxId, CancellationToken cancellationToken = default)
     {
-        var tmx = new Tmx(site);
+        var tmx = new TMX(site);
         return await tmx.GetReplaysAsync(tmxId, cancellationToken);
     }
 
@@ -19,7 +18,7 @@ public class TmxService : ITmxService
         {
             if (tempTime is null)
             {
-                tempTime = isStunts ? replay.ReplayScore : replay.ReplayTime;
+                tempTime = isStunts ? replay.ReplayScore : replay.ReplayTime.TotalMilliseconds;
                 yield return replay;
             }
 
@@ -29,9 +28,9 @@ public class TmxService : ITmxService
                 yield return replay;
             }
 
-            if (!isStunts && replay.ReplayTime < tempTime)
+            if (!isStunts && replay.ReplayTime.TotalMilliseconds < tempTime)
             {
-                tempTime = replay.ReplayTime;
+                tempTime = replay.ReplayTime.TotalMilliseconds;
                 yield return replay;
             }
         }
@@ -39,7 +38,7 @@ public class TmxService : ITmxService
 
     public async Task<ItemCollection<TrackSearchItem>> SearchAsync(TmxSite site, TrackSearchFilters trackSearchFilters, CancellationToken cancellationToken = default)
     {
-        var tmx = new Tmx(site);
+        var tmx = new TMX(site);
         return await tmx.SearchAsync(trackSearchFilters, cancellationToken);
     }
 }
