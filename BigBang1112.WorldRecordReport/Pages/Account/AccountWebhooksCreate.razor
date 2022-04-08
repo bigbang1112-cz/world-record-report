@@ -150,9 +150,9 @@
         {
             tmufFilters = new List<DiscordWebhookFilter.TMUF>();
 
-            if (ReportNadeoTMUF) tmufFilters.Add(new DiscordWebhookFilter.TMUF("united", LeaderboardType: TmExchangeApi.LeaderboardType.Nadeo));
-            if (ReportStarTrack) tmufFilters.Add(new DiscordWebhookFilter.TMUF("united", LeaderboardType: TmExchangeApi.LeaderboardType.Star));
-            if (ReportNadeoTMNF) tmufFilters.Add(new DiscordWebhookFilter.TMUF("tmnf", LeaderboardType: TmExchangeApi.LeaderboardType.Nadeo));
+            if (ReportNadeoTMUF) tmufFilters.Add(new DiscordWebhookFilter.TMUF("united", LeaderboardType: ManiaAPI.TMX.LeaderboardType.Nadeo));
+            if (ReportStarTrack) tmufFilters.Add(new DiscordWebhookFilter.TMUF("united", LeaderboardType: ManiaAPI.TMX.LeaderboardType.Star));
+            if (ReportNadeoTMNF) tmufFilters.Add(new DiscordWebhookFilter.TMUF("tmnf", LeaderboardType: ManiaAPI.TMX.LeaderboardType.Nadeo));
         }
 
         if (tm2Filters is null && tmufFilters is null)
