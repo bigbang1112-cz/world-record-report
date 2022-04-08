@@ -1,7 +1,7 @@
 ﻿using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using Mapster;
-using TmExchangeApi.Models;
+using ManiaAPI.TMX;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 

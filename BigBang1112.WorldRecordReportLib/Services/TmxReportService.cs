@@ -7,8 +7,7 @@ using Mapster;
 using Microsoft.Extensions.Logging;
 using System.IO.Compression;
 using System.Text.Json;
-using TmExchangeApi;
-using TmExchangeApi.Models;
+using ManiaAPI.TMX;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
@@ -172,7 +171,7 @@ public class TmxReportService
                 return false;
             }
 
-            if (!isStunts && wrOnTmx.ReplayTime >= currentWr.Time)
+            if (!isStunts && wrOnTmx.ReplayTime.TotalMilliseconds >= currentWr.Time)
             {
                 return false;
             }
@@ -181,7 +180,7 @@ public class TmxReportService
         var newWrsOnTmx = currentWr is null ? wrsOnTmx
             : wrsOnTmx.Where(x => isStunts
                 ? x.ReplayScore > currentWr.Time
-                : x.ReplayTime < currentWr.Time);
+                : x.ReplayTime.TotalMilliseconds < currentWr.Time);
 
         _logger.LogInformation("{count} new world record/s found.", newWrsOnTmx.Count());
 
@@ -189,7 +188,7 @@ public class TmxReportService
 
         foreach (var newWr in newWrsOnTmx)
         {
-            var newTimeOrScore = isStunts ? newWr.ReplayScore : newWr.ReplayTime;
+            var newTimeOrScore = isStunts ? newWr.ReplayScore : newWr.ReplayTime.TotalMilliseconds;
 
             // If this is the old world record time
             if (currentWr is not null && (isStunts ? newTimeOrScore <= currentWr.Time : newTimeOrScore >= currentWr.Time))
@@ -225,6 +224,16 @@ public class TmxReportService
     private void FindChangesInRecordSets(TmxReplay[] prevRecordSet, TmxReplay[] recordSet)
     {
         var changes = LeaderboardComparer.Compare(recordSet, prevRecordSet);
+
+        if (changes is null)
+        {
+            return;
+        }
+
+        if (changes.ImprovedRecords.Any())
+        {
+            
+        }
     }
 
     private async Task<WorldRecordModel> ProcessNewWorldRecordAsync(TmxSiteModel tmxSite,
@@ -394,7 +403,7 @@ public class TmxReportService
             var tmxWrs = _tmxService.GetWrHistory(replays).Reverse();
             var tmxWr = tmxWrs.FirstOrDefault();
 
-            if (tmxWr is not null && tmxWr.ReplayTime <= wr.Time)
+            if (tmxWr is not null && tmxWr.ReplayTime.TotalMilliseconds <= wr.Time)
             {
                 continue;
             }
