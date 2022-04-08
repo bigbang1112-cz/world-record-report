@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Quartz;
 using System.Security.Cryptography;
 using TmEssentials;
-using TrackmaniaIONet;
+using ManiaAPI.TrackmaniaIO;
 
 namespace BigBang1112.WorldRecordReportLib.Jobs;
 
