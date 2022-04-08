@@ -22,6 +22,7 @@ public class WrMapper : Mapper
             .Map(dest => dest.IsCompPatch, src => src.Validated)
             .Map(dest => dest.UserId, src => src.User.UserId)
             .Map(dest => dest.UserName, src => src.User.Name)
-            .Map(dest => dest.ReplayAt, src => src.ReplayAt.UtcDateTime);
+            .Map(dest => dest.ReplayAt, src => src.ReplayAt.UtcDateTime)
+            .Map(dest => dest.ReplayTime, src => src.ReplayTime.TotalMilliseconds);
     }
 }
