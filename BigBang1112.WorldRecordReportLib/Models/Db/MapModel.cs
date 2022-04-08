@@ -73,6 +73,8 @@ public class MapModel : DbModel
     [Column(TypeName = "datetime")]
     public DateTime? FileLastModifiedOn { get; set; }
 
+    public Guid? MapId { get; set; }
+
     public virtual ICollection<WorldRecordModel> WorldRecords { get; set; } = default!;
     public virtual ICollection<RecordSetChangeModel> RecordSetChanges { get; set; } = default!;
     public virtual ICollection<RecordSetDetailedChangeModel> RecordSetDetailedChanges { get; set; } = default!;
