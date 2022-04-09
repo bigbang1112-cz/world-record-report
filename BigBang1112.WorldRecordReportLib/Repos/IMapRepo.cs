@@ -3,4 +3,5 @@
 public interface IMapRepo : IRepo<MapModel>
 {
     Task<MapModel?> GetByUidAsync(string mapUid, CancellationToken cancellationToken = default);
+    Task<Guid?> GetMapIdByMapUidAsync(string mapUid, CancellationToken cancellationToken = default);
 }

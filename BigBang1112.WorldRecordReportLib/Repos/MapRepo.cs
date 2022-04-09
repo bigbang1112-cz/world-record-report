@@ -15,4 +15,10 @@ public class MapRepo : Repo<MapModel>, IMapRepo
     {
         return await _context.Maps.SingleOrDefaultAsync(x => string.Equals(x.MapUid, mapUid), cancellationToken);
     }
+
+    public async Task<Guid?> GetMapIdByMapUidAsync(string mapUid, CancellationToken cancellationToken = default)
+    {
+        var map = await _context.Maps.SingleOrDefaultAsync(x => x.MapUid == mapUid, cancellationToken);
+        return map?.MapId;
+    }
 }
