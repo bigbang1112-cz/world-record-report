@@ -1,7 +1,4 @@
-﻿using BigBang1112.WorldRecordReportLib.Data;
-using BigBang1112.WorldRecordReportLib.Enums;
-using BigBang1112.WorldRecordReportLib.Models.Db;
-using BigBang1112.WorldRecordReportLib.Repos;
+﻿using BigBang1112.WorldRecordReportLib.Enums;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using System.Security.Cryptography;
@@ -122,7 +119,7 @@ public class AcquireNewOfficialCampaignsJob : IJob
 
     private async Task<bool> CheckMapDataAsync(Map map, MapModel mapModel, CancellationToken cancellationToken)
     {
-        if (mapModel.FileLastModifiedOn is null)
+        if (mapModel.FileLastModifiedOn is null || mapModel.MapId is null)
         {
             return await ProcessMapDataAsync(map, mapModel, cancellationToken);
         }
@@ -178,6 +175,8 @@ public class AcquireNewOfficialCampaignsJob : IJob
         {
             _logger.LogWarning("{name} map file last modified on not found.", mapModel.DeformattedName);
         }
+
+        mapModel.MapId = map.MapId;
 
         return true;
     }
