@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BigBang1112.WorldRecordReportLib.Services.Wrappers;
 
-public class NadeoApiService : IHostedService, INadeoServices, INadeoLiveServices
+public class NadeoApiService : IHostedService, INadeoServices, INadeoLiveServices, INadeoApiService
 {
     private readonly IConfiguration _config;
     private readonly NadeoServices _nadeoServices;
@@ -33,9 +33,9 @@ public class NadeoApiService : IHostedService, INadeoServices, INadeoLiveService
         await _nadeoServices.AuthorizeAsync(login, password, cancellationToken);
 
         _logger.LogInformation("Authorized with NadeoServices. Authorizing with NadeoLiveServices...");
-        
+
         await _nadeoLiveServices.AuthorizeAsync(login, password, cancellationToken);
-        
+
         _logger.LogInformation("Authorized with NadeoLiveServices.");
     }
 

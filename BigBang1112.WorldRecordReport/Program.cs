@@ -63,10 +63,11 @@ builder.Services.AddScoped<IGhostService, GhostService>();
 builder.Services.AddSingleton<NadeoServices>();
 builder.Services.AddSingleton<NadeoLiveServices>();
 builder.Services.AddSingleton<TrackmaniaAPI>();
-builder.Services.AddSingleton<NadeoApiService>();
-builder.Services.AddHostedService(x => x.GetRequiredService<NadeoApiService>());
-builder.Services.AddSingleton<TrackmaniaApiService>();
-builder.Services.AddHostedService(x => x.GetRequiredService<TrackmaniaApiService>());
+builder.Services.AddSingleton<INadeoApiService, NadeoApiService>();
+builder.Services.AddHostedService(x => x.GetRequiredService<INadeoApiService>());
+builder.Services.AddSingleton<ITrackmaniaApiService, TrackmaniaApiService>();
+builder.Services.AddHostedService(x => x.GetRequiredService<ITrackmaniaApiService>());
+builder.Services.AddSingleton<ITrackmaniaIoApiService, TrackmaniaIoApiService>();
 
 builder.Services.AddSingleton<RefreshScheduleService>();
 

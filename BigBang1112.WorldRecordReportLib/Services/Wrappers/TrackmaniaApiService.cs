@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BigBang1112.WorldRecordReportLib.Services.Wrappers;
 
-public class TrackmaniaApiService : IHostedService, ITrackmaniaAPI
+public class TrackmaniaApiService : IHostedService, ITrackmaniaAPI, ITrackmaniaApiService
 {
     private readonly IConfiguration _config;
     private readonly TrackmaniaAPI _trackmaniaApi;
@@ -29,7 +29,7 @@ public class TrackmaniaApiService : IHostedService, ITrackmaniaAPI
 
         _logger.LogInformation("Authorized with Trackmania API.");
     }
-    
+
     public Task StopAsync(CancellationToken cancellationToken)
     {
         return Task.CompletedTask;

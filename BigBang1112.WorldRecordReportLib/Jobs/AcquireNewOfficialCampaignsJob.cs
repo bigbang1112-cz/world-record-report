@@ -4,6 +4,7 @@ using Quartz;
 using System.Security.Cryptography;
 using TmEssentials;
 using ManiaAPI.TrackmaniaIO;
+using BigBang1112.WorldRecordReportLib.Services.Wrappers;
 
 namespace BigBang1112.WorldRecordReportLib.Jobs;
 
@@ -11,12 +12,14 @@ namespace BigBang1112.WorldRecordReportLib.Jobs;
 public class AcquireNewOfficialCampaignsJob : IJob
 {
     private readonly IWrUnitOfWork _wrUnitOfWork;
+    private readonly ITrackmaniaIoApiService _tmIo;
     private readonly HttpClient _http;
     private readonly ILogger<AcquireNewOfficialCampaignsJob> _logger;
 
-    public AcquireNewOfficialCampaignsJob(IWrUnitOfWork wrUnitOfWork, HttpClient http, ILogger<AcquireNewOfficialCampaignsJob> logger)
+    public AcquireNewOfficialCampaignsJob(IWrUnitOfWork wrUnitOfWork, ITrackmaniaIoApiService tmIo, HttpClient http, ILogger<AcquireNewOfficialCampaignsJob> logger)
     {
         _wrUnitOfWork = wrUnitOfWork;
+        _tmIo = tmIo;
         _http = http;
         _logger = logger;
     }
@@ -26,11 +29,11 @@ public class AcquireNewOfficialCampaignsJob : IJob
         await AcquireNewOfficialCampaignsAsync();
     }
 
-    private async Task AcquireNewOfficialCampaignsAsync(CancellationToken cancellationToken = default)
+    internal async Task AcquireNewOfficialCampaignsAsync(int delay = 500, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Acquiting map data about official campaigns...");
+        _logger.LogInformation("Acquiring map data about official campaigns...");
 
-        var campaigns = await TrackmaniaIO.GetCampaignsAsync(cancellationToken: cancellationToken);
+        var campaigns = await _tmIo.GetCampaignsAsync(cancellationToken: cancellationToken);
 
         _logger.LogInformation("{count} campaigns found.", campaigns.Count);
 
@@ -46,17 +49,18 @@ public class AcquireNewOfficialCampaignsJob : IJob
                 break;
             }
 
-            await ProcessOfficialCampaignAsync(officialCampaign, game, env, mode, cancellationToken);
+            await ProcessOfficialCampaignAsync(officialCampaign, game, env, mode, delay, cancellationToken);
         }
     }
 
-    private async Task ProcessOfficialCampaignAsync(OfficialCampaignItem officialCampaign,
-                                                    GameModel game,
-                                                    EnvModel env,
-                                                    MapModeModel mode,
-                                                    CancellationToken cancellationToken = default)
+    internal async Task ProcessOfficialCampaignAsync(OfficialCampaignItem officialCampaign,
+                                                     GameModel game,
+                                                     EnvModel env,
+                                                     MapModeModel mode,
+                                                     int delay,
+                                                     CancellationToken cancellationToken)
     {
-        var details = await officialCampaign.GetDetailsAsync(cancellationToken);
+        var details = await _tmIo.GetOfficialCampaignAsync(officialCampaign.Id, cancellationToken);
         
         _logger.LogInformation("{name} campaign details fetched.", details.Name);
 
@@ -113,11 +117,11 @@ public class AcquireNewOfficialCampaignsJob : IJob
                 await _wrUnitOfWork.SaveAsync(cancellationToken);
             }
 
-            await Task.Delay(500, cancellationToken);
+            await Task.Delay(delay, cancellationToken);
         }
     }
 
-    private async Task<bool> CheckMapDataAsync(Map map, MapModel mapModel, CancellationToken cancellationToken)
+    internal async Task<bool> CheckMapDataAsync(Map map, MapModel mapModel, CancellationToken cancellationToken)
     {
         if (mapModel.FileLastModifiedOn is null || mapModel.MapId is null)
         {
@@ -147,7 +151,7 @@ public class AcquireNewOfficialCampaignsJob : IJob
         return false;
     }
 
-    private async Task<bool> ProcessMapDataAsync(Map map, MapModel mapModel, CancellationToken cancellationToken)
+    internal async Task<bool> ProcessMapDataAsync(Map map, MapModel mapModel, CancellationToken cancellationToken)
     {
         using var response = await _http.GetAsync(map.FileUrl, cancellationToken);
 
