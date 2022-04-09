@@ -61,6 +61,11 @@ public class WrContext : DbContext
     {
         modelBuilder.UseEncryption(encryption);
 
+        modelBuilder.Entity<GameModel>().HasEnumData<GameModel, Game, GameAttribute>(WrEnumData.GameAttributeToModel);
+        modelBuilder.Entity<EnvModel>().HasEnumData<EnvModel, Env, EnvAttribute>(WrEnumData.EnvAttributeToModel);
+        modelBuilder.Entity<TmxSiteModel>().HasEnumData<TmxSiteModel, TmxSite, TmxSiteAttribute>(WrEnumData.TmxSiteAttributeToModel);
+        modelBuilder.Entity<MapModeModel>().HasEnumData<MapModeModel, MapMode, MapModeAttribute>(WrEnumData.MapModeAttributeToModel);
+
         modelBuilder.Entity<RefreshLoopModel>()
             .HasMany(x => x.Refreshes)
             .WithOne(x => x.RefreshLoop)
@@ -70,31 +75,6 @@ public class WrContext : DbContext
             .HasOne(x => x.Report)
             .WithMany(x => x.DiscordWebhookMessages)
             .OnDelete(DeleteBehavior.SetNull);
-
-        modelBuilder.Entity<GameModel>().HasEnumData<GameModel, Game, GameAttribute>(att => new GameModel
-        {
-            Name = att.Name,
-            DisplayName = att.DisplayName
-        });
-
-        modelBuilder.Entity<EnvModel>().HasEnumData<EnvModel, Env, EnvAttribute>(att => new EnvModel
-        {
-            Name = att.Name,
-            Name2 = att.Name2,
-            DisplayName = att.DisplayName,
-            Color = new byte[] { att.ColorR, att.ColorG, att.ColorB }
-        });
-
-        modelBuilder.Entity<TmxSiteModel>().HasEnumData<TmxSiteModel, TmxSite, TmxSiteAttribute>(att => new TmxSiteModel
-        {
-            ShortName = att.ShortName,
-            Url = att.Url
-        });
-
-        modelBuilder.Entity<MapModeModel>().HasEnumData<MapModeModel, MapMode, MapModeAttribute>(att => new MapModeModel
-        {
-            Name = att.Name
-        });
 
         modelBuilder.Entity<RecordSetDetailedChangeModel>()
             .Property(e => e.Type)
