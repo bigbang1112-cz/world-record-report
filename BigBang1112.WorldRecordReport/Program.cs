@@ -9,6 +9,9 @@ using BigBang1112.WorldRecordReportLib.Repos;
 using BigBang1112.DiscordBot.Data;
 using System.Globalization;
 using BigBang1112.WorldRecordReportLib;
+using BigBang1112.WorldRecordReportLib.Services.Wrappers;
+using ManiaAPI.NadeoAPI;
+using ManiaAPI.TrackmaniaAPI;
 
 var cultureInfo = (CultureInfo)CultureInfo.InvariantCulture.Clone();
 cultureInfo.NumberFormat.NumberGroupSeparator = " ";
@@ -56,6 +59,14 @@ builder.Services.AddScoped<TmxReportService>();
 builder.Services.AddScoped<ITmxRecordSetService, TmxRecordSetService>();
 
 builder.Services.AddScoped<IGhostService, GhostService>();
+
+builder.Services.AddSingleton<NadeoServices>();
+builder.Services.AddSingleton<NadeoLiveServices>();
+builder.Services.AddSingleton<TrackmaniaAPI>();
+builder.Services.AddSingleton<NadeoApiService>();
+builder.Services.AddHostedService(x => x.GetRequiredService<NadeoApiService>());
+builder.Services.AddSingleton<TrackmaniaApiService>();
+builder.Services.AddHostedService(x => x.GetRequiredService<TrackmaniaApiService>());
 
 builder.Services.AddSingleton<RefreshScheduleService>();
 
