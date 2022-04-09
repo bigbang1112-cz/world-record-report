@@ -29,4 +29,14 @@
     <ProjectReference Include="..\BigBang1112.WorldRecordReportLib\BigBang1112.WorldRecordReportLib.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Unit\Jobs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Data\PlaylistSpring2022.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
