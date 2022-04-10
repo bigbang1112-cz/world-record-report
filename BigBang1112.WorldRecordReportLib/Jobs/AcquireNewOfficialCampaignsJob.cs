@@ -70,6 +70,11 @@ public class AcquireNewOfficialCampaignsJob : IJob
 
         // Apply the current campaign maps to the official TM2020 refresh cycle
 
+        await ApplyCurrentCampaignToRefreshCycleAsync(campaignModels, cancellationToken);
+    }
+
+    private async Task ApplyCurrentCampaignToRefreshCycleAsync(List<CampaignModel> campaignModels, CancellationToken cancellationToken)
+    {
         var currentOfficialCampaign = campaignModels.OrderByDescending(x => x.PublishedOn).First();
 
         if (currentOfficialCampaign.LeaderboardUid is null)
@@ -83,17 +88,17 @@ public class AcquireNewOfficialCampaignsJob : IJob
     }
 
     internal async Task<CampaignModel> ProcessOfficialCampaignAsync(OfficialCampaignItem officialCampaign,
-                                                     GameModel game,
-                                                     EnvModel env,
-                                                     MapModeModel mode,
-                                                     int delay,
-                                                     CancellationToken cancellationToken)
+                                                                    GameModel game,
+                                                                    EnvModel env,
+                                                                    MapModeModel mode,
+                                                                    int delay,
+                                                                    CancellationToken cancellationToken)
     {
         var details = await _tmIo.GetOfficialCampaignAsync(officialCampaign.Id, cancellationToken);
         
         _logger.LogInformation("{name} campaign details fetched.", details.Name);
 
-        var campaignModel = await _wrUnitOfWork.Campaigns.GetOrAddAsync<CampaignModel>(x => x.LeaderboardUid == details.LeaderboardUid, () => new CampaignModel
+        var campaignModel = await _wrUnitOfWork.Campaigns.GetOrAddAsync(x => x.LeaderboardUid == details.LeaderboardUid, () => new CampaignModel
         {
             Game = game,
             LeaderboardUid = details.LeaderboardUid,
@@ -119,7 +124,7 @@ public class AcquireNewOfficialCampaignsJob : IJob
                 _logger.LogInformation("Login model of '{nickname}' ({name}) received.", loginModel.Nickname, loginModel.Name);
             }
 
-            var mapModel = await _wrUnitOfWork.Maps.GetOrAddAsync<MapModel>(x => string.Equals(x.MapUid, map.MapUid), () => new MapModel
+            var mapModel = await _wrUnitOfWork.Maps.GetOrAddAsync(x => string.Equals(x.MapUid, map.MapUid), () => new MapModel
             {
                 MapUid = map.MapUid,
                 Game = game,
