@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -30,13 +30,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Unit\Jobs\" />
+    <Folder Include="Integration\Jobs\" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Data\PlaylistSpring2022.json">
+    <Content Include="Data\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
 
 </Project>
