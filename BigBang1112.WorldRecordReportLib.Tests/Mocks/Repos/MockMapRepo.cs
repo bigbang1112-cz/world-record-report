@@ -6,6 +6,11 @@ namespace BigBang1112.WorldRecordReportLib.Tests.Mocks.Repos;
 
 public class MockMapRepo : MockRepo<MapModel>, IMapRepo
 {
+    public async Task<List<MapModel>> GetByCampaignAsync(CampaignModel campaign, CancellationToken cancellationToken = default)
+    {
+        return await Task.FromResult(Entities.Where(x => x.Campaign == campaign).ToList());
+    }
+
     public async Task<MapModel?> GetByUidAsync(string mapUid, CancellationToken cancellationToken = default)
     {
         return await Task.FromResult(Entities.SingleOrDefault(x => x.MapUid == mapUid));
