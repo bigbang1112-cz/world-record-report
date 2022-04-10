@@ -1,4 +1,5 @@
 ﻿using BigBang1112.Repos.Mocks;
+using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 
@@ -24,5 +25,11 @@ public class MockLoginRepo : MockRepo<LoginModel>, ILoginRepo
         loginModel.LastSeenOn = DateTime.UtcNow;
 
         return loginModel;
+    }
+
+    public async Task<Dictionary<Guid, LoginModel>> GetByNamesAsync(Game game, IEnumerable<Guid> accountIds, CancellationToken cancellationToken)
+    {
+        var logins = Entities.Where(x => x.Game.Id == (int)game && accountIds.Select(x => x.ToString()).Contains(x.Name));
+        return await Task.FromResult(logins.ToDictionary(x => new Guid(x.Name), x => x));
     }
 }

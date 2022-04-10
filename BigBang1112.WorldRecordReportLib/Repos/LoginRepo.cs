@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BigBang1112.WorldRecordReportLib.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace BigBang1112.WorldRecordReportLib.Repos;
 
@@ -49,5 +50,12 @@ public class LoginRepo : Repo<LoginModel>, ILoginRepo
         loginModel.LastSeenOn = DateTime.UtcNow;
 
         return loginModel;
+    }
+
+    public async Task<Dictionary<Guid, LoginModel>> GetByNamesAsync(Game game, IEnumerable<Guid> accountIds, CancellationToken cancellationToken)
+    {
+        var accountIdsAsString = accountIds.Select(x => x.ToString());
+        var logins = await _context.Logins.Where(x => x.Game.Id == (int)game && accountIdsAsString.Contains(x.Name)).ToListAsync(cancellationToken);
+        return logins.ToDictionary(x => new Guid(x.Name), x => x);
     }
 }
