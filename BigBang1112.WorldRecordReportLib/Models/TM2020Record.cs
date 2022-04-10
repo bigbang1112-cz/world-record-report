@@ -1,7 +1,17 @@
-﻿namespace BigBang1112.WorldRecordReportLib.Models;
+﻿using TmEssentials;
 
-public class TM2020Record : IRecord<string>
+namespace BigBang1112.WorldRecordReportLib.Models;
+
+public class TM2020Record : IRecord<Guid>
 {
-    public string PlayerId { get => throw new NotImplementedException(); init => throw new NotImplementedException(); }
-    public int Time { get => throw new NotImplementedException(); init => throw new NotImplementedException(); }
+    public Guid PlayerId { get; init; }
+    public int Time { get; init; }
+    public string? DisplayName { get; init; }
+    public string? GhostUrl { get; init; }
+    public DateTime Timestamp { get; init; }
+
+    public override string ToString()
+    {
+        return $"{new TimeInt32(Time)} by {DisplayName ?? PlayerId.ToString()}";
+    }
 }
