@@ -6,6 +6,8 @@ using System.Text.Json;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
+// This should be generalized into RecordStorageService
+
 public class TmxRecordSetService : ITmxRecordSetService
 {
     private readonly IFileHostService _fileHostService;

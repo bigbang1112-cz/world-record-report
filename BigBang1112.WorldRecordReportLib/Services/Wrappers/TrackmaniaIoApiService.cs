@@ -36,5 +36,4 @@ public class TrackmaniaIoApiService : ITrackmaniaIoApiService
     {
         return await TrackmaniaIO.GetRecentWorldRecordsAsync(leaderboardUid, cancellationToken);
     }
-
 }
