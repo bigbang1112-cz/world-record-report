@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json;
 using BigBang1112.WorldRecordReportLib.Jobs;
+using BigBang1112.WorldRecordReportLib.Services;
 using BigBang1112.WorldRecordReportLib.Services.Wrappers;
 using BigBang1112.WorldRecordReportLib.Tests.Mocks;
 using ManiaAPI.Base.Converters;
@@ -13,11 +14,13 @@ namespace BigBang1112.WorldRecordReportLib.Tests.Unit.Jobs;
 
 public class AcquireNewOfficialCampaignsJobTests
 {
-    // test AcquireNewOfficialCampaignsAsync
+    private readonly JsonSerializerOptions options = new(JsonSerializerDefaults.Web);
 
-    // test AcquireNewOfficialCampaignsAsync_WhenThereAreNoNewCampaigns
+    public AcquireNewOfficialCampaignsJobTests()
+    {
+        options.Converters.Add(new TimeInt32Converter());
+    }
 
-    // test AcquireNewOfficialCampaignsAsync_WhenThereAreNewCampaigns
     [Fact]
     public async Task AcquireNewOfficialCampaignsAsync()
     {
@@ -51,32 +54,73 @@ public class AcquireNewOfficialCampaignsJobTests
             },
             Playlist = id switch
             {
-                22874 => CreatePlaylistSpring2022(),
+                22874 => CreatePlaylist("Spring2022"),
+                18729 => CreatePlaylist("Winter2022"),
+                16056 => CreatePlaylist("Fall2021"),
                 _ => Array.Empty<Map>()
-            }
+            },
+            PublishTime = id switch
+            {
+                22874 => DateTimeOffset.FromUnixTimeSeconds(1648825200),
+                18729 => DateTimeOffset.FromUnixTimeSeconds(1641052800),
+                16056 => DateTimeOffset.FromUnixTimeSeconds(1633100400),
+                _ => throw new ArgumentOutOfRangeException(nameof(id))
+            },
         });
 
         var http = new MockHttpClient((request, cancellationToken) =>
         {
-            if (request.RequestUri is null)
+            var uri = request.RequestUri;
+
+            if (uri is null)
             {
-                throw new ArgumentNullException(nameof(request.RequestUri));
+                throw new ArgumentNullException(nameof(uri));
             }
 
-            if (request.RequestUri.AbsoluteUri.StartsWith("https://prod.trackmania.core.nadeo.online/storageObjects/"))
+            if (uri.AbsoluteUri.StartsWith("https://prod.trackmania.core.nadeo.online/storageObjects/"))
             {
-                return new HttpResponseMessage
+                var response = new HttpResponseMessage();
+
+                if (request.Method == HttpMethod.Get)
                 {
-                    StatusCode = HttpStatusCode.OK
-                };
+                    var data = new byte[256];
+
+                    Random.Shared.NextBytes(data);
+
+                    var content = new ByteArrayContent(data);
+                    content.Headers.LastModified = DateTimeOffset.UtcNow - TimeSpan.FromSeconds(Random.Shared.Next(30));
+
+                    return new HttpResponseMessage
+                    {
+                        RequestMessage = request,
+                        Content = content,
+                        StatusCode = HttpStatusCode.OK
+                    };
+                }
+                else if (request.Method == HttpMethod.Head)
+                {
+                    return new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.BadRequest
+                    };
+                }
+                else
+                {
+                    return new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.MethodNotAllowed
+                    };
+                }
             }
 
             throw new Exception("Unknown request");
         });
 
+        var refreshSchedule = new RefreshScheduleService();
+
         var logger = Mock.Of<ILogger<AcquireNewOfficialCampaignsJob>>();
 
-        var job = new AcquireNewOfficialCampaignsJob(mockUnitOfWork, mockTmIo.Object, http, logger);
+        var job = new AcquireNewOfficialCampaignsJob(mockUnitOfWork, mockTmIo.Object, http, refreshSchedule, logger);
 
         // Act
         await job.AcquireNewOfficialCampaignsAsync(0);
@@ -84,11 +128,9 @@ public class AcquireNewOfficialCampaignsJobTests
         // Assert
     }
 
-    private static Map[] CreatePlaylistSpring2022()
+    private Map[] CreatePlaylist(string name)
     {
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-        options.Converters.Add(new TimeInt32Converter());
-        return JsonSerializer.Deserialize<Map[]>(File.ReadAllText("Data/PlaylistSpring2022.json"), options) ?? throw new Exception();
+        return JsonSerializer.Deserialize<Map[]>(File.ReadAllText($"Data/MockPlaylist{name}.json"), options) ?? throw new Exception();
     }
 
     // test AcquireNewOfficialCampaignsAsync_WhenThereAreNewCampaignsAndThereIsAnError
