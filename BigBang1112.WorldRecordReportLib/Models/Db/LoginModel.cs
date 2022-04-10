@@ -25,6 +25,9 @@ public class LoginModel : DbModel
     [Column(TypeName = "datetime")]
     public DateTime LastSeenOn { get; set; }
 
+    [Column(TypeName = "datetime")]
+    public DateTime? LastNicknameChangeOn { get; set; }
+
     public override string ToString()
     {
         return string.IsNullOrWhiteSpace(Nickname) ? Name : Nickname;
