@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using TmEssentials;
 using ManiaAPI.TrackmaniaIO;
 using BigBang1112.WorldRecordReportLib.Services.Wrappers;
+using BigBang1112.WorldRecordReportLib.Services;
 
 namespace BigBang1112.WorldRecordReportLib.Jobs;
 
@@ -14,13 +15,19 @@ public class AcquireNewOfficialCampaignsJob : IJob
     private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly ITrackmaniaIoApiService _tmIo;
     private readonly HttpClient _http;
+    private readonly RefreshScheduleService _refreshScheduleService;
     private readonly ILogger<AcquireNewOfficialCampaignsJob> _logger;
 
-    public AcquireNewOfficialCampaignsJob(IWrUnitOfWork wrUnitOfWork, ITrackmaniaIoApiService tmIo, HttpClient http, ILogger<AcquireNewOfficialCampaignsJob> logger)
+    public AcquireNewOfficialCampaignsJob(IWrUnitOfWork wrUnitOfWork,
+                                          ITrackmaniaIoApiService tmIo,
+                                          HttpClient http,
+                                          RefreshScheduleService refreshScheduleService,
+                                          ILogger<AcquireNewOfficialCampaignsJob> logger)
     {
         _wrUnitOfWork = wrUnitOfWork;
         _tmIo = tmIo;
         _http = http;
+        _refreshScheduleService = refreshScheduleService;
         _logger = logger;
     }
 
@@ -37,9 +44,16 @@ public class AcquireNewOfficialCampaignsJob : IJob
 
         _logger.LogInformation("{count} campaigns found.", campaigns.Count);
 
+        if (campaigns.Count == 0)
+        {
+            return;
+        }
+
         var game = await _wrUnitOfWork.Games.GetAsync(Game.TM2020, cancellationToken);
         var env = await _wrUnitOfWork.Envs.GetAsync(Env.Stadium2020, cancellationToken);
         var mode = await _wrUnitOfWork.MapModes.GetAsync(MapMode.Race, cancellationToken);
+
+        var campaignModels = new List<CampaignModel>();
 
         foreach (var campaign in campaigns)
         {
@@ -49,11 +63,26 @@ public class AcquireNewOfficialCampaignsJob : IJob
                 break;
             }
 
-            await ProcessOfficialCampaignAsync(officialCampaign, game, env, mode, delay, cancellationToken);
+            var campaignModel = await ProcessOfficialCampaignAsync(officialCampaign, game, env, mode, delay, cancellationToken);
+
+            campaignModels.Add(campaignModel);
         }
+
+        // Apply the current campaign maps to the official TM2020 refresh cycle
+
+        var currentOfficialCampaign = campaignModels.OrderByDescending(x => x.PublishedOn).First();
+
+        if (currentOfficialCampaign.LeaderboardUid is null)
+        {
+            return;
+        }
+
+        var maps = await _wrUnitOfWork.Maps.GetByCampaignAsync(currentOfficialCampaign, cancellationToken);
+
+        _refreshScheduleService.SetupTM2020Official(maps);
     }
 
-    internal async Task ProcessOfficialCampaignAsync(OfficialCampaignItem officialCampaign,
+    internal async Task<CampaignModel> ProcessOfficialCampaignAsync(OfficialCampaignItem officialCampaign,
                                                      GameModel game,
                                                      EnvModel env,
                                                      MapModeModel mode,
@@ -68,13 +97,14 @@ public class AcquireNewOfficialCampaignsJob : IJob
         {
             Game = game,
             LeaderboardUid = details.LeaderboardUid,
-            Name = details.Name
+            Name = details.Name,
+            PublishedOn = details.PublishTime.UtcDateTime
         }, cancellationToken);
 
         if (campaignModel.IsOver)
         {
             _logger.LogInformation("{name} campaign no longer receives updates.", details.Name);
-            return;
+            return campaignModel;
         }
 
         var loginDictionary = new Dictionary<Guid, LoginModel>();
@@ -119,6 +149,8 @@ public class AcquireNewOfficialCampaignsJob : IJob
 
             await Task.Delay(delay, cancellationToken);
         }
+
+        return campaignModel;
     }
 
     internal async Task<bool> CheckMapDataAsync(Map map, MapModel mapModel, CancellationToken cancellationToken)
