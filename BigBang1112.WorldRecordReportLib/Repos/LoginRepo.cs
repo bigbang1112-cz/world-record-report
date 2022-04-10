@@ -19,7 +19,7 @@ public class LoginRepo : Repo<LoginModel>, ILoginRepo
 
     public LoginModel GetOrAdd(GameModel game, string name, string nickname)
     {
-        var loginModel = GetOrAdd<LoginModel>(x => x.Game == game && x.Name == name, () => new LoginModel
+        var loginModel = GetOrAdd(x => x.Game == game && x.Name == name, () => new LoginModel
         {
             Game = game,
             Name = name,
@@ -39,7 +39,7 @@ public class LoginRepo : Repo<LoginModel>, ILoginRepo
 
     public async Task<LoginModel> GetOrAddAsync(GameModel game, string name, string nickname, CancellationToken cancellationToken = default)
     {
-        var loginModel = await GetOrAddAsync<LoginModel>(x => x.Game == game && x.Name == name, () => new LoginModel
+        var loginModel = await GetOrAddAsync(x => x.Game == game && x.Name == name, () => new LoginModel
         {
             Game = game,
             Name = name,

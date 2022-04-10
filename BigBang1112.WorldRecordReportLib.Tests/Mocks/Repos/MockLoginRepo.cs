@@ -14,7 +14,7 @@ public class MockLoginRepo : MockRepo<LoginModel>, ILoginRepo
 
     public async Task<LoginModel> GetOrAddAsync(GameModel game, string name, string nickname, CancellationToken cancellationToken = default)
     {
-        var loginModel = await GetOrAddAsync<LoginModel>(x => x.Game == game && x.Name == name, () => new LoginModel
+        var loginModel = await GetOrAddAsync(x => x.Game == game && x.Name == name, () => new LoginModel
         {
             Game = game,
             Name = name,
