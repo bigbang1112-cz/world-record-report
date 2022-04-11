@@ -55,6 +55,8 @@ public class AcquireNewOfficialCampaignsJob : IJob
 
         var campaignModels = new List<CampaignModel>();
 
+        var isOver = false;
+
         foreach (var campaign in campaigns)
         {
             if (campaign is not OfficialCampaignItem officialCampaign)
@@ -63,7 +65,9 @@ public class AcquireNewOfficialCampaignsJob : IJob
                 break;
             }
 
-            var campaignModel = await ProcessOfficialCampaignAsync(officialCampaign, game, env, mode, delay, cancellationToken);
+            var campaignModel = await ProcessOfficialCampaignAsync(officialCampaign, game, env, mode, delay, isOver, cancellationToken);
+
+            isOver = true;
 
             campaignModels.Add(campaignModel);
         }
@@ -92,6 +96,7 @@ public class AcquireNewOfficialCampaignsJob : IJob
                                                                     EnvModel env,
                                                                     MapModeModel mode,
                                                                     int delay,
+                                                                    bool isOver,
                                                                     CancellationToken cancellationToken)
     {
         var details = await _tmIo.GetOfficialCampaignAsync(officialCampaign.Id, cancellationToken);
@@ -105,6 +110,8 @@ public class AcquireNewOfficialCampaignsJob : IJob
             Name = details.Name,
             PublishedOn = details.PublishTime.UtcDateTime
         }, cancellationToken);
+
+        campaignModel.IsOver = isOver;
 
         if (campaignModel.IsOver)
         {
