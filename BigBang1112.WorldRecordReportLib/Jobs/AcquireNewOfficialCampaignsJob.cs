@@ -111,7 +111,13 @@ public class AcquireNewOfficialCampaignsJob : IJob
             PublishedOn = details.PublishTime.UtcDateTime
         }, cancellationToken);
 
-        campaignModel.IsOver = isOver;
+        var wasOver = campaignModel.IsOver;
+
+        if (campaignModel.IsOver != isOver)
+        {
+            campaignModel.IsOver = isOver;
+            await _wrUnitOfWork.SaveAsync(cancellationToken);
+        }
 
         if (campaignModel.IsOver)
         {
