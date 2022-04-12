@@ -45,7 +45,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
 
     public async Task<string> GetManialinkAsync(HttpContext httpContext, CancellationToken cancellationToken)
     {
-        var xmlFile = _fileHost.GetFilePath("Data/LbManialink", "Leaderboards.xml");
+        var xmlFile = _fileHost.GetClosedFilePath("Data/LbManialink", "Leaderboards.xml");
         var lastWriteTime = File.GetLastWriteTimeUtc(xmlFile);
 
         httpContext.Response.Headers.AddLastModified(lastWriteTime);
@@ -56,7 +56,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
             return _cache.Get<string>(CacheKeys.LeaderboardsManialink);
         }
 
-        var scriptFile = _fileHost.GetFilePath("Data/LbManialink", "Leaderboards.Script.txt");
+        var scriptFile = _fileHost.GetClosedFilePath("Data/LbManialink", "Leaderboards.Script.txt");
 
         var contentXmlTask = File.ReadAllTextAsync(xmlFile, Encoding.UTF8, cancellationToken);
         var contentScriptTask = File.ReadAllTextAsync(scriptFile, Encoding.UTF8, cancellationToken);
@@ -88,7 +88,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
 
     public void Head(IHeaderDictionary headers)
     {
-        var xmlFile = _fileHost.GetFilePath("Data/LbManialink", "Leaderboards.xml");
+        var xmlFile = _fileHost.GetClosedFilePath("Data/LbManialink", "Leaderboards.xml");
         var xmlFileInfo = new FileInfo(xmlFile);
 
         headers.AddLastModified(xmlFileInfo.LastWriteTimeUtc);
@@ -204,7 +204,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
 
-            var xmlFile = _fileHost.GetFilePath("Data/LbManialink", "LeaderboardsAuth.xml");
+            var xmlFile = _fileHost.GetClosedFilePath("Data/LbManialink", "LeaderboardsAuth.xml");
             return await File.ReadAllTextAsync(xmlFile, Encoding.UTF8);
         });
 

@@ -64,7 +64,7 @@ public class GhostService : IGhostService
 
     public string GetGhostFullPath(string mapUid, TimeInt32 time, string login)
     {
-        return _fileHostService.GetFilePath("Ghosts", GetGhostFileName(mapUid, time, login));
+        return _fileHostService.GetClosedFilePath("Ghosts", GetGhostFileName(mapUid, time, login));
     }
 
     public string GetGhostFileName(string mapUid, TimeInt32 time, string login)
