@@ -51,17 +51,23 @@ public class NadeoApiService : IHostedService, INadeoServices, INadeoLiveService
 
     public async Task<MapRecord[]> GetMapRecordsAsync(IEnumerable<Guid> accountIds, IEnumerable<Guid> mapIds, CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("HTTP request: MapRecords (accountIds={accountIds}; mapIds={mapIds})", string.Join(',', accountIds), string.Join(',', mapIds));
+
         return await _nadeoServices.GetMapRecordsAsync(accountIds, mapIds, cancellationToken);
     }
 
     public async ValueTask<bool> RefreshAsync(CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("HTTP request: Refresh");
+        
         return await _nadeoServices.RefreshAsync(cancellationToken)
             && await _nadeoLiveServices.RefreshAsync(cancellationToken);
     }
 
     public async Task<TopLeaderboardCollection> GetTopLeaderboardAsync(string mapUid, int length = 10, int offset = 0, bool onlyWorld = true, CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("HTTP request: TopLeaderboard (mapuid={mapUid}; length={length}; offset={offset}; onlyWorld={onlyWorld})", mapUid, length, offset, onlyWorld);
+        
         return await _nadeoLiveServices.GetTopLeaderboardAsync(mapUid, length, offset, onlyWorld, cancellationToken);
     }
 }
