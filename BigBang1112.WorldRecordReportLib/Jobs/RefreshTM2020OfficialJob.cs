@@ -18,6 +18,7 @@ public class RefreshTM2020OfficialJob : IJob
 {
     private readonly IConfiguration _config;
     private readonly RefreshScheduleService _refreshSchedule;
+    private readonly RecordStorageService _recordStorageService;
     private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly INadeoApiService _nadeoApiService;
     private readonly ITrackmaniaApiService _trackmaniaApiService;
@@ -25,6 +26,7 @@ public class RefreshTM2020OfficialJob : IJob
 
     public RefreshTM2020OfficialJob(IConfiguration config,
                                     RefreshScheduleService refreshSchedule,
+                                    RecordStorageService recordStorageService,
                                     IWrUnitOfWork wrUnitOfWork,
                                     INadeoApiService nadeoApiService,
                                     ITrackmaniaApiService trackmaniaApiService,
@@ -32,6 +34,7 @@ public class RefreshTM2020OfficialJob : IJob
     {
         _config = config;
         _refreshSchedule = refreshSchedule;
+        _recordStorageService = recordStorageService;
         _wrUnitOfWork = wrUnitOfWork;
         _nadeoApiService = nadeoApiService;
         _trackmaniaApiService = trackmaniaApiService;
@@ -65,8 +68,6 @@ public class RefreshTM2020OfficialJob : IJob
         var hadNullLastNicknameChangeOn = false;
 
         var loginModels = await _wrUnitOfWork.Logins.GetByNamesAsync(Game.TM2020, accountIds, cancellationToken);
-
-        _logger.LogInformation("{count} logins are known.", loginModels.Count);
         
         foreach (var (accountId, loginModel) in loginModels)
         {
@@ -101,22 +102,41 @@ public class RefreshTM2020OfficialJob : IJob
             await _wrUnitOfWork.SaveAsync(cancellationToken);
         }
 
-
         // Check existance of any leaderboard data in api/v1/records/tm2020/World, possibly through RecordStorageService
+        if (_recordStorageService.OfficialLeaderboardExists(Game.TM2020, map.MapUid))
+        {
+            // Compare the current leaderboard with the prev one with
 
-        // If it doesn't exist, call GetMapRecordsAsync on all accountIds
-        var mapId = await _wrUnitOfWork.Maps.GetMapIdByMapUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
-        var recordDetails = await _nadeoApiService.GetMapRecordsAsync(accountIds, Enumerable.Repeat(mapId, 1), cancellationToken);
+            var currentRecordsFundamental = records.Adapt<TM2020RecordFundamental[]>();
+            var previousRecords = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid, cancellationToken: cancellationToken);
 
-        // Pass the result to RecordsToTM2020Records
-        var tm2020Records = RecordsToTM2020Records(records, loginModels, recordDetails.ToDictionary(x => x.AccountId)).ToList();
+            var diff = LeaderboardComparer.Compare(currentRecordsFundamental.Cast<IRecord<Guid>>(), previousRecords);
+            
+            if (diff is null)
+            {
+                return;
+            }
 
-        // If it does exist, compare the current one with the prev one with
-        // LeaderboardComparer.Compare();
-        // by mapping records to TM2020Records (or simpler struct), without external data
-        // If no changes were found, skip !everything! afterwards
-        // Get only new and improved records, and request GetMapRecordsAsync only on those
-        // Then use the RecordsToTM2020Records
+            var newAndImprovedRecords = diff.NewRecords.Concat(diff.ImprovedRecords);
+
+            var mapId = await _wrUnitOfWork.Maps.GetMapIdByMapUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
+            var recordDetails = await _nadeoApiService.GetMapRecordsAsync(newAndImprovedRecords.Select(x => x.PlayerId), mapId.Yield(), cancellationToken);
+            
+            // Get only new and improved records, and request GetMapRecordsAsync only on those
+            // Then use the RecordsToTM2020Records
+        }
+        else
+        {
+            // If it doesn't exist, call GetMapRecordsAsync on all accountIds
+            var mapId = await _wrUnitOfWork.Maps.GetMapIdByMapUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
+            var recordDetails = await _nadeoApiService.GetMapRecordsAsync(accountIds, mapId.Yield(), cancellationToken);
+            var recordDict = recordDetails.ToDictionary(x => x.AccountId);
+
+            // Pass the result to RecordsToTM2020Records
+            var tm2020Records = RecordsToTM2020Records(records, loginModels, recordDict).ToList();
+
+            await _recordStorageService.SaveTM2020LeaderboardAsync(tm2020Records, map.MapUid, cancellationToken: cancellationToken);
+        }
     }
 
     private static IEnumerable<TM2020Record> RecordsToTM2020Records(Record[] records,

@@ -70,6 +70,7 @@ builder.Services.AddHostedService(x => x.GetRequiredService<ITrackmaniaApiServic
 builder.Services.AddSingleton<ITrackmaniaIoApiService, TrackmaniaIoApiService>();
 
 builder.Services.AddSingleton<RefreshScheduleService>();
+builder.Services.AddSingleton<RecordStorageService>();
 
 builder.Services.AddSingleton<TmwrDiscordBotService>();
 builder.Services.AddHostedService(x => x.GetRequiredService<TmwrDiscordBotService>());
