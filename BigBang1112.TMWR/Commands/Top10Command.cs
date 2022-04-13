@@ -1,4 +1,5 @@
-﻿using BigBang1112.Extensions;
+﻿using System.Collections.ObjectModel;
+using BigBang1112.Extensions;
 using BigBang1112.TMWR.Models;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
@@ -16,16 +17,19 @@ public class Top10Command : MapRelatedWithUidCommand
     private readonly IWrRepo _repo;
     private readonly IRecordSetService _recordSetService;
     private readonly ITmxRecordSetService _tmxRecordSetService;
+    private readonly RecordStorageService _recordStorageService;
 
     public Top10Command(TmwrDiscordBotService tmwrDiscordBotService,
                         IWrRepo repo,
                         IRecordSetService recordSetService,
-                        ITmxRecordSetService tmxRecordSetService) : base(tmwrDiscordBotService, repo)
+                        ITmxRecordSetService tmxRecordSetService,
+                        RecordStorageService recordStorageService) : base(tmwrDiscordBotService, repo)
     {
         _tmwrDiscordBotService = tmwrDiscordBotService;
         _repo = repo;
         _recordSetService = recordSetService;
         _tmxRecordSetService = tmxRecordSetService;
+        _recordStorageService = recordStorageService;
     }
 
     protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
@@ -101,6 +105,18 @@ public class Top10Command : MapRelatedWithUidCommand
 
     private async Task<(string desc, int? recordCount)?> CreateTop10EmbedContentAsync(MapModel map)
     {
+        if (map.Game.IsTM2020())
+        {
+            var leaderboard = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid);
+            
+            if (leaderboard is null)
+            {
+                return null;
+            }
+
+            return CreateTop10EmbedContentFromTM2020(leaderboard);
+        }
+
         var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
 
         if (recordSet is not null)
@@ -121,6 +137,18 @@ public class Top10Command : MapRelatedWithUidCommand
         }
 
         return await CreateTop10EmbedContentFromTmxAsync(map, recordSetTmx);
+    }
+
+    private static (string desc, int? recordCount)? CreateTop10EmbedContentFromTM2020(IEnumerable<TM2020Record> leaderboard)
+    {
+        var top10records = leaderboard.Take(10)
+            .Select((x, i) => new MiniRecord(Rank: i + 1, x.Time, x.DisplayName ?? x.PlayerId.ToString()));
+        
+        var miniRecordStrings = ConvertMiniRecordsToStrings(top10records, isTMUF: false, isStunts: false);
+
+        var desc = string.Join('\n', miniRecordStrings);
+
+        return (desc, null);
     }
 
     private async Task<(string desc, int? recordCount)?> CreateTop10EmbedContentFromTmxAsync(MapModel map, TmxReplay[] recordSetTmx)
