@@ -25,6 +25,7 @@ public class RefreshTM2020OfficialJob : IJob
     private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly INadeoApiService _nadeoApiService;
     private readonly ITrackmaniaApiService _trackmaniaApiService;
+    private readonly IGhostService _ghostService;
     private readonly ILogger<RefreshTM2020OfficialJob> _logger;
 
     public RefreshTM2020OfficialJob(IConfiguration config,
@@ -33,6 +34,7 @@ public class RefreshTM2020OfficialJob : IJob
                                     IWrUnitOfWork wrUnitOfWork,
                                     INadeoApiService nadeoApiService,
                                     ITrackmaniaApiService trackmaniaApiService,
+                                    IGhostService ghostService,
                                     ILogger<RefreshTM2020OfficialJob> logger)
     {
         _config = config;
@@ -41,6 +43,7 @@ public class RefreshTM2020OfficialJob : IJob
         _wrUnitOfWork = wrUnitOfWork;
         _nadeoApiService = nadeoApiService;
         _trackmaniaApiService = trackmaniaApiService;
+        _ghostService = ghostService;
         _logger = logger;
     }
 
@@ -141,6 +144,8 @@ public class RefreshTM2020OfficialJob : IJob
             throw new Exception("previousRecords is null even though the leaderboard file exists");
         }
 
+        await DownloadMissingGhostsAsync(map, previousRecords, cancellationToken);
+
         // Leaderboard differences algorithm
         // For structs arrays, Cast is unfortunately required for some reason
         var diff = LeaderboardComparer.Compare(currentRecordsFundamental.Cast<IRecord<Guid>>(), previousRecords);
@@ -239,9 +244,9 @@ public class RefreshTM2020OfficialJob : IJob
 
         // Map GUID (not UID) is required for the MapRecords request to receive the ghost urls
         var mapId = await _wrUnitOfWork.Maps.GetMapIdByMapUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
-        
+
         var recordDetails = await _nadeoApiService.GetMapRecordsAsync(accountIds, mapId.Yield(), cancellationToken);
-        
+
         // MapRecord dictionary is used to quickly find url and timestamp
         var recordDict = recordDetails.ToDictionary(x => x.AccountId);
 
@@ -252,12 +257,31 @@ public class RefreshTM2020OfficialJob : IJob
         var tm2020Records = RecordsToTM2020Records(records, loginModels, recordDict, prevRecordsDict).ToList();
 
         await _recordStorageService.SaveTM2020LeaderboardAsync(tm2020Records, map.MapUid, cancellationToken: cancellationToken);
-        
+
         _logger.LogInformation("{map}: Leaderboard saved.", map);
 
         // Download ghosts from recordDetails to the Ghosts folder in this part of the code
+        foreach (var rec in recordDetails)
+        {
+            _ = await _ghostService.DownloadGhostAndGetTimestampAsync(map.MapUid, rec.Url, rec.RecordScore.Time, rec.AccountId.ToString());
+            await Task.Delay(500, cancellationToken);
+        }
 
         return tm2020Records;
+    }
+
+    private async Task DownloadMissingGhostsAsync(MapRefreshData map, IEnumerable<TM2020Record> records, CancellationToken cancellationToken)
+    {
+        foreach (var rec in records)
+        {
+            var playerIdStr = rec.PlayerId.ToString();
+
+            if (rec.GhostUrl is not null && !_ghostService.GhostExists(map.MapUid, new TimeInt32(rec.Time), playerIdStr))
+            {
+                _ = await _ghostService.DownloadGhostAndGetTimestampAsync(map.MapUid, rec.GhostUrl, new TimeInt32(rec.Time), playerIdStr);
+                await Task.Delay(500, cancellationToken);
+            }
+        }
     }
 
     private static IEnumerable<TM2020Record> RecordsToTM2020Records(Record[] records,
