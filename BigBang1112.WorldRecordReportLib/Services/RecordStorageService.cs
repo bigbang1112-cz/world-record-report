@@ -54,11 +54,30 @@ public class RecordStorageService
         await _fileHostService.SaveToApiAsync(records, ApiVersion, path, cancellationToken);
     }
 
-    public async Task<ReadOnlyCollection<TM2020Record>> GetTM2020LeaderboardAsync(string mapUid, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
+    public ReadOnlyCollection<TM2020Record>? GetTM2020Leaderboard(string mapUid, string zone = "World", string scoreContext = "")
+    {
+        var path = GetStandardOfficialLeaderboardPath(Game.TM2020, mapUid, zone, scoreContext);
+
+        var records = _fileHostService.GetFromApi<TM2020Record[]>(ApiVersion, path);
+
+        if (records is null)
+        {
+            return null;
+        }
+
+        return new ReadOnlyCollection<TM2020Record>(records);
+    }
+
+    public async Task<ReadOnlyCollection<TM2020Record>?> GetTM2020LeaderboardAsync(string mapUid, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
     {
         var path = GetStandardOfficialLeaderboardPath(Game.TM2020, mapUid, zone, scoreContext);
 
         var records = await _fileHostService.GetFromApiAsync<TM2020Record[]>(ApiVersion, path, cancellationToken);
+
+        if (records is null)
+        {
+            return null;
+        }
 
         return new ReadOnlyCollection<TM2020Record>(records);
     }

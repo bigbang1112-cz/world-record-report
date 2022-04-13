@@ -1,4 +1,6 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using BigBang1112.WorldRecordReportLib.Enums;
@@ -11,6 +13,7 @@ using Mapster;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Quartz;
+using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Jobs;
 
@@ -56,18 +59,21 @@ public class RefreshTM2020OfficialJob : IJob
             return;
         }
 
-        _logger.LogInformation("Refreshing TM2020 official map... {map}", map);
+        _logger.LogInformation("Refreshing TM2020 official map: {map}", map);
 
         var topLbCollection = await _nadeoApiService.GetTopLeaderboardAsync(map.MapUid, length: 20, cancellationToken: cancellationToken);
 
-        _logger.LogInformation("Leaderboard received. {map}", map);
+        _logger.LogInformation("Leaderboard received.");
         
         var records = topLbCollection.Top.Top;
         var accountIds = records.Select(x => x.AccountId);
 
-        var hadNullLastNicknameChangeOn = false;
-
+        // Populate with display names that are already known
         var loginModels = await _wrUnitOfWork.Logins.GetByNamesAsync(Game.TM2020, accountIds, cancellationToken);
+
+        // Assign LastNicknameChangeOn that are NULL to UtcNow
+        // If any of them is NULL, hadNullLastNicknameChangeOn is true, and UoW will save the changes
+        var hadNullLastNicknameChangeOn = false;
         
         foreach (var (accountId, loginModel) in loginModels)
         {
@@ -75,20 +81,25 @@ public class RefreshTM2020OfficialJob : IJob
             {
                 continue;
             }
-            
+
             loginModel.LastNicknameChangeOn = DateTime.UtcNow;
             hadNullLastNicknameChangeOn = true;
         }
+        //
 
+        // Filter out requests of display names only to the ones that fulfill two criteria
         var accountIdsToRequest = accountIds.Where(x =>
         {
+            // Either if it doesn't exist in the database
             if (!loginModels.TryGetValue(x, out LoginModel? login))
             {
                 return true;
             }
 
+            // Or if its been 1 hour since last nickname refresh
+            // Better name could be something like LastNicknameCheckOn
             return login.LastNicknameChangeOn.HasValue && DateTime.UtcNow - login.LastNicknameChangeOn.Value >= TimeSpan.FromHours(12);
-        }).ToList();
+        }).ToList(); // ToList ensures these conditions are evaluated just once, but as only Any() would be called without it, it could change in the future
 
         var anyAccountIdsToRequest = accountIdsToRequest.Count > 0;
 
@@ -105,54 +116,182 @@ public class RefreshTM2020OfficialJob : IJob
         // Check existance of any leaderboard data in api/v1/records/tm2020/World, possibly through RecordStorageService
         if (_recordStorageService.OfficialLeaderboardExists(Game.TM2020, map.MapUid))
         {
-            // Compare the current leaderboard with the prev one with
-
-            var currentRecordsFundamental = records.Adapt<TM2020RecordFundamental[]>();
-            var previousRecords = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid, cancellationToken: cancellationToken);
-
-            var diff = LeaderboardComparer.Compare(currentRecordsFundamental.Cast<IRecord<Guid>>(), previousRecords);
-            
-            if (diff is null)
-            {
-                return;
-            }
-
-            var newAndImprovedRecords = diff.NewRecords.Concat(diff.ImprovedRecords);
-
-            var mapId = await _wrUnitOfWork.Maps.GetMapIdByMapUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
-            var recordDetails = await _nadeoApiService.GetMapRecordsAsync(newAndImprovedRecords.Select(x => x.PlayerId), mapId.Yield(), cancellationToken);
-            
-            // Get only new and improved records, and request GetMapRecordsAsync only on those
-            // Then use the RecordsToTM2020Records
+            await CompareLeaderboardAsync(map, records, loginModels, cancellationToken);
         }
         else
         {
-            // If it doesn't exist, call GetMapRecordsAsync on all accountIds
-            var mapId = await _wrUnitOfWork.Maps.GetMapIdByMapUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
-            var recordDetails = await _nadeoApiService.GetMapRecordsAsync(accountIds, mapId.Yield(), cancellationToken);
-            var recordDict = recordDetails.ToDictionary(x => x.AccountId);
-
-            // Pass the result to RecordsToTM2020Records
-            var tm2020Records = RecordsToTM2020Records(records, loginModels, recordDict).ToList();
-
-            await _recordStorageService.SaveTM2020LeaderboardAsync(tm2020Records, map.MapUid, cancellationToken: cancellationToken);
+            _ = await SaveLeaderboardAsync(map, records, accountIds, loginModels, prevRecords: null, cancellationToken);
         }
+    }
+
+    private async Task CompareLeaderboardAsync(MapRefreshData map, Record[] records, Dictionary<Guid, LoginModel> loginModels, CancellationToken cancellationToken)
+    {
+        // Converts the ManiaAPI record objects to the TM2020RecordFundamental struct array
+        // This is done to make use of the IRecord interface
+        var currentRecordsFundamental = records.Adapt<TM2020RecordFundamental[]>();
+
+        _logger.LogInformation("Importing the previous leaderboard...");
+
+        // Gets the leaderboard that is already stored (considered previous)
+        var previousRecords = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid, cancellationToken: cancellationToken);
+
+        if (previousRecords is null)
+        {
+            // The object shouldn't return a null result, as the JSON is not formatted to behave this way
+            throw new Exception("previousRecords is null even though the leaderboard file exists");
+        }
+
+        // Leaderboard differences algorithm
+        // For structs arrays, Cast is unfortunately required for some reason
+        var diff = LeaderboardComparer.Compare(currentRecordsFundamental.Cast<IRecord<Guid>>(), previousRecords);
+
+        if (diff is null)
+        {
+            _logger.LogInformation("No leaderboard differences found.");
+            return;
+        }
+
+        LogDifferences(diff);
+
+        // New records and improved records are merged into one collection of accounts for the MapRecords request, to receive ghost URL downloads
+        var newAndImprovedRecordAccounts = diff.NewRecords
+            .Concat(diff.ImprovedRecords)
+            .Select(x => x.PlayerId);
+
+        var currentRecords = await SaveLeaderboardAsync(map, records, newAndImprovedRecordAccounts, loginModels, previousRecords, cancellationToken);
+
+        // Current records help with managing the reports
+        
+        await ReportDifferencesAsync(diff, currentRecords, previousWr: previousRecords.FirstOrDefault(), cancellationToken);
+    }
+
+    private void LogDifferences(Top10Changes<Guid> diff)
+    {
+        _logger.LogInformation("Differences found between the current and previous leaderboard.");
+
+        if (diff.NewRecords.Any())
+        {
+            _logger.LogInformation("New records: {count}", diff.NewRecords.Count());
+        }
+
+        if (diff.ImprovedRecords.Any())
+        {
+            _logger.LogInformation("Improved records: {count}", diff.ImprovedRecords.Count());
+        }
+
+        if (diff.PushedOffRecords.Any())
+        {
+            _logger.LogInformation("Pushed off records: {count}", diff.PushedOffRecords.Count());
+        }
+
+        if (diff.RemovedRecords.Any())
+        {
+            _logger.LogInformation("Removed records: {count}", diff.RemovedRecords.Count());
+        }
+
+        if (diff.WorsenRecords.Any())
+        {
+            _logger.LogInformation("Worsened records: {count}", diff.WorsenRecords.Count());
+        }
+    }
+
+    private Task ReportDifferencesAsync(Top10Changes<Guid> diff, List<TM2020Record> currentRecords, TM2020Record? previousWr, CancellationToken cancellationToken)
+    {
+        if (currentRecords.Count == 0)
+        {
+            // Can happen if record/s got removed to a point there are none in the leaderboard
+            return Task.CompletedTask;
+        }
+
+        var possibleWr = currentRecords[0];
+
+        Debug.Assert(possibleWr.Rank == 1);
+
+        foreach (var rec in diff.NewRecords)
+        {
+            if (rec == possibleWr)
+            {
+                _logger.LogInformation("New WR: {time} by {player}", new TimeInt32(possibleWr.Time), possibleWr.DisplayName);
+                break;
+            }
+        }
+
+        foreach (var rec in diff.ImprovedRecords)
+        {
+            if (rec.PlayerId == possibleWr.PlayerId)
+            {
+                _logger.LogInformation("New WR: {time} by {player}", new TimeInt32(possibleWr.Time), possibleWr.DisplayName);
+                break;
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task<List<TM2020Record>> SaveLeaderboardAsync(MapRefreshData map,
+                                                                Record[] records,
+                                                                IEnumerable<Guid> accountIds,
+                                                                Dictionary<Guid, LoginModel> loginModels,
+                                                                ReadOnlyCollection<TM2020Record>? prevRecords,
+                                                                CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("{map}: Saving the leaderboard...", map);
+
+        // Map GUID (not UID) is required for the MapRecords request to receive the ghost urls
+        var mapId = await _wrUnitOfWork.Maps.GetMapIdByMapUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
+        
+        var recordDetails = await _nadeoApiService.GetMapRecordsAsync(accountIds, mapId.Yield(), cancellationToken);
+        
+        // MapRecord dictionary is used to quickly find url and timestamp
+        var recordDict = recordDetails.ToDictionary(x => x.AccountId);
+
+        // Previous records dictionary is used to quickly assign previous records to its expected ranks
+        var prevRecordsDict = prevRecords?.ToDictionary(x => x.PlayerId);
+
+        // Compile the mess into a nice list of current leaderboard records with all its details
+        var tm2020Records = RecordsToTM2020Records(records, loginModels, recordDict, prevRecordsDict).ToList();
+
+        await _recordStorageService.SaveTM2020LeaderboardAsync(tm2020Records, map.MapUid, cancellationToken: cancellationToken);
+        
+        _logger.LogInformation("{map}: Leaderboard saved.", map);
+
+        // Download ghosts from recordDetails to the Ghosts folder in this part of the code
+
+        return tm2020Records;
     }
 
     private static IEnumerable<TM2020Record> RecordsToTM2020Records(Record[] records,
                                                                     Dictionary<Guid, LoginModel> loginModels,
-                                                                    Dictionary<Guid, MapRecord> recordDetails)
+                                                                    Dictionary<Guid, MapRecord> recordDetails,
+                                                                    Dictionary<Guid, TM2020Record>? prevRecords)
     {
         foreach (var rec in records)
         {
-            yield return new TM2020Record
+            if (recordDetails.TryGetValue(rec.AccountId, out MapRecord? recDetails))
             {
-                Time = rec.Score.TotalMilliseconds,
-                PlayerId = rec.AccountId,
-                DisplayName = loginModels[rec.AccountId].Nickname,
-                GhostUrl = recordDetails[rec.AccountId].Url,
-                Timestamp = recordDetails[rec.AccountId].Timestamp.UtcDateTime,
-            };
+                // Create a new record that just got fetched as a fresh record (aka it didn't exist before)
+
+                yield return new TM2020Record
+                {
+                    Rank = rec.Position,
+                    Time = rec.Score.TotalMilliseconds,
+                    PlayerId = rec.AccountId,
+                    DisplayName = loginModels[rec.AccountId].Nickname,
+                    GhostUrl = recDetails.Url,
+                    Timestamp = recDetails.Timestamp.UtcDateTime,
+                };
+            }
+            else if (prevRecords is not null)
+            {
+                // Uses an existing record from the previous records
+
+                yield return prevRecords[rec.AccountId];
+            }
+            else
+            {
+                // Reaching this place could corrupt the leaderboard, so it is prefered to close the update of this leaderboard early
+                throw new Exception("This should not happen");
+            }
         }
     }
 
@@ -172,6 +311,7 @@ public class RefreshTM2020OfficialJob : IJob
 
         foreach (var (accountId, displayName) in displayNames)
         {
+            // The display name is applied on either the login that was already in the database
             if (loginModels.TryGetValue(accountId, out LoginModel? login))
             {
                 login.Nickname = displayName;
@@ -180,6 +320,7 @@ public class RefreshTM2020OfficialJob : IJob
                 continue;
             }
 
+            // Or is created as a fresh login
             login = new LoginModel
             {
                 Game = game,
