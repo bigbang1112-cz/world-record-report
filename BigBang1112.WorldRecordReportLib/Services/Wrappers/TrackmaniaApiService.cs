@@ -35,7 +35,7 @@ public class TrackmaniaApiService : IHostedService, ITrackmaniaAPI, ITrackmaniaA
         return Task.CompletedTask;
     }
 
-    public async Task<Dictionary<Guid, string>> GetDisplayNamesAsync(IEnumerable<Guid> accountIds, CancellationToken cancellationToken = default)
+    public async ValueTask<Dictionary<Guid, string>> GetDisplayNamesAsync(IEnumerable<Guid> accountIds, CancellationToken cancellationToken = default)
     {
         return await _trackmaniaApi.GetDisplayNamesAsync(accountIds, cancellationToken);
     }
