@@ -16,10 +16,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Controllers\Api\" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Content Remove="wwwroot\api\**\*" />
 	</ItemGroup>
 
