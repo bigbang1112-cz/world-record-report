@@ -11,4 +11,5 @@ public interface IGhostService
     string GetGhostFileName(string mapUid, TimeInt32 time, string login);
     string GetGhostFullPath(string mapUid, TimeInt32 time, string login);
     bool GhostExists(string mapUid, RecordSetDetailedRecord record);
+    bool GhostExists(string mapUid, TimeInt32 time, string login);
 }

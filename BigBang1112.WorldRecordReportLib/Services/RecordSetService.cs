@@ -157,8 +157,6 @@ public class RecordSetService : IRecordSetService
 
             await _ghostService.DownloadGhostAndGetTimestampAsync(mapUid, record);
 
-            _logger.LogInformation("Downloaded {time} on {mapUid} by {login}", new TimeInt32(record.Time), mapUid, record.Login);
-
             await Task.Delay(500);
         }
     }

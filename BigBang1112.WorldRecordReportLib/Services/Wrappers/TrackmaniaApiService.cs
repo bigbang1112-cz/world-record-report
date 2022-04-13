@@ -37,11 +37,15 @@ public class TrackmaniaApiService : IHostedService, ITrackmaniaAPI, ITrackmaniaA
 
     public async ValueTask<Dictionary<Guid, string>> GetDisplayNamesAsync(IEnumerable<Guid> accountIds, CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("HTTP request: DisplayNames (accountIds={accountIds})", string.Join(',', accountIds));
+
         return await _trackmaniaApi.GetDisplayNamesAsync(accountIds, cancellationToken);
     }
 
     public async Task<User> GetUserAsync(CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("HTTP request: DisplayNames");
+
         return await _trackmaniaApi.GetUserAsync(cancellationToken);
     }
 }

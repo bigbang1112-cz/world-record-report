@@ -1,5 +1,6 @@
 ﻿using BigBang1112.Services;
 using BigBang1112.WorldRecordReportLib.Models;
+using Microsoft.Extensions.Logging;
 using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
@@ -8,11 +9,13 @@ public class GhostService : IGhostService
 {
     private readonly IFileHostService _fileHostService;
     private readonly HttpClient _http;
+    private readonly ILogger<GhostService> _logger;
 
-    public GhostService(IFileHostService fileHostService, HttpClient http)
+    public GhostService(IFileHostService fileHostService, HttpClient http, ILogger<GhostService> logger)
     {
         _fileHostService = fileHostService;
         _http = http;
+        _logger = logger;
     }
 
     public bool GhostExists(string mapUid, TimeInt32 time, string login)
@@ -47,16 +50,23 @@ public class GhostService : IGhostService
 
     public async Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, string replayUrl, TimeInt32 time, string login)
     {
+        _logger.LogInformation("Downloading {time} on {mapUid} by {login}...", time, mapUid, login);
+
         using var response = await _http.GetAsync(replayUrl);
 
         if (!response.IsSuccessStatusCode)
         {
+            _logger.LogInformation("Ghost not downloaded (status code: {code}). Using current time instead.", response.StatusCode);
+
             // access denied or not found
             return DateTimeOffset.UtcNow;
         }
 
         using var fileStream = File.Create(GetGhostFullPath(mapUid, time, login));
         using var ghostStream = await response.Content.ReadAsStreamAsync();
+
+        _logger.LogInformation("Downloaded.");
+
         await ghostStream.CopyToAsync(fileStream);
 
         return response.Content.Headers.LastModified.GetValueOrDefault(DateTimeOffset.UtcNow);
