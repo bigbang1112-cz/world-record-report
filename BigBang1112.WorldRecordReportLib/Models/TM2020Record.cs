@@ -4,6 +4,7 @@ namespace BigBang1112.WorldRecordReportLib.Models;
 
 public class TM2020Record : IRecord<Guid>
 {
+    public int Rank { get; init; }
     public Guid PlayerId { get; init; }
     public int Time { get; init; }
     public string? DisplayName { get; init; }

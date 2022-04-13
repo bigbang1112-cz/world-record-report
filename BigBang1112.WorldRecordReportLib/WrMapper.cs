@@ -24,5 +24,9 @@ public class WrMapper : Mapper
             .Map(dest => dest.UserName, src => src.User.Name)
             .Map(dest => dest.ReplayAt, src => src.ReplayAt.UtcDateTime)
             .Map(dest => dest.ReplayTime, src => src.ReplayTime.TotalMilliseconds);
+
+        TypeAdapterConfig<ManiaAPI.NadeoAPI.Record, TM2020RecordFundamental>
+            .ForType()
+            .Map(dest => dest.Rank, src => src.Position);
     }
 }

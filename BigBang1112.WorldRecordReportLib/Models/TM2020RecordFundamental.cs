@@ -4,6 +4,7 @@ namespace BigBang1112.WorldRecordReportLib.Models;
 
 public record struct TM2020RecordFundamental : IRecord<Guid>
 {
+    public int Rank { get; init; }
     public Guid AccountId { get; init; }
     public TimeInt32 Score { get; init; }
 
