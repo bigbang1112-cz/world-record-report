@@ -18,9 +18,14 @@ public class GhostService : IGhostService
         _logger = logger;
     }
 
+    public bool GhostExists(string mapUid, int timeInMilliseconds, string login)
+    {
+        return File.Exists(GetGhostFullPath(mapUid, timeInMilliseconds, login));
+    }
+
     public bool GhostExists(string mapUid, TimeInt32 time, string login)
     {
-        return File.Exists(GetGhostFullPath(mapUid, time, login));
+        return GhostExists(mapUid, time.TotalMilliseconds, login);
     }
 
     public bool GhostExists(string mapUid, RecordSetDetailedRecord record)
@@ -72,13 +77,43 @@ public class GhostService : IGhostService
         return response.Content.Headers.LastModified.GetValueOrDefault(DateTimeOffset.UtcNow);
     }
 
+    public string GetGhostFullPath(string mapUid, int timeInMilliseconds, string login)
+    {
+        return _fileHostService.GetClosedFilePath("Ghosts", GetGhostFileName(mapUid, timeInMilliseconds, login));
+    }
+
+    public string GetGhostFileName(string mapUid, int timeInMilliseconds, string login)
+    {
+        return $"{mapUid}_{timeInMilliseconds}_{login}.Ghost.Gbx";
+    }
+
     public string GetGhostFullPath(string mapUid, TimeInt32 time, string login)
     {
-        return _fileHostService.GetClosedFilePath("Ghosts", GetGhostFileName(mapUid, time, login));
+        return GetGhostFullPath(mapUid, time.TotalMilliseconds, login);
     }
 
     public string GetGhostFileName(string mapUid, TimeInt32 time, string login)
     {
-        return $"{mapUid}_{time.TotalMilliseconds}_{login}.Ghost.Gbx";
+        return GetGhostFileName(mapUid, time.TotalMilliseconds, login);
+    }
+
+    public Stream? GetGhostStream(string mapUid, int timeInMilliseconds, string login)
+    {
+        if (!GhostExists(mapUid, timeInMilliseconds, login))
+        {
+            return null;
+        }
+
+        return File.OpenRead(GetGhostFullPath(mapUid, timeInMilliseconds, login));
+    }
+
+    public DateTimeOffset? GetGhostLastModified(string mapUid, int timeInMilliseconds, string login)
+    {
+        if (!GhostExists(mapUid, timeInMilliseconds, login))
+        {
+            return null;
+        }
+
+        return File.GetLastWriteTimeUtc(GetGhostFullPath(mapUid, timeInMilliseconds, login));
     }
 }

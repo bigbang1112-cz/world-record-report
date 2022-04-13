@@ -10,6 +10,11 @@ public interface IGhostService
     Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, string replayUrl, TimeInt32 time, string login);
     string GetGhostFileName(string mapUid, TimeInt32 time, string login);
     string GetGhostFullPath(string mapUid, TimeInt32 time, string login);
+    string GetGhostFullPath(string mapUid, int timeInMilliseconds, string login);
+    string GetGhostFileName(string mapUid, int timeInMilliseconds, string login);
     bool GhostExists(string mapUid, RecordSetDetailedRecord record);
     bool GhostExists(string mapUid, TimeInt32 time, string login);
+    Stream? GetGhostStream(string mapUid, int timeInMilliseconds, string login);
+    DateTimeOffset? GetGhostLastModified(string mapUid, int timeInMilliseconds, string login);
+    bool GhostExists(string mapUid, int timeInMilliseconds, string login);
 }
