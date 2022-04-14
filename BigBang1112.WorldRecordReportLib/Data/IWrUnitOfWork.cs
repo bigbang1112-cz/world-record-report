@@ -10,4 +10,5 @@ public interface IWrUnitOfWork : IUnitOfWork
     IEnvRepo Envs { get; }
     ILoginRepo Logins { get; }
     IMapModeRepo MapModes { get; }
+    IWorldRecordRepo WorldRecords { get; }
 }

@@ -13,6 +13,7 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
     public IEnvRepo Envs { get; }
     public ILoginRepo Logins { get; }
     public IMapModeRepo MapModes { get; }
+    public IWorldRecordRepo WorldRecords { get; }
 
     public WrUnitOfWork(WrContext context, ILogger<WrUnitOfWork> logger) : base(context, logger)
     {
@@ -24,5 +25,6 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
         Envs = new EnvRepo(_context);
         Logins = new LoginRepo(_context);
         MapModes = new MapModeRepo(_context);
+        WorldRecords = new WorldRecordRepo(_context);
     }
 }

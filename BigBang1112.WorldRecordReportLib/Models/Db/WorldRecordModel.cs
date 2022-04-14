@@ -4,10 +4,8 @@ using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class WorldRecordModel
+public class WorldRecordModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     public Guid Guid { get; set; }
 
