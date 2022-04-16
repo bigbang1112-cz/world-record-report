@@ -141,7 +141,7 @@ public class Top10Command : MapRelatedWithUidCommand
 
     private static (string desc, int? recordCount)? CreateTop10EmbedContentFromTM2020(IEnumerable<TM2020Record> leaderboard)
     {
-        var top10records = leaderboard.Take(10)
+        var top10records = leaderboard.Where(x => !x.Ignored).Take(10)
             .Select((x, i) => new MiniRecord(Rank: i + 1, x.Time, x.DisplayName ?? x.PlayerId.ToString()));
         
         var miniRecordStrings = ConvertMiniRecordsToStrings(top10records, isTMUF: false, isStunts: false);
