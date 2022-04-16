@@ -51,6 +51,11 @@ public class NadeoApiService : IHostedService, INadeoServices, INadeoLiveService
 
     public async Task<MapRecord[]> GetMapRecordsAsync(IEnumerable<Guid> accountIds, IEnumerable<Guid> mapIds, CancellationToken cancellationToken = default)
     {
+        if (!accountIds.Any() || !mapIds.Any())
+        {
+            return Array.Empty<MapRecord>();
+        }
+
         _logger.LogInformation("HTTP request: MapRecords (accountIds={accountIds}; mapIds={mapIds})", string.Join(',', accountIds), string.Join(',', mapIds));
 
         return await _nadeoServices.GetMapRecordsAsync(accountIds, mapIds, cancellationToken);
