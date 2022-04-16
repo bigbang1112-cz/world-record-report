@@ -49,10 +49,10 @@ public class RefreshTM2020OfficialJob : IJob
 
     public async Task Execute(IJobExecutionContext context)
     {
-        await RefreshAsync();
+        await RefreshAsync(forceUpdate: true);
     }
 
-    public async Task RefreshAsync(CancellationToken cancellationToken = default)
+    public async Task RefreshAsync(bool forceUpdate, CancellationToken cancellationToken = default)
     {
         var map = _refreshSchedule.NextTM2020OfficialMap();
 
@@ -115,16 +115,18 @@ public class RefreshTM2020OfficialJob : IJob
         {
             await _wrUnitOfWork.SaveAsync(cancellationToken);
         }
+        
+        var ignoredLoginNames = await _wrUnitOfWork.IgnoredLogins.GetNamesByGameAsync(Game.TM2020, cancellationToken);
 
         // Check existance of any leaderboard data in api/v1/records/tm2020/World, possibly through RecordStorageService
         if (_recordStorageService.OfficialLeaderboardExists(Game.TM2020, map.MapUid))
         {
-            await CompareLeaderboardAsync(map, records, loginModels, cancellationToken);
+            await CompareLeaderboardAsync(map, records, loginModels, ignoredLoginNames, forceUpdate, cancellationToken);
         }
         else
         {
-            var currentRecords = await SaveLeaderboardAsync(map, records, accountIds, loginModels, prevRecords: null, cancellationToken);
-            var wr = await GetWorldRecordAsync(currentRecords, cancellationToken);
+            var currentRecords = await SaveLeaderboardAsync(map, records, accountIds, loginModels, ignoredLoginNames, prevRecords: null, cancellationToken);
+            var wr = GetWorldRecord(currentRecords, ignoredLoginNames);
 
             if (wr is not null)
             {
@@ -138,14 +140,17 @@ public class RefreshTM2020OfficialJob : IJob
         await _wrUnitOfWork.SaveAsync(cancellationToken);
     }
         
-    private async Task<TM2020Record?> GetWorldRecordAsync(List<TM2020Record> currentRecords, CancellationToken cancellationToken)
-    {
-        return currentRecords.FirstOrDefault();
-
-        // Filter out cheaters via ignoredlogin table
+    private static TM2020Record? GetWorldRecord(List<TM2020Record> currentRecords, IEnumerable<string> ignoredLoginNames)
+    {        
+        return currentRecords.FirstOrDefault(x => !ignoredLoginNames.Contains(x.PlayerId.ToString()));
     }
 
-    private async Task CompareLeaderboardAsync(MapRefreshData map, Record[] records, Dictionary<Guid, LoginModel> loginModels, CancellationToken cancellationToken)
+    private async Task CompareLeaderboardAsync(MapRefreshData map,
+                                               Record[] records,
+                                               Dictionary<Guid, LoginModel> loginModels,
+                                               IEnumerable<string> ignoredLoginNames,
+                                               bool forceUpdate,
+                                               CancellationToken cancellationToken)
     {
         // Converts the ManiaAPI record objects to the TM2020RecordFundamental struct array
         // This is done to make use of the IRecord interface
@@ -168,24 +173,36 @@ public class RefreshTM2020OfficialJob : IJob
         // For structs arrays, Cast is unfortunately required for some reason
         var diff = LeaderboardComparer.Compare(currentRecordsFundamental.Cast<IRecord<Guid>>(), previousRecords);
 
+        var currentRecords = default(List<TM2020Record>);
+
         if (diff is null)
         {
             _logger.LogInformation("No leaderboard differences found.");
-            return;
+
+            if (forceUpdate)
+            {
+                currentRecords = await SaveLeaderboardAsync(map, records, records.Select(x => x.AccountId), loginModels, ignoredLoginNames, previousRecords, cancellationToken);
+            }
+            else
+            {
+                return;
+            }
         }
+        else
+        {
+            LogDifferences(diff);
 
-        LogDifferences(diff);
+            // New records and improved records are merged into one collection of accounts for the MapRecords request, to receive ghost URL downloads
+            var newAndImprovedRecordAccounts = diff.NewRecords
+                .Concat(diff.ImprovedRecords)
+                .Select(x => x.PlayerId);
 
-        // New records and improved records are merged into one collection of accounts for the MapRecords request, to receive ghost URL downloads
-        var newAndImprovedRecordAccounts = diff.NewRecords
-            .Concat(diff.ImprovedRecords)
-            .Select(x => x.PlayerId);
-
-        var currentRecords = await SaveLeaderboardAsync(map, records, newAndImprovedRecordAccounts, loginModels, previousRecords, cancellationToken);
-
+            currentRecords = await SaveLeaderboardAsync(map, records, newAndImprovedRecordAccounts, loginModels, ignoredLoginNames, previousRecords, cancellationToken);
+        }
+        
         // Current records help with managing the reports
 
-        var wr = await GetWorldRecordAsync(currentRecords, cancellationToken);
+        var wr = GetWorldRecord(currentRecords, ignoredLoginNames);
 
         if (wr is not null)
         {
@@ -202,11 +219,14 @@ public class RefreshTM2020OfficialJob : IJob
                 await ReportWorldRecordAsync(wr, previousWr: currentWr, login, mapModel, cancellationToken);
             }
         }
-        
-        await ReportDifferencesAsync(diff,
-                                     currentRecords.ToDictionary(x => x.PlayerId),
-                                     previousRecords.ToDictionary(x => x.PlayerId),
-                                     cancellationToken);
+
+        if (diff is not null)
+        {
+            await ReportDifferencesAsync(diff,
+                                         currentRecords.ToDictionary(x => x.PlayerId),
+                                         previousRecords.ToDictionary(x => x.PlayerId),
+                                         cancellationToken);
+        }
     }
 
     private void LogDifferences(Top10Changes<Guid> diff)
@@ -292,6 +312,37 @@ public class RefreshTM2020OfficialJob : IJob
 
     private async Task ReportWorldRecordAsync(TM2020Record wr, WorldRecordModel? previousWr, LoginModel login, MapModel map, CancellationToken cancellationToken)
     {
+        if (wr.Time == 0)
+        {
+            _logger.LogInformation("World record is 0 seconds, ignoring.");
+            return;
+        }
+
+        if (previousWr is not null)
+        {
+            // Worse WR is a sign of a removed world record
+            while (previousWr is not null && wr.Time > previousWr.Time)
+            {
+                if (previousWr.Ignored)
+                {
+                    previousWr = previousWr.PreviousWorldRecord;
+                    continue;
+                }
+
+                previousWr.Ignored = true;
+
+                _logger.LogInformation("Removed WR: {time} by {player}", new TimeInt32(previousWr.Time), previousWr.GetPlayerNickname());
+
+                previousWr = previousWr.PreviousWorldRecord;
+            }
+            
+            // Equal WR is ignored
+            if (previousWr is not null && wr.Time == previousWr.Time)
+            {
+                return;
+            }
+        }
+
         _logger.LogInformation("New WR: {time} by {player}", new TimeInt32(wr.Time), wr.DisplayName);
 
         await AddWorldRecordAsync(wr, previousWr, login, map, cancellationToken);
@@ -318,6 +369,7 @@ public class RefreshTM2020OfficialJob : IJob
                                                                 Record[] records,
                                                                 IEnumerable<Guid> accountIds,
                                                                 Dictionary<Guid, LoginModel> loginModels,
+                                                                IEnumerable<string> ignoredLoginNames,
                                                                 ReadOnlyCollection<TM2020Record>? prevRecords,
                                                                 CancellationToken cancellationToken)
     {
@@ -335,11 +387,11 @@ public class RefreshTM2020OfficialJob : IJob
         var prevRecordsDict = prevRecords?.ToDictionary(x => x.PlayerId);
 
         // Compile the mess into a nice list of current leaderboard records with all its details
-        var tm2020Records = RecordsToTM2020Records(records, loginModels, recordDict, prevRecordsDict).ToList();
+        var tm2020Records = RecordsToTM2020Records(records, ignoredLoginNames, loginModels, recordDict, prevRecordsDict).ToList();
 
-#if RELEASE
+//#if RELEASE
         await _recordStorageService.SaveTM2020LeaderboardAsync(tm2020Records, map.MapUid, cancellationToken: cancellationToken);
-#endif
+//#endif
         
         _logger.LogInformation("{map}: Leaderboard saved.", map);
 
@@ -368,12 +420,15 @@ public class RefreshTM2020OfficialJob : IJob
     }
 
     private static IEnumerable<TM2020Record> RecordsToTM2020Records(Record[] records,
+                                                                    IEnumerable<string> ignoredLoginNames,
                                                                     Dictionary<Guid, LoginModel> loginModels,
                                                                     Dictionary<Guid, MapRecord> recordDetails,
                                                                     Dictionary<Guid, TM2020Record>? prevRecords)
     {
         foreach (var rec in records)
         {
+            var isIgnored = ignoredLoginNames.Contains(rec.AccountId.ToString());
+
             if (recordDetails.TryGetValue(rec.AccountId, out MapRecord? recDetails))
             {
                 // Create a new record that just got fetched as a fresh record (aka it didn't exist before)
@@ -386,10 +441,16 @@ public class RefreshTM2020OfficialJob : IJob
                     DisplayName = loginModels[rec.AccountId].Nickname,
                     GhostUrl = recDetails.Url,
                     Timestamp = recDetails.Timestamp.UtcDateTime,
+                    Ignored = isIgnored
                 };
             }
             else if (prevRecords is not null)
             {
+                if (prevRecords[rec.AccountId].Ignored != isIgnored)
+                {
+                    prevRecords[rec.AccountId] = prevRecords[rec.AccountId] with { Ignored = isIgnored };
+                }
+
                 yield return prevRecords[rec.AccountId]; // Uses an existing record from the previous records
             }
             else
