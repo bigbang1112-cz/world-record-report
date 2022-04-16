@@ -49,7 +49,7 @@ public class RefreshTM2020OfficialJob : IJob
 
     public async Task Execute(IJobExecutionContext context)
     {
-        await RefreshAsync(forceUpdate: true);
+        await RefreshAsync(forceUpdate: false);
     }
 
     public async Task RefreshAsync(bool forceUpdate, CancellationToken cancellationToken = default)
