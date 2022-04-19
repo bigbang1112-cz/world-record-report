@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BigBang1112.WorldRecordReportLib.Repos;
 
-public class IgnoredLoginsRepo : Repo<IgnoredLoginModel>, IIgnoredLoginsRepo
+public class IgnoredLoginRepo : Repo<IgnoredLoginModel>, IIgnoredLoginRepo
 {
     private readonly WrContext _context;
 
-    public IgnoredLoginsRepo(WrContext context) : base(context)
+    public IgnoredLoginRepo(WrContext context) : base(context)
     {
         _context = context;
     }

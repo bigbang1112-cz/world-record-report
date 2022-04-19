@@ -13,4 +13,7 @@ public class MockWrUnitOfWork : MockUnitOfWork, IWrUnitOfWork
     public IEnvRepo Envs { get; } = new MockEnvRepo();
     public ILoginRepo Logins { get; } = new MockLoginRepo();
     public IMapModeRepo MapModes { get; } = new MockMapModeRepo();
+    public IWorldRecordRepo WorldRecords { get; } = new MockWorldRecordRepo();
+    public IIgnoredLoginRepo IgnoredLogins { get; } = new MockIgnoredLoginRepo();
+    public IDiscordWebhookRepo DiscordWebhooks { get; } = new MockDiscordWebhookRepo();
 }

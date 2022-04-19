@@ -14,7 +14,8 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
     public ILoginRepo Logins { get; }
     public IMapModeRepo MapModes { get; }
     public IWorldRecordRepo WorldRecords { get; }
-    public IIgnoredLoginsRepo IgnoredLogins { get; }
+    public IIgnoredLoginRepo IgnoredLogins { get; }
+    public IDiscordWebhookRepo DiscordWebhooks { get; }
 
     public WrUnitOfWork(WrContext context, ILogger<WrUnitOfWork> logger) : base(context, logger)
     {
@@ -27,6 +28,7 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
         Logins = new LoginRepo(_context);
         MapModes = new MapModeRepo(_context);
         WorldRecords = new WorldRecordRepo(_context);
-        IgnoredLogins = new IgnoredLoginsRepo(_context);
+        IgnoredLogins = new IgnoredLoginRepo(_context);
+        DiscordWebhooks = new DiscordWebhookRepo(context);
     }
 }

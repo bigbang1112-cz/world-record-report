@@ -3,7 +3,7 @@ using BigBang1112.WorldRecordReportLib.Enums;
 
 namespace BigBang1112.WorldRecordReportLib.Repos;
 
-public interface IIgnoredLoginsRepo : IRepo<IgnoredLoginModel>
+public interface IIgnoredLoginRepo : IRepo<IgnoredLoginModel>
 {
     IgnoredLoginModel? GetByLogin(LoginModel login);
     Task<IgnoredLoginModel?> GetByLoginAsync(LoginModel login, CancellationToken cancellationToken = default);
