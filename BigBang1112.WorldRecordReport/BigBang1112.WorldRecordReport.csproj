@@ -41,6 +41,7 @@
 		<ProjectReference Include="..\BigBang1112.Essentials\BigBang1112.Essentials.Razor\BigBang1112.Essentials.Razor.csproj" />
 		<ProjectReference Include="..\BigBang1112.Essentials\BigBang1112.Essentials\BigBang1112.Essentials.csproj" />
 		<ProjectReference Include="..\BigBang1112.TMWR\BigBang1112.TMWR.csproj" />
+		<ProjectReference Include="..\BigBang1112.WorldRecordReport.DiscordBot\BigBang1112.WorldRecordReport.DiscordBot.csproj" />
 		<ProjectReference Include="..\BigBang1112.WorldRecordReportLib\BigBang1112.WorldRecordReportLib.csproj" />
 	</ItemGroup>
 </Project>

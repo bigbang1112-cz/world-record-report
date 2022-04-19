@@ -12,6 +12,7 @@ using BigBang1112.WorldRecordReportLib;
 using BigBang1112.WorldRecordReportLib.Services.Wrappers;
 using ManiaAPI.NadeoAPI;
 using ManiaAPI.TrackmaniaAPI;
+using BigBang1112.WorldRecordReport.DiscordBot;
 
 var cultureInfo = (CultureInfo)CultureInfo.InvariantCulture.Clone();
 cultureInfo.NumberFormat.NumberGroupSeparator = " ";
@@ -61,6 +62,7 @@ builder.Services.AddScoped<TmxReportService>();
 builder.Services.AddScoped<ITmxRecordSetService, TmxRecordSetService>();
 
 builder.Services.AddScoped<IGhostService, GhostService>();
+builder.Services.AddScoped<ReportService>();
 
 builder.Services.AddSingleton<NadeoServices>();
 builder.Services.AddSingleton<NadeoLiveServices>();
@@ -76,6 +78,8 @@ builder.Services.AddSingleton<RecordStorageService>();
 
 builder.Services.AddSingleton<TmwrDiscordBotService>();
 builder.Services.AddHostedService(x => x.GetRequiredService<TmwrDiscordBotService>());
+builder.Services.AddSingleton<WrrDiscordBotService>();
+builder.Services.AddHostedService(x => x.GetRequiredService<WrrDiscordBotService>());
 
 builder.Services.AddQuartz(q =>
 {
