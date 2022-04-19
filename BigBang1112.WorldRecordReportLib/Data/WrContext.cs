@@ -3,12 +3,14 @@ using BigBang1112.WorldRecordReportLib.Attributes;
 using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Exceptions;
 using BigBang1112.WorldRecordReportLib.Models.Db;
+using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.DataEncryption;
 using Microsoft.EntityFrameworkCore.DataEncryption.Providers;
 using Microsoft.Extensions.Configuration;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 
 namespace BigBang1112.WorldRecordReportLib.Data;
 
@@ -79,5 +81,11 @@ public class WrContext : DbContext
         modelBuilder.Entity<RecordSetDetailedChangeModel>()
             .Property(e => e.Type)
             .HasConversion<int>();
+
+        modelBuilder.Entity<DiscordWebhookModel>()
+            .Property(e => e.Scope)
+            .HasConversion(
+                x => JsonSerializer.Serialize(x, ReportScopeSet.JsonSerializerOptions),
+                x => JsonSerializer.Deserialize<ReportScopeSet>(x, ReportScopeSet.JsonSerializerOptions));
     }
 }
