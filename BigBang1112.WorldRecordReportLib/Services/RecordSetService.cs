@@ -161,7 +161,7 @@ public class RecordSetService : IRecordSetService
         }
     }
 
-    private async Task ApplyChangesAsync(RecordSet recordSet, string fullFileName, Top10Changes<string>? recordSetChanges, string cacheKey, MapModel map, bool hasCount, Dictionary<string, string> nicknameDictionary)
+    private async Task ApplyChangesAsync(RecordSet recordSet, string fullFileName, LeaderboardChanges<string>? recordSetChanges, string cacheKey, MapModel map, bool hasCount, Dictionary<string, string> nicknameDictionary)
     {
         var drivenAfter = _cache.GetOrCreate(cacheKey, entry =>
         {

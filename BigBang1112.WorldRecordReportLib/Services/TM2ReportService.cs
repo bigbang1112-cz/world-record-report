@@ -408,7 +408,7 @@ public class TM2ReportService : ITM2ReportService
 
                 foreach (var msg in report.DiscordWebhookMessages)
                 {
-                    using var client = _discordWebhookService.CreateWebhookClient(msg.Webhook.Url);
+                    using var client = _discordWebhookService.CreateWebhookClient(msg.Webhook.Url, out bool isDeleted);
 
                     if (client is null)
                     {

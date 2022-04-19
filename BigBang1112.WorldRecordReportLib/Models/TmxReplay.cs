@@ -22,10 +22,16 @@ public class TmxReplay : IRecord<int>
         init => UserId = value;
     }
     
-    int IRecord<int>.Time
+    TimeInt32 IRecord.Time
     {
-        get => ReplayTime;
-        init => ReplayTime = value;
+        get => new(ReplayTime);
+        init => ReplayTime = value.TotalMilliseconds;
+    }
+    
+    string? IRecord.DisplayName
+    {
+        get => UserName;
+        init => UserName = value;
     }
 
     public override string ToString()

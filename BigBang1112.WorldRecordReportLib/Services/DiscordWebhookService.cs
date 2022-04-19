@@ -1,6 +1,4 @@
-﻿using BigBang1112.WorldRecordReportLib.Data;
-using BigBang1112.WorldRecordReportLib.Models.Db;
-using BigBang1112.WorldRecordReportLib.Models;
+﻿using BigBang1112.WorldRecordReportLib.Models;
 using Discord.Webhook;
 using System.Globalization;
 using TmEssentials;
@@ -22,9 +20,9 @@ public class DiscordWebhookService : IDiscordWebhookService
         _repo = repo;
     }
 
-    public async Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook, Func<ulong, DiscordWebhookMessageModel>? message = null, string? text = null, IEnumerable<Discord.Embed>? embeds = null)
+    public async Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook, Func<ulong, DiscordWebhookMessageModel>? message = null, string? text = null, IEnumerable<Discord.Embed>? embeds = null, CancellationToken cancellationToken = default)
     {
-        using var webhookClient = CreateWebhookClient(webhook.Url);
+        var webhookClient = CreateWebhookClientOrDisable(webhook);
 
         if (webhookClient is null)
         {
@@ -45,8 +43,29 @@ public class DiscordWebhookService : IDiscordWebhookService
         return msg;
     }
 
-    public DiscordWebhookClient? CreateWebhookClient(string webhookUrl)
+    private DiscordWebhookClient? CreateWebhookClientOrDisable(DiscordWebhookModel webhook)
     {
+        if (webhook.Disabled)
+        {
+            return null;
+        }
+
+        var webhookClient = CreateWebhookClient(webhook.Url, out bool isDeleted);
+
+        if (isDeleted)
+        {
+            _logger.LogWarning("Webhook {guid} is deleted", webhook.Guid);
+
+            webhook.Disabled = true;
+        }
+
+        return webhookClient;
+    }
+
+    public DiscordWebhookClient? CreateWebhookClient(string webhookUrl, out bool isDeleted)
+    {
+        isDeleted = false;
+
         try
         {
             return new DiscordWebhookClient(webhookUrl);
@@ -62,6 +81,8 @@ public class DiscordWebhookService : IDiscordWebhookService
         catch (InvalidOperationException)
         {
             // Could not find a webhook with the supplied credentials.
+
+            isDeleted = true;
         }
         catch (Exception e)
         {
@@ -213,9 +234,9 @@ public class DiscordWebhookService : IDiscordWebhookService
         return nickname;
     }
 
-    public async Task DeleteMessageAsync(DiscordWebhookMessageModel msg)
+    public async Task DeleteMessageAsync(DiscordWebhookMessageModel msg, CancellationToken cancellationToken = default)
     {
-        using var webhookClient = CreateWebhookClient(msg.Webhook.Url);
+        using var webhookClient = CreateWebhookClientOrDisable(msg.Webhook);
 
         if (webhookClient is null)
         {

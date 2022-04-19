@@ -14,6 +14,20 @@ public class RecordSetDetailedRecord : IRecord<string>
         get => Login;
         init => Login = value;
     }
+    
+    TimeInt32 IRecord.Time
+    {
+        get => new(Time);
+        init => Time = value.TotalMilliseconds;
+    }
+
+    public string? DisplayName { get; init; }
+
+    int? IRecord.Rank
+    {
+        get => Rank;
+        init => Rank = value.GetValueOrDefault();
+    }
 
     public RecordSetDetailedRecord(int rank, string login, int time, string? replayUrl = null)
     {

@@ -1,5 +1,6 @@
 ﻿using BigBang1112.Models.Db;
 using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Enums;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -126,9 +127,9 @@ public class MapModel : DbModel
                 return null;
             }
 
-            return TmxAuthor.Site.ShortName switch
+            return (TmxSite)TmxAuthor.Site.Id switch
             {
-                NameConsts.TMXSiteUnited or NameConsts.TMXSiteTMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}/image/0",
+                TmxSite.United or TmxSite.TMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}/image/0",
                 _ => null,
             };
         }

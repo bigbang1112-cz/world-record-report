@@ -10,7 +10,7 @@ public static class LeaderboardComparer
     /// </summary>
     /// <param name="records">Current leaderboard.</param>
     /// <param name="recordsPrev">Previous leaderboard.</param>
-    public static Top10Changes<TPlayerId>? Compare<TPlayerId>(IEnumerable<IRecord<TPlayerId>> records, IEnumerable<IRecord<TPlayerId>> recordsPrev)
+    public static LeaderboardChanges<TPlayerId>? Compare<TPlayerId>(IEnumerable<IRecord<TPlayerId>> records, IEnumerable<IRecord<TPlayerId>> recordsPrev)
         where TPlayerId : notnull
     {
         // Compares equality based on everything except rank
@@ -62,6 +62,11 @@ public static class LeaderboardComparer
         var improvedRecords = previousRecordsThatAreImproved;
         var worsenRecords = previousRecordsThatAreWorsen;
 
-        return new Top10Changes<TPlayerId>(newRecords, improvedRecords, removedRecords, worsenRecords, pushedOffRecords);
+        return new LeaderboardChanges<TPlayerId>(
+            newRecords.ToList(),
+            improvedRecords.ToList(),
+            removedRecords.ToList(),
+            worsenRecords.ToList(),
+            pushedOffRecords.ToList());
     }
 }

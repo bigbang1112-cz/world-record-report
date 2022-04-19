@@ -1,6 +1,6 @@
 ﻿namespace BigBang1112.WorldRecordReportLib.Models;
 
-public class Top10Changes<TPlayerId> where TPlayerId : notnull
+public class LeaderboardChanges<TPlayerId> where TPlayerId : notnull
 {
     /// <summary>
     /// Contains new record occurances, where <see cref="IRecord{T}.Time"/> is the time of this record. Rest of the properties should also relate to this new record.
@@ -28,7 +28,7 @@ public class Top10Changes<TPlayerId> where TPlayerId : notnull
     /// </summary>
     public IEnumerable<IRecord<TPlayerId>> PushedOffRecords { get; init; }
 
-    public Top10Changes(
+    public LeaderboardChanges(
         IEnumerable<IRecord<TPlayerId>> newRecords,
         IEnumerable<IRecord<TPlayerId>> improvedRecords,
         IEnumerable<IRecord<TPlayerId>> removedRecords,

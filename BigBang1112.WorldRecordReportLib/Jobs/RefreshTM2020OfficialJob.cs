@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Text;
 using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
+using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 using BigBang1112.WorldRecordReportLib.Services;
 using BigBang1112.WorldRecordReportLib.Services.Wrappers;
 using ManiaAPI.NadeoAPI;
@@ -19,9 +20,13 @@ namespace BigBang1112.WorldRecordReportLib.Jobs;
 
 public class RefreshTM2020OfficialJob : IJob
 {
+    private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.Official)}:{nameof(ReportScopeTM2020Official.WR)}";
+    private const string ScopeOfficialTop10 = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.Official)}:{nameof(ReportScopeTM2020Official.Changes)}";
+
     private readonly IConfiguration _config;
     private readonly RefreshScheduleService _refreshSchedule;
     private readonly RecordStorageService _recordStorageService;
+    private readonly ReportService _reportService;
     private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly INadeoApiService _nadeoApiService;
     private readonly ITrackmaniaApiService _trackmaniaApiService;
@@ -31,6 +36,7 @@ public class RefreshTM2020OfficialJob : IJob
     public RefreshTM2020OfficialJob(IConfiguration config,
                                     RefreshScheduleService refreshSchedule,
                                     RecordStorageService recordStorageService,
+                                    ReportService reportService,
                                     IWrUnitOfWork wrUnitOfWork,
                                     INadeoApiService nadeoApiService,
                                     ITrackmaniaApiService trackmaniaApiService,
@@ -40,6 +46,7 @@ public class RefreshTM2020OfficialJob : IJob
         _config = config;
         _refreshSchedule = refreshSchedule;
         _recordStorageService = recordStorageService;
+        _reportService = reportService;
         _wrUnitOfWork = wrUnitOfWork;
         _nadeoApiService = nadeoApiService;
         _trackmaniaApiService = trackmaniaApiService;
@@ -118,28 +125,41 @@ public class RefreshTM2020OfficialJob : IJob
         
         var ignoredLoginNames = await _wrUnitOfWork.IgnoredLogins.GetNamesByGameAsync(Game.TM2020, cancellationToken);
 
-        // Check existance of any leaderboard data in api/v1/records/tm2020/World, possibly through RecordStorageService
+        // Check existance of any leaderboard data in api/v1/records/tm2020/World
         if (_recordStorageService.OfficialLeaderboardExists(Game.TM2020, map.MapUid))
         {
             await CompareLeaderboardAsync(map, records, loginModels, ignoredLoginNames, forceUpdate, cancellationToken);
         }
         else
         {
-            var currentRecords = await SaveLeaderboardAsync(map, records, accountIds, loginModels, ignoredLoginNames, prevRecords: null, cancellationToken);
-            var wr = GetWorldRecord(currentRecords, ignoredLoginNames);
-
-            if (wr is not null)
-            {
-                var login = loginModels[wr.PlayerId];
-                var mapModel = await _wrUnitOfWork.Maps.GetByUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
-
-                await AddWorldRecordAsync(wr, previousWr: null, login, mapModel, cancellationToken);
-            }
+            // Create a fresh leaderboard (for the first time) where world record is not going to be reported
+            await CreateLeaderboardAsync(map, records, loginModels, ignoredLoginNames, accountIds, cancellationToken);
         }
-        
+
         await _wrUnitOfWork.SaveAsync(cancellationToken);
     }
-        
+
+    private async Task CreateLeaderboardAsync(MapRefreshData map,
+                                              Record[] records,
+                                              Dictionary<Guid, LoginModel> loginModels,
+                                              IEnumerable<string> ignoredLoginNames,
+                                              IEnumerable<Guid> accountIds,
+                                              CancellationToken cancellationToken)
+    {
+        var currentRecords = await SaveLeaderboardAsync(map, records, accountIds, loginModels, ignoredLoginNames, prevRecords: null, cancellationToken);
+        var wr = GetWorldRecord(currentRecords, ignoredLoginNames);
+
+        if (wr is null)
+        {
+            return;
+        }
+
+        var login = loginModels[wr.PlayerId];
+        var mapModel = await _wrUnitOfWork.Maps.GetByUidAsync(map.MapUid, cancellationToken) ?? throw new Exception("Map is no longer available.");
+
+        await AddWorldRecordAsync(wr, previousWr: null, login, mapModel, cancellationToken);
+    }
+
     private static TM2020Record? GetWorldRecord(List<TM2020Record> currentRecords, IEnumerable<string> ignoredLoginNames)
     {        
         return currentRecords.FirstOrDefault(x => !ignoredLoginNames.Contains(x.PlayerId.ToString()));
@@ -199,8 +219,10 @@ public class RefreshTM2020OfficialJob : IJob
 
             currentRecords = await SaveLeaderboardAsync(map, records, newAndImprovedRecordAccounts, loginModels, ignoredLoginNames, previousRecords, cancellationToken);
         }
-        
+
         // Current records help with managing the reports
+
+        var mapModel = await _wrUnitOfWork.Maps.GetByUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
 
         var wr = GetWorldRecord(currentRecords, ignoredLoginNames);
 
@@ -208,7 +230,6 @@ public class RefreshTM2020OfficialJob : IJob
         {
             var currentWr = await _wrUnitOfWork.WorldRecords.GetCurrentByMapUidAsync(map.MapUid, cancellationToken);
             var login = loginModels[wr.PlayerId];
-            var mapModel = await _wrUnitOfWork.Maps.GetByUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
 
             if (currentWr is null)
             {
@@ -225,11 +246,12 @@ public class RefreshTM2020OfficialJob : IJob
             await ReportDifferencesAsync(diff,
                                          currentRecords.ToDictionary(x => x.PlayerId),
                                          previousRecords.ToDictionary(x => x.PlayerId),
+                                         mapModel,
                                          cancellationToken);
         }
     }
 
-    private void LogDifferences(Top10Changes<Guid> diff)
+    private void LogDifferences(LeaderboardChanges<Guid> diff)
     {
         _logger.LogInformation("Differences found between the current and previous leaderboard.");
 
@@ -259,9 +281,10 @@ public class RefreshTM2020OfficialJob : IJob
         }
     }
 
-    private async Task ReportDifferencesAsync(Top10Changes<Guid> diff,
+    private async Task ReportDifferencesAsync(LeaderboardChanges<Guid> diff,
                                               Dictionary<Guid, TM2020Record> currentRecords,
                                               Dictionary<Guid, TM2020Record> previousRecords,
+                                              MapModel map,
                                               CancellationToken cancellationToken)
     {
         if (currentRecords.Count == 0)
@@ -270,49 +293,69 @@ public class RefreshTM2020OfficialJob : IJob
             return;
         }
 
+        var newRecords = new List<IRecord<Guid>>();
+        var improvedRecords = new List<(IRecord<Guid>, IRecord<Guid>)>();
+        var removedRecords = new List<IRecord<Guid>>();
+        var pushedOffRecords = new List<IRecord<Guid>>();
+        var worsenedRecords = new List<(IRecord<Guid>, IRecord<Guid>)>();
+
         foreach (var rec in diff.NewRecords)
         {
             var currentRecord = currentRecords[rec.PlayerId];
 
-            _logger.LogInformation("New record: {rank}) {time} by {player}", currentRecord.Rank, new TimeInt32(currentRecord.Time), currentRecord.DisplayName);
+            _logger.LogInformation("New record: {rank}) {time} by {player}", currentRecord.Rank, currentRecord.Time, currentRecord.DisplayName);
+
+            newRecords.Add(currentRecord);
         }
 
         foreach (var rec in diff.ImprovedRecords)
         {
-            var previousTime = new TimeInt32(rec.Time);
             var currentRecord = currentRecords[rec.PlayerId];
             var prevRecord = previousRecords[rec.PlayerId];
 
-            var currentTime = new TimeInt32(currentRecord.Time);
+            _logger.LogInformation("Improved record: {previousRank}) {previousTime} to {currentRank}) {currentTime} by {player}",
+                prevRecord.Rank, prevRecord.Time, currentRecord.Rank, currentRecord.Time, currentRecord.DisplayName);
 
-            _logger.LogInformation("Improved record: {previousRank}) {previousTime} to {currentRank}) {currentTime} by {player}", prevRecord.Rank, previousTime, currentRecord.Rank, currentTime, currentRecord.DisplayName);
+            improvedRecords.Add((currentRecord, prevRecord));
         }
 
         foreach (var rec in diff.RemovedRecords)
         {
             var prevRecord = previousRecords[rec.PlayerId];
 
-            _logger.LogInformation("Removed record: {rank}) {time} by {player}", prevRecord.Rank, new TimeInt32(prevRecord.Time), prevRecord.DisplayName);
+            _logger.LogInformation("Removed record: {rank}) {time} by {player}", prevRecord.Rank, prevRecord.Time, prevRecord.DisplayName);
+
+            removedRecords.Add(prevRecord);
         }
 
         foreach (var rec in diff.PushedOffRecords)
         {
             var prevRecord = previousRecords[rec.PlayerId];
 
-            _logger.LogInformation("Pushed off record: {rank}) {time} by {player}", prevRecord.Rank, new TimeInt32(prevRecord.Time), prevRecord.DisplayName);
+            _logger.LogInformation("Pushed off record: {rank}) {time} by {player}", prevRecord.Rank, prevRecord.Time, prevRecord.DisplayName);
+
+            pushedOffRecords.Add(prevRecord);
         }
 
         foreach (var rec in diff.WorsenRecords)
         {
             var currentRecord = currentRecords[rec.PlayerId];
+            var prevRecord = previousRecords[rec.PlayerId];
 
-            _logger.LogInformation("Worsened record: {time} by {player}", new TimeInt32(currentRecord.Time), currentRecord.DisplayName);
+            _logger.LogInformation("Worsened record: {previousRank}) {previousTime} to {currentRank}) {currentTime} by {player}",
+                prevRecord.Rank, prevRecord.Time, currentRecord.Rank, currentRecord.Time, currentRecord.DisplayName);
+            
+            worsenedRecords.Add((currentRecord, prevRecord));
         }
+
+        var changes = new LeaderboardChangesRich<Guid>(newRecords, improvedRecords, removedRecords, worsenedRecords, pushedOffRecords);
+
+        await _reportService.ReportDifferencesAsync(changes, map, ScopeOfficialTop10, cancellationToken);
     }
 
     private async Task ReportWorldRecordAsync(TM2020Record wr, WorldRecordModel? previousWr, LoginModel login, MapModel map, CancellationToken cancellationToken)
     {
-        if (wr.Time == 0)
+        if (wr.Time == TimeInt32.Zero)
         {
             _logger.LogInformation("World record is 0 seconds, ignoring.");
             return;
@@ -321,7 +364,7 @@ public class RefreshTM2020OfficialJob : IJob
         if (previousWr is not null)
         {
             // Worse WR is a sign of a removed world record
-            while (previousWr is not null && wr.Time > previousWr.Time)
+            while (previousWr is not null && wr.Time.TotalMilliseconds > previousWr.Time)
             {
                 if (previousWr.Ignored)
                 {
@@ -337,18 +380,26 @@ public class RefreshTM2020OfficialJob : IJob
             }
             
             // Equal WR is ignored
-            if (previousWr is not null && wr.Time == previousWr.Time)
+            if (previousWr is not null && wr.Time.TotalMilliseconds == previousWr.Time)
             {
                 return;
             }
         }
 
-        _logger.LogInformation("New WR: {time} by {player}", new TimeInt32(wr.Time), wr.DisplayName);
+        _logger.LogInformation("New WR: {time} by {player}", wr.Time, wr.DisplayName);
 
-        await AddWorldRecordAsync(wr, previousWr, login, map, cancellationToken);
+        var wrModel = await AddWorldRecordAsync(wr, previousWr, login, map, cancellationToken);
+
+        await _reportService.ReportWorldRecordAsync(wrModel, ScopeOfficialWR, cancellationToken);
     }
 
-    private async Task AddWorldRecordAsync(TM2020Record wr, WorldRecordModel? previousWr, LoginModel login, MapModel map, CancellationToken cancellationToken)
+    private static IEnumerable<string> CreateWorldRecordScope()
+    {
+        yield return nameof(ReportScopeSet.TM2020);
+        yield return nameof(ReportScopeSet.TM2020);
+    }
+
+    private async Task<WorldRecordModel> AddWorldRecordAsync(TM2020Record wr, WorldRecordModel? previousWr, LoginModel login, MapModel map, CancellationToken cancellationToken)
     {
         var wrModel = new WorldRecordModel
         {
@@ -358,11 +409,13 @@ public class RefreshTM2020OfficialJob : IJob
             DrivenOn = wr.Timestamp,
             PublishedOn = wr.Timestamp,
             ReplayUrl = wr.GhostUrl,
-            Time = wr.Time,
+            Time = wr.Time.TotalMilliseconds,
             PreviousWorldRecord = previousWr
         };
 
         await _wrUnitOfWork.WorldRecords.AddAsync(wrModel, cancellationToken);
+
+        return wrModel;
     }
 
     private async Task<List<TM2020Record>> SaveLeaderboardAsync(MapRefreshData map,
@@ -389,15 +442,18 @@ public class RefreshTM2020OfficialJob : IJob
         // Compile the mess into a nice list of current leaderboard records with all its details
         var tm2020Records = RecordsToTM2020Records(records, ignoredLoginNames, loginModels, recordDict, prevRecordsDict).ToList();
 
-//#if RELEASE
         await _recordStorageService.SaveTM2020LeaderboardAsync(tm2020Records, map.MapUid, cancellationToken: cancellationToken);
-//#endif
-        
+
         _logger.LogInformation("{map}: Leaderboard saved.", map);
 
         // Download ghosts from recordDetails to the Ghosts folder in this part of the code
         foreach (var rec in recordDetails)
         {
+            if (rec.Url is null || _ghostService.GhostExists(map.MapUid, rec.RecordScore.Time, rec.AccountId.ToString()))
+            {
+                continue;
+            }
+
             _ = await _ghostService.DownloadGhostAndGetTimestampAsync(map.MapUid, rec.Url, rec.RecordScore.Time, rec.AccountId.ToString());
             await Task.Delay(500, cancellationToken);
         }
@@ -411,11 +467,13 @@ public class RefreshTM2020OfficialJob : IJob
         {
             var playerIdStr = rec.PlayerId.ToString();
 
-            if (rec.GhostUrl is not null && !_ghostService.GhostExists(map.MapUid, new TimeInt32(rec.Time), playerIdStr))
+            if (rec.GhostUrl is null || _ghostService.GhostExists(map.MapUid, rec.Time, playerIdStr))
             {
-                _ = await _ghostService.DownloadGhostAndGetTimestampAsync(map.MapUid, rec.GhostUrl, new TimeInt32(rec.Time), playerIdStr);
-                await Task.Delay(500, cancellationToken);
+                continue;
             }
+            
+            _ = await _ghostService.DownloadGhostAndGetTimestampAsync(map.MapUid, rec.GhostUrl, rec.Time, playerIdStr);
+            await Task.Delay(500, cancellationToken);
         }
     }
 
@@ -436,7 +494,7 @@ public class RefreshTM2020OfficialJob : IJob
                 yield return new TM2020Record
                 {
                     Rank = rec.Position,
-                    Time = rec.Score.TotalMilliseconds,
+                    Time = rec.Score,
                     PlayerId = rec.AccountId,
                     DisplayName = loginModels[rec.AccountId].Nickname,
                     GhostUrl = recDetails.Url,

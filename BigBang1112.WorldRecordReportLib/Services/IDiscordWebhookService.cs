@@ -10,7 +10,7 @@ public interface IDiscordWebhookService
     Embed GetDefaultEmbed_NewStuntsWorldRecord(WorldRecordModel wr);
     Embed GetDefaultEmbed_NewWorldRecord(WorldRecordModel wr);
     Embed GetDefaultEmbed_RemovedWorldRecord(RemovedWorldRecord removedWr);
-    Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook, Func<ulong, DiscordWebhookMessageModel>? message = null, string? text = null, IEnumerable<Embed>? embeds = null);
-    DiscordWebhookClient? CreateWebhookClient(string webhookUrl);
-    Task DeleteMessageAsync(DiscordWebhookMessageModel msg);
+    Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook, Func<ulong, DiscordWebhookMessageModel>? message = null, string? text = null, IEnumerable<Embed>? embeds = null, CancellationToken cancellationToken = default);
+    DiscordWebhookClient? CreateWebhookClient(string webhookUrl, out bool isDeleted);
+    Task DeleteMessageAsync(DiscordWebhookMessageModel msg, CancellationToken cancellationToken = default);
 }
