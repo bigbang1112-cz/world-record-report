@@ -54,7 +54,7 @@ builder.Services.AddScoped<IRecordSetService, RecordSetService>();
 builder.Services.AddScoped<IDiscordWebhookService, DiscordWebhookService>();
 builder.Services.AddScoped<ILeaderboardsManialinkService, LeaderboardsManialinkService>();
 builder.Services.AddScoped<ITM2ReportService, TM2ReportService>();
-//builder.Services.AddScoped<TM2020ReportService>();
+builder.Services.AddScoped<RefreshTM2020Service>();
 
 builder.Services.AddScoped<WrAuthService>();
 builder.Services.AddScoped<ITmxService, TmxService>();
