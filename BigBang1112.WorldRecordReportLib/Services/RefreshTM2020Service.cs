@@ -160,6 +160,22 @@ public class RefreshTM2020Service
         await AddWorldRecordAsync(wr, previousWr: null, login, mapModel, cancellationToken);
     }
 
+    /// <summary>
+    /// Gets the world record without considering cheated records.
+    /// </summary>
+    /// <param name="currentRecords"></param>
+    /// <returns></returns>
+    private static TM2020Record? GetWorldRecord(List<IRecord<Guid>> currentRecords)
+    {
+        return currentRecords.FirstOrDefault(x => x.Time > TimeInt32.Zero) as TM2020Record;
+    }
+
+    /// <summary>
+    /// Gets the world record with consideration of cheated records.
+    /// </summary>
+    /// <param name="currentRecords"></param>
+    /// <param name="ignoredLoginNames"></param>
+    /// <returns></returns>
     private static TM2020Record? GetWorldRecord(List<TM2020Record> currentRecords, IEnumerable<string> ignoredLoginNames)
     {
         return currentRecords.FirstOrDefault(x => x.Time > TimeInt32.Zero && !ignoredLoginNames.Contains(x.PlayerId.ToString()));
@@ -174,41 +190,38 @@ public class RefreshTM2020Service
     {
         // Converts the ManiaAPI record objects to the TM2020RecordFundamental struct array
         // This is done to make use of the IRecord interface
-        var currentRecordsWithCheated = records.Select(x => new TM2020RecordFundamental
+        var currentRecordsWithCheatedFundamental = records.Select(x => new TM2020RecordFundamental
         {
             Rank = x.Position,
             AccountId = x.AccountId,
             Score = x.Score
-        } as IRecord<Guid>);
-
-        var currentRecordsWithoutCheated = currentRecordsWithCheated.Where(x => !ignoredLoginNames.Contains(x.PlayerId.ToString())).ToList();
+        } as IRecord<Guid>).ToList();
 
         _logger.LogInformation("Importing the previous leaderboard...");
 
         // Gets the leaderboard that is already stored (considered previous)
-        var previousRecords = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid, cancellationToken: cancellationToken);
+        var previousRecordsWithCheated = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid, cancellationToken: cancellationToken);
 
-        if (previousRecords is null)
+        if (previousRecordsWithCheated is null)
         {
             // The object shouldn't return a null result, as the JSON is not formatted to behave this way
             throw new Exception("previousRecords is null even though the leaderboard file exists");
         }
 
-        await DownloadMissingGhostsAsync(map, previousRecords, cancellationToken);
+        await DownloadMissingGhostsAsync(map, previousRecordsWithCheated, cancellationToken);
 
         // Leaderboard differences algorithm
-        // For structs arrays, Cast is unfortunately required for some reason
-        var diff = LeaderboardComparer.Compare(currentRecordsWithCheated, previousRecords);
+        var diffForDownloading = LeaderboardComparer.Compare(currentRecordsWithCheatedFundamental, previousRecordsWithCheated);
 
-        var currentRecords = default(List<TM2020Record>);
+        var currentRecordsWithCheated = default(List<TM2020Record>);
 
-        if (diff is null)
+        if (diffForDownloading is null)
         {
             _logger.LogInformation("No leaderboard differences found.");
 
             if (forceUpdate)
             {
-                currentRecords = await SaveLeaderboardAsync(map, records, records.Select(x => x.AccountId), loginModels, ignoredLoginNames, previousRecords, cancellationToken);
+                currentRecordsWithCheated = await SaveLeaderboardAsync(map, records, records.Select(x => x.AccountId), loginModels, ignoredLoginNames, previousRecordsWithCheated, cancellationToken);
             }
             else
             {
@@ -217,21 +230,27 @@ public class RefreshTM2020Service
         }
         else
         {
-            LogDifferences(diff);
+            LogDifferences(diffForDownloading);
 
             // New records and improved records are merged into one collection of accounts for the MapRecords request, to receive ghost URL downloads
-            var newAndImprovedRecordAccounts = diff.NewRecords
-                .Concat(diff.ImprovedRecords)
+            var newAndImprovedRecordAccounts = diffForDownloading.NewRecords
+                .Concat(diffForDownloading.ImprovedRecords)
                 .Select(x => x.PlayerId);
 
-            currentRecords = await SaveLeaderboardAsync(map, records, newAndImprovedRecordAccounts, loginModels, ignoredLoginNames, previousRecords, cancellationToken);
+            currentRecordsWithCheated = await SaveLeaderboardAsync(map, records, newAndImprovedRecordAccounts, loginModels, ignoredLoginNames, previousRecordsWithCheated, cancellationToken);
         }
+        
+        var currentRecordsWithoutCheated = currentRecordsWithCheated.Where(x => !ignoredLoginNames.Contains(x.PlayerId.ToString())).Cast<IRecord<Guid>>().ToList();
+        var previousRecordsWithoutCheated = previousRecordsWithCheated.Where(x => !ignoredLoginNames.Contains(x.PlayerId.ToString())).Cast<IRecord<Guid>>().ToList();
+        
+        var diffForReporting = LeaderboardComparer.Compare(currentRecordsWithoutCheated, previousRecordsWithoutCheated);
 
         // Current records help with managing the reports
 
         var mapModel = await _wrUnitOfWork.Maps.GetByUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
 
-        var wr = GetWorldRecord(currentRecords, ignoredLoginNames);
+        // Do not use the overload, as the cheated records have been already filtered
+        var wr = GetWorldRecord(currentRecordsWithoutCheated);
 
         if (wr is not null)
         {
@@ -241,11 +260,11 @@ public class RefreshTM2020Service
             await ReportWorldRecordAsync(wr, previousWr: currentWr, login, mapModel, cancellationToken);
         }
 
-        if (diff is not null)
+        if (diffForReporting is not null)
         {
-            await ReportDifferencesAsync(diff,
-                                         currentRecords.ToDictionary(x => x.PlayerId),
-                                         previousRecords.ToDictionary(x => x.PlayerId),
+            await ReportDifferencesAsync(diffForReporting,
+                                         currentRecordsWithoutCheated.ToDictionary(x => x.PlayerId),
+                                         previousRecordsWithoutCheated.ToDictionary(x => x.PlayerId),
                                          mapModel,
                                          cancellationToken);
         }
@@ -281,11 +300,11 @@ public class RefreshTM2020Service
         }
     }
 
-    private async Task ReportDifferencesAsync(LeaderboardChanges<Guid> diff,
-                                              Dictionary<Guid, TM2020Record> currentRecords,
-                                              Dictionary<Guid, TM2020Record> previousRecords,
+    private async Task ReportDifferencesAsync<TPlayerId>(LeaderboardChanges<TPlayerId> diff,
+                                              Dictionary<TPlayerId, IRecord<TPlayerId>> currentRecords,
+                                              Dictionary<TPlayerId, IRecord<TPlayerId>> previousRecords,
                                               MapModel map,
-                                              CancellationToken cancellationToken)
+                                              CancellationToken cancellationToken) where TPlayerId : notnull
     {
         if (currentRecords.Count == 0)
         {
@@ -293,11 +312,11 @@ public class RefreshTM2020Service
             return;
         }
 
-        var newRecords = new List<IRecord<Guid>>();
-        var improvedRecords = new List<(IRecord<Guid>, IRecord<Guid>)>();
-        var removedRecords = new List<IRecord<Guid>>();
-        var pushedOffRecords = new List<IRecord<Guid>>();
-        var worsenedRecords = new List<(IRecord<Guid>, IRecord<Guid>)>();
+        var newRecords = new List<IRecord<TPlayerId>>();
+        var improvedRecords = new List<(IRecord<TPlayerId>, IRecord<TPlayerId>)>();
+        var removedRecords = new List<IRecord<TPlayerId>>();
+        var pushedOffRecords = new List<IRecord<TPlayerId>>();
+        var worsenedRecords = new List<(IRecord<TPlayerId>, IRecord<TPlayerId>)>();
 
         foreach (var rec in diff.NewRecords)
         {
@@ -348,7 +367,7 @@ public class RefreshTM2020Service
             worsenedRecords.Add((currentRecord, prevRecord));
         }
 
-        var changes = new LeaderboardChangesRich<Guid>(newRecords, improvedRecords, removedRecords, worsenedRecords, pushedOffRecords);
+        var changes = new LeaderboardChangesRich<TPlayerId>(newRecords, improvedRecords, removedRecords, worsenedRecords, pushedOffRecords);
 
         await _reportService.ReportDifferencesAsync(changes, map, ScopeOfficialTop10, cancellationToken);
     }

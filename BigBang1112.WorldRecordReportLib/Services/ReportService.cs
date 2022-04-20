@@ -26,7 +26,10 @@ public class ReportService
         await ReportToAllScopedWebhooksAsync(embed, scope, cancellationToken);
     }
 
-    public async Task ReportDifferencesAsync(LeaderboardChangesRich<Guid> changes, MapModel map, string scope, CancellationToken cancellationToken)
+    public async Task ReportDifferencesAsync<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes,
+                                                        MapModel map,
+                                                        string scope,
+                                                        CancellationToken cancellationToken) where TPlayerId : notnull
     {
         var lines = CreateLeaderboardChangesStringsForDiscord(changes);
 
@@ -36,8 +39,10 @@ public class ReportService
         }
 
         var embed = new Discord.EmbedBuilder()
+            .WithTitle(map.GetHumanizedDeformattedName())
+            .WithUrl(map.GetInfoUrl())
             .WithDescription(string.Join('\n', lines))
-            .AddField("Leaderboard changes within Top 10", $"[{map.GetHumanizedDeformattedName()}]({map.GetInfoUrl()})")
+            .WithBotFooter("Leaderboard changes within Top 10 | Powered by wr.bigbang1112.cz")
             .WithColor(new Discord.Color(
                 map.Environment.Color[0],
                 map.Environment.Color[1],
@@ -47,7 +52,7 @@ public class ReportService
         await ReportToAllScopedWebhooksAsync(embed, scope, cancellationToken);
     }
 
-    private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord(LeaderboardChangesRich<Guid> changes)
+    private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
     {
         var dict = new SortedDictionary<int, string>();
 
