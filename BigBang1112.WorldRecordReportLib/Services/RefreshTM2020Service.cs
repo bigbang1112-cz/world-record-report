@@ -294,7 +294,12 @@ public class RefreshTM2020Service
             // Non-existing previous record or current wr not equal to previous wr are reported
             if (previousWr is null || wr.Time.TotalMilliseconds != previousWr.Time)
             {
-                await ReportWorldRecordAsync(wr, previousWr, removedWrs, login, mapModel, cancellationToken);
+                var wrModel = await AddWorldRecordAsync(wr, previousWr, login, mapModel, cancellationToken);
+
+                if (mapModel.Campaign is null || DateTime.UtcNow - mapModel.Campaign.PublishedOn >= TimeSpan.FromDays(7))
+                {
+                    await ReportWorldRecordAsync(wrModel, removedWrs, cancellationToken);
+                }
             }
             else // WR that has been already reported is ignored
             {
@@ -414,19 +419,17 @@ public class RefreshTM2020Service
         await _reportService.ReportDifferencesAsync(changes, map, ScopeOfficialTop10, cancellationToken);
     }
 
-    private async Task ReportWorldRecordAsync(TM2020Record wr, WorldRecordModel? previousWr, IEnumerable<WorldRecordModel> removedWrs, LoginModel login, MapModel map, CancellationToken cancellationToken)
+    private async Task ReportWorldRecordAsync(WorldRecordModel wr, IEnumerable<WorldRecordModel> removedWrs, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("New WR: {time} by {player}", wr.Time, wr.DisplayName);
-
-        var wrModel = await AddWorldRecordAsync(wr, previousWr, login, map, cancellationToken);
+        _logger.LogInformation("New WR: {time} by {player}", wr.Time, wr.GetPlayerNicknameDeformatted());
 
         if (removedWrs.Any())
         {
-            await _reportService.ReportRemovedWorldRecordsAsync(wrModel, removedWrs, ScopeOfficialWR, cancellationToken);
+            await _reportService.ReportRemovedWorldRecordsAsync(wr, removedWrs, ScopeOfficialWR, cancellationToken);
         }
         else
         {
-            await _reportService.ReportWorldRecordAsync(wrModel, ScopeOfficialWR, cancellationToken);
+            await _reportService.ReportWorldRecordAsync(wr, ScopeOfficialWR, cancellationToken);
         }
     }
 
