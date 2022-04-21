@@ -104,10 +104,10 @@ public class LeaderboardComparerTests
         Assert.True(changes.PushedOffRecords.Count() == 1);
         Assert.Contains(changes.NewRecords, record =>
              record.PlayerId == "zzz"
-          && record.Time == 10004);
+          && record.Time.TotalMilliseconds == 10004);
         Assert.Contains(changes.PushedOffRecords, record =>
              record.PlayerId == "jjj"
-          && record.Time == 10010);
+          && record.Time.TotalMilliseconds == 10010);
         Assert.Empty(changes.ImprovedRecords);
         Assert.Empty(changes.RemovedRecords);
         Assert.Empty(changes.WorsenRecords);
@@ -152,13 +152,13 @@ public class LeaderboardComparerTests
         
         Assert.Contains(changes.NewRecords, record =>
             record.PlayerId == "www"
-         && record.Time == 10002);
+         && record.Time.TotalMilliseconds == 10002);
         Assert.Contains(changes.NewRecords, record =>
             record.PlayerId == "xxx"
-         && record.Time == 10005);
+         && record.Time.TotalMilliseconds == 10005);
         Assert.Contains(changes.NewRecords, record =>
             record.PlayerId == "yyy"
-         && record.Time == 10007);
+         && record.Time.TotalMilliseconds == 10007);
 
         foreach (var (rank, login, time) in new (int rank, string login, int time)[] {
             (rank: 8, login: "hhh", time: 10010),
@@ -168,7 +168,7 @@ public class LeaderboardComparerTests
         {
             Assert.Contains(changes.PushedOffRecords, record =>
                 record.PlayerId == login
-             && record.Time == time);
+             && record.Time.TotalMilliseconds == time);
         }
 
         Assert.Empty(changes.ImprovedRecords);
@@ -217,7 +217,7 @@ public class LeaderboardComparerTests
         Assert.True(changes.ImprovedRecords.Count() == 1);
         Assert.Contains(changes.ImprovedRecords, record =>
             record.PlayerId == exampleLogin
-         && record.Time == examplePreviousTime);
+         && record.Time.TotalMilliseconds == examplePreviousTime);
         Assert.Empty(changes.NewRecords);
         Assert.Empty(changes.RemovedRecords);
         Assert.Empty(changes.WorsenRecords);
@@ -270,7 +270,7 @@ public class LeaderboardComparerTests
         {
             Assert.Contains(changes.ImprovedRecords, record =>
                 record.PlayerId == login
-             && record.Time == time);
+             && record.Time.TotalMilliseconds == time);
         }
 
         Assert.Empty(changes.NewRecords);
@@ -320,7 +320,7 @@ public class LeaderboardComparerTests
         Assert.True(changes.ImprovedRecords.Count() == 1);
         Assert.Contains(changes.ImprovedRecords, record =>
             record.PlayerId == exampleLogin
-         && record.Time == examplePreviousTime);
+         && record.Time.TotalMilliseconds == examplePreviousTime);
         Assert.Empty(changes.NewRecords);
         Assert.Empty(changes.RemovedRecords);
         Assert.Empty(changes.WorsenRecords);
@@ -369,10 +369,10 @@ public class LeaderboardComparerTests
         Assert.True(changes.NewRecords.Count() == 1);
         Assert.Contains(changes.RemovedRecords, record =>
             record.PlayerId == exampleLogin
-         && record.Time == examplePreviousTime);
+         && record.Time.TotalMilliseconds == examplePreviousTime);
         Assert.Contains(changes.NewRecords, record =>
             record.PlayerId == "kkk"
-         && record.Time == 10010);
+         && record.Time.TotalMilliseconds == 10010);
         Assert.Empty(changes.ImprovedRecords);
         Assert.Empty(changes.WorsenRecords);
         Assert.Empty(changes.PushedOffRecords);
@@ -424,7 +424,7 @@ public class LeaderboardComparerTests
         {
             Assert.Contains(changes.RemovedRecords, record =>
                 record.PlayerId == login
-             && record.Time == time);
+             && record.Time.TotalMilliseconds == time);
         }
 
         foreach (var (rank, login, time) in new (int rank, string login, int time)[] {
@@ -436,7 +436,7 @@ public class LeaderboardComparerTests
         {
             Assert.Contains(changes.NewRecords, record =>
                 record.PlayerId == login
-             && record.Time == time);
+             && record.Time.TotalMilliseconds == time);
         }
 
         Assert.Empty(changes.ImprovedRecords);
@@ -481,7 +481,7 @@ public class LeaderboardComparerTests
         Assert.True(changes.WorsenRecords.Count() == 1);
         Assert.Contains(changes.WorsenRecords, record =>
             record.PlayerId == "aaa"
-         && record.Time == 10000);
+         && record.Time.TotalMilliseconds == 10000);
         Assert.Empty(changes.NewRecords);
         Assert.Empty(changes.ImprovedRecords);
         Assert.Empty(changes.RemovedRecords);
@@ -532,7 +532,7 @@ public class LeaderboardComparerTests
         {
             Assert.Contains(changes.WorsenRecords, record =>
                 record.PlayerId == login
-             && record.Time == time);
+             && record.Time.TotalMilliseconds == time);
         }
 
         Assert.Empty(changes.NewRecords);
@@ -582,21 +582,21 @@ public class LeaderboardComparerTests
         Assert.True(changes.PushedOffRecords.Count() == 1);
         Assert.Contains(changes.NewRecords, record =>
             record.PlayerId == "kkk"
-         && record.Time == 10004);
+         && record.Time.TotalMilliseconds == 10004);
         Assert.Contains(changes.NewRecords, record =>
             record.PlayerId == "lll"
-         && record.Time == 10009);
+         && record.Time.TotalMilliseconds == 10009);
         Assert.Contains(changes.ImprovedRecords, record =>
             record.PlayerId == "bbb"
-         && record.Time == 10001);
+         && record.Time.TotalMilliseconds == 10001);
         Assert.Contains(changes.RemovedRecords, record =>
             record.PlayerId == "ccc"
-         && record.Time == 10002);
+         && record.Time.TotalMilliseconds == 10002);
         Assert.Contains(changes.WorsenRecords, record =>
             record.PlayerId == "ggg"
-         && record.Time == 10006);
+         && record.Time.TotalMilliseconds == 10006);
         Assert.Contains(changes.PushedOffRecords, record =>
             record.PlayerId == "jjj"
-         && record.Time == 10009);
+         && record.Time.TotalMilliseconds == 10009);
     }
 }
