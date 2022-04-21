@@ -69,7 +69,7 @@ public class WorldRecordModel : DbModel
 
     public string GetPlayerLogin()
     {
-        return Player?.Name ?? TmxPlayer?.Nickname ?? "[unknown player]";
+        return Player?.Name ?? TmxPlayer?.UserId.ToString() ?? "[unknown player]";
     }
 
     public string GetPlayerNickname()
