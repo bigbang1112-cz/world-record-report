@@ -2,6 +2,8 @@
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
+using Microsoft.Extensions.Configuration;
+using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
 
 namespace BigBang1112.TMWR.Commands;
 
@@ -10,6 +12,7 @@ public class WrCommand : MapRelatedWithUidCommand
 {
     private readonly TmwrDiscordBotService _tmwrDiscordBotService;
     private readonly IWrRepo _repo;
+    private readonly IConfiguration _config;
 
     [DiscordBotCommandOption("guid",
         ApplicationCommandOptionType.String,
@@ -21,10 +24,11 @@ public class WrCommand : MapRelatedWithUidCommand
         return await _repo.GetWorldRecordGuidsAsync(value);
     }
 
-    public WrCommand(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo) : base(tmwrDiscordBotService, repo)
+    public WrCommand(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo, IConfiguration config) : base(tmwrDiscordBotService, repo)
     {
         _tmwrDiscordBotService = tmwrDiscordBotService;
         _repo = repo;
+        _config = config;
     }
 
     public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand, Deferer deferer)
@@ -58,9 +62,9 @@ public class WrCommand : MapRelatedWithUidCommand
 
         var builder = new ComponentBuilder();
 
-        if (map.Game.IsTM2())
+        if (map.Game.IsTM2() || map.Game.IsTM2020())
         {
-            var downloadUrl = wr.ReplayUrl;
+            var downloadUrl = $"https://{_config["BaseAddress"]}/api/v1/ghost/download/{map.MapUid}/{wr.Time}/{wr.GetPlayerLogin()}";
 
             builder = builder.WithButton("Download ghost",
                 customId: downloadUrl is null ? "download-disabled" : null,
@@ -118,7 +122,21 @@ public class WrCommand : MapRelatedWithUidCommand
             return;
         }
 
-        builder.AddField("Driven on", wr.DrivenOn.ToTimestampTag(TimestampTagStyles.LongDateTime));
+        var login = wr.GetPlayerLogin();
+
+        var isLoginUnder16Chars = login.Length < 16;
+
+        var idType = (Game)map.Game.Id switch
+        {
+            Game.TM2 => "Login",
+            Game.TMUF => "User ID",
+            Game.TM2020 => "Account ID",
+            _ => "Login"
+        };
+
+        builder.AddField(idType, login, inline: isLoginUnder16Chars);
+
+        builder.AddField("Driven on", wr.DrivenOn.ToTimestampTag(TimestampTagStyles.LongDateTime), inline: isLoginUnder16Chars);
         builder.WithBotFooter(wr.Guid.ToString());
     }
 

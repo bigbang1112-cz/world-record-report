@@ -6,8 +6,11 @@ using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using BigBang1112.WorldRecordReportLib.Services;
 using Discord;
+using Microsoft.Extensions.Configuration;
+using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using TmEssentials;
+using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
 
 namespace BigBang1112.TMWR.Commands;
 
@@ -17,9 +20,12 @@ public class RecordCommand : MapRelatedWithUidCommand
     private readonly IWrRepo _repo;
     private readonly IRecordSetService _recordSetService;
     private readonly ITmxRecordSetService _tmxRecordSetService;
+    private readonly RecordStorageService _recordStorageService;
+    private readonly IConfiguration _config;
 
     private RecordSet? recordSet;
     private TmxReplay[]? recordSetTmx;
+    private ReadOnlyCollection<TM2020Record>? tm2020Leaderboard;
     private string nickname = "";
 
     [DiscordBotCommandOption("rank",
@@ -32,11 +38,15 @@ public class RecordCommand : MapRelatedWithUidCommand
     public RecordCommand(TmwrDiscordBotService tmwrDiscordBotService,
                          IWrRepo repo,
                          IRecordSetService recordSetService,
-                         ITmxRecordSetService tmxRecordSetService) : base(tmwrDiscordBotService, repo)
+                         ITmxRecordSetService tmxRecordSetService,
+                         RecordStorageService recordStorageService,
+                         IConfiguration config) : base(tmwrDiscordBotService, repo)
     {
         _repo = repo;
         _recordSetService = recordSetService;
         _tmxRecordSetService = tmxRecordSetService;
+        _recordStorageService = recordStorageService;
+        _config = config;
     }
 
     protected override Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, bool isModified)
@@ -47,11 +57,41 @@ public class RecordCommand : MapRelatedWithUidCommand
         {
             var record = recordSet.Records.ElementAtOrDefault((int)Rank - 1);
 
-            builder = builder.WithButton("Download ghost",
-                customId: record is null ? "download-disabled" : null,
-                style: record is null ? ButtonStyle.Secondary : ButtonStyle.Link,
-                url: record?.ReplayUrl,
-                disabled: record is null);
+            if (record is null)
+            {
+                builder = builder.WithButton("Download ghost",
+                    customId: "download-disabled",
+                    style: ButtonStyle.Secondary,
+                    disabled: true);
+            }
+            else
+            {
+                var downloadUrl = $"https://{_config["BaseAddress"]}/api/v1/ghost/download/{map.MapUid}/{record.Time}/{record.Login}";
+
+                builder = builder.WithButton("Download ghost",
+                    style: ButtonStyle.Link,
+                    url: downloadUrl);
+            }
+        }
+        else if (map.Game.IsTM2020() && tm2020Leaderboard is not null)
+        {
+            var record = tm2020Leaderboard.Where(x => !x.Ignored).ElementAtOrDefault((int)Rank - 1);
+
+            if (record is null)
+            {
+                builder = builder.WithButton("Download ghost",
+                    customId: "download-disabled",
+                    style: ButtonStyle.Secondary,
+                    disabled: true);
+            }
+            else
+            {
+                var downloadUrl = $"https://{_config["BaseAddress"]}/api/v1/ghost/download/{map.MapUid}/{record.Time.TotalMilliseconds}/{record.PlayerId}";
+
+                builder = builder.WithButton("Download ghost",
+                    style: ButtonStyle.Link,
+                    url: downloadUrl);
+            }
         }
         else if (map.Game.IsTMUF() && recordSetTmx is not null)
         {
@@ -75,20 +115,13 @@ public class RecordCommand : MapRelatedWithUidCommand
         builder.Footer.Text = $"({Rank}) {builder.Footer.Text}";
         builder.ThumbnailUrl = map.GetThumbnailUrl();
 
-        builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
+        builder.Description = $"{map.GetMdLink()} by {map.Author.GetDeformattedNicknameForDiscord()}";
 
-        var infoUrl = map.GetInfoUrl();
-
-        if (infoUrl is not null)
+        var rec = (Game)map.Game.Id switch
         {
-            builder.Description = $"[{builder.Description}]({infoUrl})";
-        }
-
-        var rec = (WorldRecordReportLib.Enums.Game)map.Game.Id switch
-        {
-            WorldRecordReportLib.Enums.Game.TM2 => await FindDetailedRecordFromTM2Async(map),
-            WorldRecordReportLib.Enums.Game.TMUF => await FindDetailedRecordFromTMUFAsync(map),
-            WorldRecordReportLib.Enums.Game.TM2020 => await FindDetailedRecordFromTM2020Async(map),
+            Game.TM2 => await FindDetailedRecordFromTM2Async(map),
+            Game.TMUF => await FindDetailedRecordFromTMUFAsync(map),
+            Game.TM2020 => await FindDetailedRecordFromTM2020Async(map),
             _ => null
         };
 
@@ -102,13 +135,23 @@ public class RecordCommand : MapRelatedWithUidCommand
             ? rec.TimeOrScore.ToString()
             : new TimeInt32(rec.TimeOrScore).ToString(useHundredths: map.Game.IsTMUF());
 
-        builder.Title = $"{score} by {nickname.EscapeDiscord()}";
+        builder.Title = $"{score} by {nickname}";
 
-        builder.AddField("Login", rec.Login, inline: true);
+        var isLoginUnder16Chars = rec.Login.Length < 16;
+
+        var idType = (Game)map.Game.Id switch
+        {
+            Game.TM2 => "Login",
+            Game.TMUF => "User ID",
+            Game.TM2020 => "Account ID",
+            _ => "Login"
+        };
+
+        builder.AddField(idType, rec.Login, inline: isLoginUnder16Chars);
 
         if (rec.DrivenOn.HasValue)
         {
-            builder.AddField("Driven on", rec.DrivenOn.Value.UtcDateTime.ToTimestampTag(TimestampTagStyles.LongDateTime), inline: true);
+            builder.AddField("Driven on", rec.DrivenOn.Value.UtcDateTime.ToTimestampTag(TimestampTagStyles.LongDateTime), inline: isLoginUnder16Chars);
         }
     }
 
@@ -160,14 +203,32 @@ public class RecordCommand : MapRelatedWithUidCommand
             ? record.ReplayScore.ToString()
             : new TimeInt32(record.ReplayTime).ToString(useHundredths: map.Game.IsTMUF());
 
-        nickname = record.UserName ?? record.UserId.ToString();
+        nickname = record.UserName?.EscapeDiscord() ?? record.UserId.ToString();
 
         return new(record.Rank.GetValueOrDefault(), map.IsStuntsMode() ? record.ReplayScore : record.ReplayTime, nickname, record.UserId.ToString(), record.ReplayAt);
     }
 
     private async Task<DetailedRecord?> FindDetailedRecordFromTM2020Async(MapModel map)
     {
-        return null;
+        tm2020Leaderboard = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid);
+
+        if (tm2020Leaderboard is null)
+        {
+            return null;
+        }
+
+        var record = tm2020Leaderboard.Where(x => !x.Ignored).ElementAtOrDefault((int)Rank - 1);
+
+        if (record is null)
+        {
+            return null;
+        }
+
+        var loginModel = await _repo.GetLoginAsync(record.PlayerId.ToString());
+
+        nickname = loginModel?.GetDeformattedNickname() ?? record.PlayerId.ToString();
+
+        return new(record.Rank, record.Time.TotalMilliseconds, nickname, record.PlayerId.ToString(), record.Timestamp);
     }
 
     public override Task<DiscordBotMessage?> SelectMenuAsync(SocketMessageComponent messageComponent, Deferer deferrer)
