@@ -57,11 +57,32 @@ public class Top10Command : MapRelatedWithUidCommand
 
     protected override async Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, bool isModified)
     {
-        var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+        var miniRecords = Enumerable.Empty<MiniRecord>();
+        
+        if (map.Game.IsTM2020())
+        {
+            var tm2020recs = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid);
 
-        IEnumerable<MiniRecord> miniRecords;
+            if (tm2020recs is not null)
+            {
+                miniRecords = GetMiniRecordsFromTM2020Leaderboard(tm2020recs);
+            }
+        }
 
-        if (recordSet is null)
+        if (map.Game.IsTM2())
+        {
+            var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+
+            if (recordSet is not null)
+            {
+                var logins = await FetchLoginModelsAsync(recordSet);
+                miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, logins);
+            }
+        }
+
+        var isTMUF = map.Game.IsTMUF();
+
+        if (isTMUF)
         {
             if (map.TmxAuthor is null)
             {
@@ -79,13 +100,7 @@ public class Top10Command : MapRelatedWithUidCommand
             var logins = await FetchTmxLoginModelsAsync(top10records);
             miniRecords = GetMiniRecordsFromTmxReplays(top10records, logins, map.IsStuntsMode());
         }
-        else
-        {
-            var logins = await FetchLoginModelsAsync(recordSet);
-            miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, logins);
-        }
 
-        var isTMUF = map.Game.IsTMUF();
         var isStunts = map.IsStuntsMode();
 
         var selectMenuBuilder = new SelectMenuBuilder
@@ -101,6 +116,14 @@ public class Top10Command : MapRelatedWithUidCommand
         };
 
         return new ComponentBuilder().WithSelectMenu(selectMenuBuilder);
+    }
+
+    private static IEnumerable<MiniRecord> GetMiniRecordsFromTM2020Leaderboard(ReadOnlyCollection<TM2020Record> records)
+    {
+        foreach (var record in records.Where(x => !x.Ignored).Take(10))
+        {
+            yield return new MiniRecord(record.Rank, record.Time.TotalMilliseconds, record.DisplayName ?? record.PlayerId.ToString());
+        }
     }
 
     private async Task<(string desc, int? recordCount)?> CreateTop10EmbedContentAsync(MapModel map)
