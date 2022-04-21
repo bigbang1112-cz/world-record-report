@@ -240,8 +240,17 @@ public class RefreshTM2020Service
             currentRecordsWithCheated = await SaveLeaderboardAsync(map, records, newAndImprovedRecordAccounts, loginModels, ignoredLoginNames, previousRecordsWithCheated, cancellationToken);
         }
         
-        var currentRecordsWithoutCheated = currentRecordsWithCheated.Where(x => !ignoredLoginNames.Contains(x.PlayerId.ToString())).Cast<IRecord<Guid>>().ToList();
-        var previousRecordsWithoutCheated = previousRecordsWithCheated.Where(x => !ignoredLoginNames.Contains(x.PlayerId.ToString())).Cast<IRecord<Guid>>().ToList();
+        var currentRecordsWithoutCheated = currentRecordsWithCheated
+            .Where(x => !ignoredLoginNames.Contains(x.PlayerId.ToString()))
+                .Select((x, i) => x with { Rank = i + 1 })
+            .Cast<IRecord<Guid>>()
+            .ToList();
+        
+        var previousRecordsWithoutCheated = previousRecordsWithCheated
+            .Where(x => !ignoredLoginNames.Contains(x.PlayerId.ToString()))
+                .Select((x, i) => x with { Rank = i + 1 })
+            .Cast<IRecord<Guid>>()
+            .ToList();
         
         var diffForReporting = LeaderboardComparer.Compare(currentRecordsWithoutCheated, previousRecordsWithoutCheated);
 
@@ -257,7 +266,40 @@ public class RefreshTM2020Service
             var currentWr = await _wrUnitOfWork.WorldRecords.GetCurrentByMapUidAsync(map.MapUid, cancellationToken);
             var login = loginModels[wr.PlayerId];
 
-            await ReportWorldRecordAsync(wr, previousWr: currentWr, login, mapModel, cancellationToken);
+            var previousWr = currentWr;
+
+            var removedWrs = new List<WorldRecordModel>();
+
+            // Worse WR is a sign of a removed world record
+            while (previousWr is not null && wr.Time.TotalMilliseconds > previousWr.Time)
+            {
+                if (previousWr.Ignored)
+                {
+                    previousWr = previousWr.PreviousWorldRecord;
+                    continue;
+                }
+
+                previousWr.Ignored = true;
+
+                _logger.LogInformation("Removed WR: {time} by {player}", new TimeInt32(previousWr.Time), previousWr.GetPlayerNickname());
+
+                // Remove the discord webhook message
+                await _reportService.RemoveWorldRecordReportAsync(previousWr);
+
+                removedWrs.Add(previousWr);
+
+                previousWr = previousWr.PreviousWorldRecord;
+            }
+
+            // Non-existing previous record or current wr not equal to previous wr are reported
+            if (previousWr is null || wr.Time.TotalMilliseconds != previousWr.Time)
+            {
+                await ReportWorldRecordAsync(wr, previousWr, removedWrs, login, mapModel, cancellationToken);
+            }
+            else // WR that has been already reported is ignored
+            {
+                _logger.LogInformation("Ignoring the report - already reported.");
+            }
         }
 
         if (diffForReporting is not null)
@@ -372,44 +414,20 @@ public class RefreshTM2020Service
         await _reportService.ReportDifferencesAsync(changes, map, ScopeOfficialTop10, cancellationToken);
     }
 
-    private async Task ReportWorldRecordAsync(TM2020Record wr, WorldRecordModel? previousWr, LoginModel login, MapModel map, CancellationToken cancellationToken)
+    private async Task ReportWorldRecordAsync(TM2020Record wr, WorldRecordModel? previousWr, IEnumerable<WorldRecordModel> removedWrs, LoginModel login, MapModel map, CancellationToken cancellationToken)
     {
-        if (previousWr is not null)
-        {
-            // Worse WR is a sign of a removed world record
-            while (previousWr is not null && wr.Time.TotalMilliseconds > previousWr.Time)
-            {
-                if (previousWr.Ignored)
-                {
-                    previousWr = previousWr.PreviousWorldRecord;
-                    continue;
-                }
-
-                previousWr.Ignored = true;
-
-                _logger.LogInformation("Removed WR: {time} by {player}", new TimeInt32(previousWr.Time), previousWr.GetPlayerNickname());
-
-                previousWr = previousWr.PreviousWorldRecord;
-            }
-
-            // Equal WR is ignored
-            if (previousWr is not null && wr.Time.TotalMilliseconds == previousWr.Time)
-            {
-                return;
-            }
-        }
-
         _logger.LogInformation("New WR: {time} by {player}", wr.Time, wr.DisplayName);
 
         var wrModel = await AddWorldRecordAsync(wr, previousWr, login, map, cancellationToken);
 
-        await _reportService.ReportWorldRecordAsync(wrModel, ScopeOfficialWR, cancellationToken);
-    }
-
-    private static IEnumerable<string> CreateWorldRecordScope()
-    {
-        yield return nameof(ReportScopeSet.TM2020);
-        yield return nameof(ReportScopeSet.TM2020);
+        if (removedWrs.Any())
+        {
+            await _reportService.ReportRemovedWorldRecordsAsync(wrModel, removedWrs, ScopeOfficialWR, cancellationToken);
+        }
+        else
+        {
+            await _reportService.ReportWorldRecordAsync(wrModel, ScopeOfficialWR, cancellationToken);
+        }
     }
 
     private async Task<WorldRecordModel> AddWorldRecordAsync(TM2020Record wr, WorldRecordModel? previousWr, LoginModel login, MapModel map, CancellationToken cancellationToken)

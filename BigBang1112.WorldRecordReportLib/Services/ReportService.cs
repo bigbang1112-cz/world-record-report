@@ -22,8 +22,36 @@ public class ReportService
     public async Task ReportWorldRecordAsync(WorldRecordModel wr, string scope, CancellationToken cancellationToken)
     {
         var embed = GetDefaultEmbed_NewWorldRecord(wr);
-        
-        await ReportToAllScopedWebhooksAsync(embed, scope, cancellationToken);
+
+        var report = new ReportModel
+        {
+            Guid = Guid.NewGuid(),
+            HappenedOn = DateTime.UtcNow,
+            WorldRecord = wr,
+            Type = ReportModel.EType.NewWorldRecord
+        };
+
+        await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
+
+        await ReportToAllScopedWebhooksAsync(report, embed, scope, cancellationToken);
+    }
+
+    public async Task ReportRemovedWorldRecordsAsync(WorldRecordModel wr, IEnumerable<WorldRecordModel> removedWrs, string scope, CancellationToken cancellationToken)
+    {
+        var embed = GetDefaultEmbed_RemovedWorldRecord(wr, removedWrs);
+
+        var report = new ReportModel
+        {
+            Guid = Guid.NewGuid(),
+            HappenedOn = DateTime.UtcNow,
+            WorldRecord = wr,
+            RemovedWorldRecord = removedWrs.First(),
+            Type = ReportModel.EType.RemovedWorldRecord
+        };
+
+        await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
+
+        await ReportToAllScopedWebhooksAsync(report, embed, scope, cancellationToken);
     }
 
     public async Task ReportDifferencesAsync<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes,
@@ -49,7 +77,16 @@ public class ReportService
                 map.Environment.Color[2]))
             .Build();
 
-        await ReportToAllScopedWebhooksAsync(embed, scope, cancellationToken);
+        var report = new ReportModel
+        {
+            Guid = Guid.NewGuid(),
+            HappenedOn = DateTime.UtcNow,
+            Type = ReportModel.EType.LeaderboardDifferences
+        };
+
+        await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
+
+        await ReportToAllScopedWebhooksAsync(report, embed, scope, cancellationToken);
     }
 
     private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
@@ -61,7 +98,7 @@ public class ReportService
 
         foreach (var record in newRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **[{record.DisplayName}](https://trackmania.io/#/player/{record.PlayerId})**");
+            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **[{record.DisplayName?.EscapeDiscord() ?? record.PlayerId.ToString()}](https://trackmania.io/#/player/{record.PlayerId})**");
         }
         
         foreach (var improvedRecord in improvedRecords)
@@ -79,7 +116,7 @@ public class ReportService
 
         foreach (var record in changes.RemovedRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **[{record.DisplayName}](https://trackmania.io/#/player/{record.PlayerId})**");
+            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **[{record.DisplayName?.EscapeDiscord() ?? record.PlayerId.ToString()}](https://trackmania.io/#/player/{record.PlayerId})**");
         }
 
         foreach (var item in dict)
@@ -88,8 +125,8 @@ public class ReportService
         }
     }
 
-    private async Task ReportToAllScopedWebhooksAsync(Discord.Embed embed, string scope, CancellationToken cancellationToken)
-    {
+    private async Task ReportToAllScopedWebhooksAsync(ReportModel report, Discord.Embed embed, string scope, CancellationToken cancellationToken)
+    {        
         var scopePath = scope.Split(':');
 
         foreach (var webhook in await _wrUnitOfWork.DiscordWebhooks.GetAllAsync(cancellationToken))
@@ -102,7 +139,7 @@ public class ReportService
             await _discordWebhookService.SendMessageAsync(webhook, snowflake => new DiscordWebhookMessageModel
             {
                 MessageId = snowflake,
-                Report = null,
+                Report = report,
                 SentOn = DateTime.UtcNow,
                 ModifiedOn = DateTime.UtcNow,
                 Webhook = webhook
@@ -182,15 +219,51 @@ public class ReportService
             .WithTitle("New world record!")
             .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
             .WithTimestamp(DateTime.SpecifyKind(wr.DrivenOn, DateTimeKind.Utc))
-            .WithThumbnailUrl(map.GetThumbnailUrl())
             .WithColor(new Discord.Color(
                 map.Environment.Color[0],
                 map.Environment.Color[1],
                 map.Environment.Color[2]))
+            .WithThumbnailUrl(map.GetThumbnailUrl())
             .AddField("Map", $"[{map.DeformattedName}]({map.GetInfoUrl()})", true)
             .AddField("Time", time, true)
             .AddField("By", nickname, true)
             .Build();
+    }
+
+    public static Discord.Embed GetDefaultEmbed_RemovedWorldRecord(WorldRecordModel? currentWr, IEnumerable<WorldRecordModel> removedWrs)
+    {
+        if (!removedWrs.Any())
+        {
+            throw new Exception("Removed WRs need to be at least 1.");
+        }
+
+        var previousWr = removedWrs.First();
+        var map = previousWr.Map;
+        var time = previousWr.TimeInt32.ToString();
+
+        var builder = new Discord.EmbedBuilder()
+            .WithTitle("Removed world record")
+            .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
+            .WithColor(new Discord.Color(
+                map.Environment.Color[0],
+                map.Environment.Color[1],
+                map.Environment.Color[2]))
+            .WithThumbnailUrl(map.GetThumbnailUrl())
+            .AddField("Map", $"[{map.DeformattedName}]({map.GetInfoUrl()})", true)
+            .AddField("Time", time, true)
+            .AddField("By", previousWr.GetPlayerNicknameDeformatted().EscapeDiscord(), true);
+
+        if (currentWr is not null)
+        {
+            var prevTime = currentWr.TimeInt32.ToString();
+            var prevNickname = currentWr.GetPlayerNicknameDeformatted().EscapeDiscord();
+
+            builder = builder
+                .AddField("New time", prevTime, true)
+                .AddField("Now by", prevNickname, true);
+        }
+
+        return builder.Build();
     }
 
     private static string FilterOutNickname(string nickname, string loginIfFilteredOut)
@@ -212,5 +285,15 @@ public class ReportService
         }
         
         return nickname;
+    }
+
+    public async Task RemoveWorldRecordReportAsync(WorldRecordModel wr)
+    {
+        var report = await _wrUnitOfWork.Reports.GetByWorldRecordAsync(wr);
+
+        if (report is null)
+        {
+            return;
+        }
     }
 }
