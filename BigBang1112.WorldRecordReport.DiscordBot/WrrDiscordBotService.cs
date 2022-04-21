@@ -1,6 +1,7 @@
 ﻿using BigBang1112.Attributes;
 using BigBang1112.DiscordBot;
 using BigBang1112.DiscordBot.Attributes;
+using Discord.WebSocket;
 
 namespace BigBang1112.WorldRecordReport.DiscordBot;
 
@@ -14,5 +15,29 @@ public class WrrDiscordBotService : DiscordBotService
     public WrrDiscordBotService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
 
+    }
+
+    protected override async Task AutocompleteExecutedAsync(SocketAutocompleteInteraction interaction)
+    {
+        if (interaction.User.Id == GetOwnerDiscordSnowflake())
+        {
+            await base.AutocompleteExecutedAsync(interaction);
+        }
+        else
+        {
+            await interaction.RespondAsync(null);
+        }
+    }
+
+    protected override async Task SlashCommandExecutedAsync(SocketSlashCommand slashCommand)
+    {
+        if (slashCommand.User.Id == GetOwnerDiscordSnowflake())
+        {
+            await base.SlashCommandExecutedAsync(slashCommand);
+        }
+        else
+        {
+            await slashCommand.RespondAsync("You don't have permissions to execute this command.", ephemeral: true);
+        }
     }
 }
