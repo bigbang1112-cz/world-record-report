@@ -21,4 +21,9 @@ public class TmxLoginModel
 
     [Required]
     public virtual TmxSiteModel Site { get; set; } = default!;
+
+    public string GetMdLink()
+    {
+        return $"[{Nickname ?? UserId.ToString()}]({Site.Url}usershow/{UserId})";
+    }
 }

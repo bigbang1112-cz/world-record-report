@@ -66,7 +66,7 @@ public partial class MapCommand
             if (wr is not null)
             {
                 builder.AddField("World record",
-                    $"**` {wr.GetTimeFormattedToGame()} `** by **{wr.GetPlayerNicknameDeformatted().EscapeDiscord()}**");
+                    $"**` {wr.GetTimeFormattedToGame()} `** by **{wr.GetPlayerNicknameDeformattedForDiscord()}**");
 
                 builder.AddField("World record driven on", wr.DrivenOn.ToTimestampTag(TimestampTagStyles.LongDateTime));
             }
@@ -178,7 +178,7 @@ public partial class MapCommand
 
                 if (recordSet is null)
                 {
-                    activityText = $"{prevTime.ToString(useHundredths: map.Game.IsTMUF())} (rank: {prevRank}) to [unknown] by {lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}";
+                    activityText = $"{prevTime.ToString(useHundredths: map.Game.IsTMUF())} (rank: {prevRank}) to [unknown] by **{lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}**";
                 }
                 else
                 {
@@ -198,7 +198,7 @@ public partial class MapCommand
                 var time = new TimeInt32(lastTop10Change.Time.GetValueOrDefault());
                 var rank = lastTop10Change.Rank.GetValueOrDefault().ToString();
 
-                activityText = $"` {rank} ` **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** by {lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}";
+                activityText = $"` {rank} ` **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** by **{lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}**";
             }
 
             builder.AddField($"Last Top 10 activity  ➡️  {typeOfActivity}", activityText);

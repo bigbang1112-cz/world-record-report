@@ -156,9 +156,9 @@ public class MapModel : DbModel
                 return null;
             }
 
-            return TmxAuthor.Site.ShortName switch
+            return (TmxSite)TmxAuthor.Site.Id switch
             {
-                NameConsts.TMXSiteUnited or NameConsts.TMXSiteTMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}",
+                TmxSite.United or TmxSite.TMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}",
                 _ => null,
             };
         }
