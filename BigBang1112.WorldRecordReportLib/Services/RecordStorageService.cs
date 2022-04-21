@@ -82,6 +82,13 @@ public class RecordStorageService
         return new ReadOnlyCollection<TM2020Record>(records);
     }
 
+    public DateTimeOffset? GetTM2020LeaderboardLastUpdatedOn(string mapUid, string zone = "World", string scoreContext = "")
+    {
+        var path = GetStandardOfficialLeaderboardPath(Game.TM2020, mapUid, zone, scoreContext);
+
+        return _fileHostService.GetLastModifiedTimeFromApi(ApiVersion, path);
+    }
+
     private static string GetOfficialLeaderboardGameFolder(Game game) => game switch
     {
         Game.TM2 => "tm2",
