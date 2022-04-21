@@ -13,4 +13,25 @@ public class MockGameRepo : MockEnumRepo<GameModel, Game>, IGameRepo
     {
         Entities = EnumData.Create<GameModel, Game, GameAttribute>(WrEnumData.GameAttributeToModel).ToList();
     }
+
+    public Task<GameModel?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(Entities.FirstOrDefault(x => x.Name == name));
+    }
+
+    public Task<IEnumerable<string>> GetAllNamesLikeAsync(string value, int? max = null, CancellationToken cancellationToken = default)
+    {
+        IEnumerable<string> enumerable = Entities
+            .Select(x => x.Name)
+            .Where(x => x.Contains(value))
+            .OrderByDescending(x => x.StartsWith(value))
+            .ThenBy(x => x);
+
+        if (max.HasValue)
+        {
+            enumerable = enumerable.Take(max.Value);
+        }
+
+        return Task.FromResult(enumerable.ToList().AsEnumerable());
+    }
 }

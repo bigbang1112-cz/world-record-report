@@ -3,15 +3,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class ReportModel
+public class ReportModel : DbModel
 {
     public enum EType
     {
         NewWorldRecord,
-        RemovedWorldRecord
+        RemovedWorldRecord,
+        LeaderboardDifferences
     }
-
-    public int Id { get; set; }
 
     [Required]
     public Guid Guid { get; set; }
@@ -22,7 +21,7 @@ public class ReportModel
     [Column(TypeName = "datetime")]
     public DateTime HappenedOn { get; set; }
 
-    public virtual WorldRecordModel WorldRecord { get; set; } = default!;
+    public virtual WorldRecordModel? WorldRecord { get; set; }
     public virtual WorldRecordModel? RemovedWorldRecord { get; set; }
 
     public virtual ICollection<DiscordWebhookMessageModel> DiscordWebhookMessages { get; set; } = default!;

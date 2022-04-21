@@ -11,6 +11,15 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
         _context = context;
     }
 
+    public async Task<IEnumerable<MapModel>> GetAllMapsOfPlayerAsync(LoginModel loginModel, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords
+            .Where(x => x.Player == loginModel)
+            .Select(x => x.Map)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<WorldRecordModel?> GetCurrentByMapUidAsync(string mapUid, CancellationToken cancellationToken = default)
     {
         return await _context.WorldRecords

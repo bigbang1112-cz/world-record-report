@@ -5,8 +5,6 @@ namespace BigBang1112.WorldRecordReportLib.Data;
 
 public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
 {
-    private readonly WrContext _context;
-
     public IGameRepo Games { get; }
     public ICampaignRepo Campaigns { get; }
     public IMapRepo Maps { get; }
@@ -16,19 +14,19 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
     public IWorldRecordRepo WorldRecords { get; }
     public IIgnoredLoginRepo IgnoredLogins { get; }
     public IDiscordWebhookRepo DiscordWebhooks { get; }
+    public IReportRepo Reports { get; }
 
     public WrUnitOfWork(WrContext context, ILogger<WrUnitOfWork> logger) : base(context, logger)
     {
-        _context = context;
-
-        Games = new GameRepo(_context);
-        Campaigns = new CampaignRepo(_context);
-        Maps = new MapRepo(_context);
-        Envs = new EnvRepo(_context);
-        Logins = new LoginRepo(_context);
-        MapModes = new MapModeRepo(_context);
-        WorldRecords = new WorldRecordRepo(_context);
-        IgnoredLogins = new IgnoredLoginRepo(_context);
+        Games = new GameRepo(context);
+        Campaigns = new CampaignRepo(context);
+        Maps = new MapRepo(context);
+        Envs = new EnvRepo(context);
+        Logins = new LoginRepo(context);
+        MapModes = new MapModeRepo(context);
+        WorldRecords = new WorldRecordRepo(context);
+        IgnoredLogins = new IgnoredLoginRepo(context);
         DiscordWebhooks = new DiscordWebhookRepo(context);
+        Reports = new ReportRepo(context);
     }
 }

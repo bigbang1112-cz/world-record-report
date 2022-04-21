@@ -13,4 +13,5 @@ public interface IWrUnitOfWork : IUnitOfWork
     IWorldRecordRepo WorldRecords { get; }
     IIgnoredLoginRepo IgnoredLogins { get; }
     IDiscordWebhookRepo DiscordWebhooks { get; }
+    IReportRepo Reports { get; }
 }

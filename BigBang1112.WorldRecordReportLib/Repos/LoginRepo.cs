@@ -12,9 +12,9 @@ public class LoginRepo : Repo<LoginModel>, ILoginRepo
         _context = context;
     }
 
-    public LoginModel? GetByName(string name)
+    public LoginModel? GetByGameAndName(GameModel game, string name)
     {
-        return _context.Logins.SingleOrDefault(x => string.Equals(x.Name, name));
+        return _context.Logins.SingleOrDefault(x => x.Game == game && string.Equals(x.Name, name));
     }
 
     public LoginModel GetOrAdd(GameModel game, string name, string nickname)
@@ -32,9 +32,9 @@ public class LoginRepo : Repo<LoginModel>, ILoginRepo
         return loginModel;
     }
 
-    public async Task<LoginModel?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<LoginModel?> GetByGameAndNameAsync(GameModel game, string name, CancellationToken cancellationToken = default)
     {
-        return await _context.Logins.SingleOrDefaultAsync(x => string.Equals(x.Name, name), cancellationToken);
+        return await _context.Logins.SingleOrDefaultAsync(x => x.Game == game && string.Equals(x.Name, name), cancellationToken);
     }
 
     public async Task<LoginModel> GetOrAddAsync(GameModel game, string name, string nickname, CancellationToken cancellationToken = default)
@@ -52,10 +52,51 @@ public class LoginRepo : Repo<LoginModel>, ILoginRepo
         return loginModel;
     }
 
-    public async Task<Dictionary<Guid, LoginModel>> GetByNamesAsync(Game game, IEnumerable<Guid> accountIds, CancellationToken cancellationToken)
+    public async Task<Dictionary<Guid, LoginModel>> GetByNamesAsync(Game game, IEnumerable<Guid> accountIds, CancellationToken cancellationToken = default)
     {
         var accountIdsAsString = accountIds.Select(x => x.ToString());
         var logins = await _context.Logins.Where(x => x.Game.Id == (int)game && accountIdsAsString.Contains(x.Name)).ToListAsync(cancellationToken);
         return logins.ToDictionary(x => new Guid(x.Name), x => x);
+    }
+
+    public async Task<IEnumerable<string>> GetAllNamesLikeAsync(string value, int? max = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<string> queryable = _context.Logins
+            .Select(x => x.Name)
+            .Where(x => x.Contains(value))
+            .OrderByDescending(x => x.StartsWith(value))
+            .ThenBy(x => x);
+
+        if (max.HasValue)
+        {
+            queryable = queryable.Take(max.Value);
+        }
+
+        return await queryable.ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<string>> GetAllNicknamesLikeAsync(string value, int? max = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<string> queryable = _context.Logins
+            .Select(x => x.Nickname)
+            .Where(x => x != null && x.Contains(value))
+            .OfType<string>()
+            .OrderByDescending(x => x.StartsWith(value))
+            .ThenBy(x => x);
+
+        if (max.HasValue)
+        {
+            queryable = queryable.Take(max.Value);
+        }
+
+        return await queryable.ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<string>> GetNamesByNicknameAsync(string? nickname, CancellationToken cancellationToken = default)
+    {
+        return await _context.Logins
+            .Where(x => x.Nickname == nickname)
+            .Select(x => x.Name)
+            .ToListAsync(cancellationToken);
     }
 }
