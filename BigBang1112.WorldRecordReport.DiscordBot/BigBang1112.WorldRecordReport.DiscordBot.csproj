@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BigBang1112.Essentials\BigBang1112.DiscordBot\BigBang1112.DiscordBot.csproj" />
+    <ProjectReference Include="..\BigBang1112.WorldRecordReportLib\BigBang1112.WorldRecordReportLib.csproj" />
   </ItemGroup>
 
 </Project>
