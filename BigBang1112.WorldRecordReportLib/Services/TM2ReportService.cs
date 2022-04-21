@@ -610,6 +610,11 @@ public class TM2ReportService : ITM2ReportService
 
         var embeds = new List<Discord.Embed> { embed };
 
+        if (report.WorldRecord is null)
+        {
+            return;
+        }
+
         var login = report.WorldRecord.GetPlayerLogin();
         var nickname = report.WorldRecord.GetPlayerNicknameDeformatted().EscapeDiscord();
 
