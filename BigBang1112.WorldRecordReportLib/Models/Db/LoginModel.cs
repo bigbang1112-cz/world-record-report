@@ -37,4 +37,16 @@ public class LoginModel : DbModel
     {
         return string.IsNullOrWhiteSpace(Nickname) ? Name : TextFormatter.Deformat(Nickname).Trim();
     }
+
+    public string GetDeformattedNicknameForDiscord()
+    {
+        var escapedNickname = GetDeformattedNickname().EscapeDiscord();
+
+        if (Game.IsTM2020())
+        {
+            return $"[{escapedNickname}](https://trackmania.io/#/player/{Name})";
+        }
+
+        return escapedNickname;
+    }
 }

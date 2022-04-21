@@ -212,7 +212,7 @@ public class ReportService
         }
 
         var nickname = FilterOutNickname(
-            nickname: wr.GetPlayerNicknameDeformatted(),
+            nickname: wr.GetPlayerNicknameDeformattedForDiscord(),
             loginIfFilteredOut: wr.GetPlayerLogin());
 
         return new Discord.EmbedBuilder()
@@ -251,12 +251,12 @@ public class ReportService
             .WithThumbnailUrl(map.GetThumbnailUrl())
             .AddField("Map", $"[{map.DeformattedName}]({map.GetInfoUrl()})", true)
             .AddField("Time", time, true)
-            .AddField("By", previousWr.GetPlayerNicknameDeformatted().EscapeDiscord(), true);
+            .AddField("By", previousWr.GetPlayerNicknameDeformattedForDiscord(), true);
 
         if (currentWr is not null)
         {
             var prevTime = currentWr.TimeInt32.ToString();
-            var prevNickname = currentWr.GetPlayerNicknameDeformatted().EscapeDiscord();
+            var prevNickname = currentWr.GetPlayerNicknameDeformattedForDiscord();
 
             builder = builder
                 .AddField("New time", prevTime, true)

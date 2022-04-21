@@ -82,6 +82,11 @@ public class WorldRecordModel : DbModel
         return Player?.GetDeformattedNickname() ?? TmxPlayer?.Nickname ?? "[unknown player]";
     }
 
+    public string GetPlayerNicknameDeformattedForDiscord()
+    {
+        return Player?.GetDeformattedNicknameForDiscord() ?? TmxPlayer?.Nickname?.EscapeDiscord() ?? "[unknown player]";
+    }
+
     public string GetTimeFormattedToGame()
     {
         if (Map.IsStuntsMode())
