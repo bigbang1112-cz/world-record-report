@@ -190,4 +190,16 @@ public class MapModel : DbModel
     {
         return GetTrackmaniaIoUrl() ?? GetTmxUrl();
     }
+
+    public string GetMdLink()
+    {
+        var infoUrl = GetInfoUrl();
+
+        if (infoUrl is null)
+        {
+            return GetHumanizedDeformattedName();
+        }
+
+        return $"[{GetHumanizedDeformattedName()}]({infoUrl})";
+    }
 }
