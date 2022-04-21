@@ -20,7 +20,7 @@ public class RecordCommand : MapRelatedWithUidCommand
 
     private RecordSet? recordSet;
     private TmxReplay[]? recordSetTmx;
-    private string? nickname;
+    private string nickname = "";
 
     [DiscordBotCommandOption("rank",
         ApplicationCommandOptionType.Integer,
@@ -86,9 +86,9 @@ public class RecordCommand : MapRelatedWithUidCommand
 
         var rec = (WorldRecordReportLib.Enums.Game)map.Game.Id switch
         {
-            WorldRecordReportLib.Enums.Game.TM2 => await FindMiniRecordFromTM2Async(map),
-            WorldRecordReportLib.Enums.Game.TMUF => await FindMiniRecordFromTMUFAsync(map),
-            WorldRecordReportLib.Enums.Game.TM2020 => await FindMiniRecordFromTM2020Async(map),
+            WorldRecordReportLib.Enums.Game.TM2 => await FindDetailedRecordFromTM2Async(map),
+            WorldRecordReportLib.Enums.Game.TMUF => await FindDetailedRecordFromTMUFAsync(map),
+            WorldRecordReportLib.Enums.Game.TM2020 => await FindDetailedRecordFromTM2020Async(map),
             _ => null
         };
 
@@ -102,10 +102,17 @@ public class RecordCommand : MapRelatedWithUidCommand
             ? rec.TimeOrScore.ToString()
             : new TimeInt32(rec.TimeOrScore).ToString(useHundredths: map.Game.IsTMUF());
 
-        builder.Title = $"{rec.Rank}) {score} by {nickname}";
+        builder.Title = $"{score} by {nickname.EscapeDiscord()}";
+
+        builder.AddField("Login", rec.Login, inline: true);
+
+        if (rec.DrivenOn.HasValue)
+        {
+            builder.AddField("Driven on", rec.DrivenOn.Value.UtcDateTime.ToTimestampTag(TimestampTagStyles.LongDateTime), inline: true);
+        }
     }
 
-    private async Task<MiniRecord?> FindMiniRecordFromTM2Async(MapModel map)
+    private async Task<DetailedRecord?> FindDetailedRecordFromTM2Async(MapModel map)
     {
         recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
 
@@ -125,10 +132,10 @@ public class RecordCommand : MapRelatedWithUidCommand
 
         nickname = loginModel?.GetDeformattedNickname() ?? record.Login;
 
-        return new MiniRecord(record.Rank, record.Time, nickname);
+        return new(record.Rank, record.Time, nickname, record.Login, DrivenOn: null);
     }
 
-    private async Task<MiniRecord?> FindMiniRecordFromTMUFAsync(MapModel map)
+    private async Task<DetailedRecord?> FindDetailedRecordFromTMUFAsync(MapModel map)
     {
         if (map.TmxAuthor is null)
         {
@@ -155,10 +162,10 @@ public class RecordCommand : MapRelatedWithUidCommand
 
         nickname = record.UserName ?? record.UserId.ToString();
 
-        return new MiniRecord(record.Rank.GetValueOrDefault(), map.IsStuntsMode() ? record.ReplayScore : record.ReplayTime, nickname);
+        return new(record.Rank.GetValueOrDefault(), map.IsStuntsMode() ? record.ReplayScore : record.ReplayTime, nickname, record.UserId.ToString(), record.ReplayAt);
     }
 
-    private async Task<MiniRecord?> FindMiniRecordFromTM2020Async(MapModel map)
+    private async Task<DetailedRecord?> FindDetailedRecordFromTM2020Async(MapModel map)
     {
         return null;
     }
