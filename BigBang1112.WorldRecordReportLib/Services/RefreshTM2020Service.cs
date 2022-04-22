@@ -113,7 +113,9 @@ public class RefreshTM2020Service
             await CreateLeaderboardAsync(map, records, loginModels, ignoredLoginNames, accountIds, cancellationToken);
         }
 
+//#if RELEASE
         await _wrUnitOfWork.SaveAsync(cancellationToken);
+//#endif
     }
 
     private static bool SetLastNicknameChangeOnWhenNull(Dictionary<Guid, LoginModel> loginModels)
@@ -156,6 +158,8 @@ public class RefreshTM2020Service
 
         var login = loginModels[wr.PlayerId];
         var mapModel = await _wrUnitOfWork.Maps.GetByUidAsync(map.MapUid, cancellationToken) ?? throw new Exception("Map is no longer available.");
+
+        UpdateLastRefreshedOn(mapModel);
 
         await AddWorldRecordAsync(wr, previousWr: null, login, mapModel, cancellationToken);
     }
@@ -239,24 +243,26 @@ public class RefreshTM2020Service
 
             currentRecordsWithCheated = await SaveLeaderboardAsync(map, records, newAndImprovedRecordAccounts, loginModels, ignoredLoginNames, previousRecordsWithCheated, cancellationToken);
         }
-        
+
         var currentRecordsWithoutCheated = currentRecordsWithCheated
             .Where(x => !ignoredLoginNames.Contains(x.PlayerId.ToString()))
                 .Select((x, i) => x with { Rank = i + 1 })
             .Cast<IRecord<Guid>>()
             .ToList();
-        
+
         var previousRecordsWithoutCheated = previousRecordsWithCheated
             .Where(x => !ignoredLoginNames.Contains(x.PlayerId.ToString()))
                 .Select((x, i) => x with { Rank = i + 1 })
             .Cast<IRecord<Guid>>()
             .ToList();
-        
+
         var diffForReporting = LeaderboardComparer.Compare(currentRecordsWithoutCheated, previousRecordsWithoutCheated);
 
         // Current records help with managing the reports
 
         var mapModel = await _wrUnitOfWork.Maps.GetByUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
+        
+        UpdateLastRefreshedOn(mapModel);
 
         // Do not use the overload, as the cheated records have been already filtered
         var wr = GetWorldRecord(currentRecordsWithoutCheated);
@@ -281,7 +287,7 @@ public class RefreshTM2020Service
 
                 previousWr.Ignored = true;
 
-                _logger.LogInformation("Removed WR: {time} by {player}", new TimeInt32(previousWr.Time), previousWr.GetPlayerNickname());
+                _logger.LogInformation("Removed WR: {time} by {player}", previousWr.TimeInt32, previousWr.GetPlayerNickname());
 
                 // Remove the discord webhook message
                 await _reportService.RemoveWorldRecordReportAsync(previousWr);
@@ -314,6 +320,20 @@ public class RefreshTM2020Service
                                          previousRecordsWithoutCheated.ToDictionary(x => x.PlayerId),
                                          mapModel,
                                          cancellationToken);
+        }
+    }
+
+    private static void UpdateLastRefreshedOn(MapModel mapModel)
+    {
+        var lastRefreshedOn = DateTime.UtcNow;
+
+        if (mapModel.LastRefreshedOn is null)
+        {
+            mapModel.LastRefreshedOn = new ScoreContextValue<DateTimeOffset>(lastRefreshedOn);
+        }
+        else
+        {
+            mapModel.LastRefreshedOn = mapModel.LastRefreshedOn with { Default = lastRefreshedOn };
         }
     }
 
@@ -476,7 +496,9 @@ public class RefreshTM2020Service
         // Compile the mess into a nice list of current leaderboard records with all its details
         var tm2020Records = RecordsToTM2020Records(records, ignoredLoginNames, loginModels, recordDict, prevRecordsDict).ToList();
 
+//#if RELEASE
         await _recordStorageService.SaveTM2020LeaderboardAsync(tm2020Records, map.MapUid, cancellationToken: cancellationToken);
+//#endif
 
         _logger.LogInformation("{map}: Leaderboard saved.", map);
 

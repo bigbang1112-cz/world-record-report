@@ -76,6 +76,8 @@ public class MapModel : DbModel
 
     public Guid? MapId { get; set; }
 
+    public ScoreContextValue<DateTimeOffset>? LastRefreshedOn { get; set; }
+
     public virtual ICollection<WorldRecordModel> WorldRecords { get; set; } = default!;
     public virtual ICollection<RecordSetChangeModel> RecordSetChanges { get; set; } = default!;
     public virtual ICollection<RecordSetDetailedChangeModel> RecordSetDetailedChanges { get; set; } = default!;

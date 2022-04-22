@@ -127,7 +127,10 @@ public class Top10Command : MapRelatedWithUidCommand
 
             CreateTop10EmbedContentFromTM2020(leaderboard, builder);
 
-            builder.AddField("Last refreshed on", "[db value to be made]", inline: true);
+            if (map.LastRefreshedOn is not null)
+            {
+                builder.AddField("Last refreshed on", map.LastRefreshedOn.Default.ToTimestampTag(), inline: true);
+            }
 
             var lastUpdatedOn = _recordStorageService.GetTM2020LeaderboardLastUpdatedOn(map.MapUid);
 

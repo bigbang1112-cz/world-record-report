@@ -2,6 +2,7 @@
 using BigBang1112.WorldRecordReportLib.Attributes;
 using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Exceptions;
+using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 using Microsoft.EntityFrameworkCore;
@@ -87,5 +88,12 @@ public class WrContext : DbContext
             .HasConversion(
                 x => JsonSerializer.Serialize(x, ReportScopeSet.JsonSerializerOptions),
                 x => JsonSerializer.Deserialize<ReportScopeSet>(x, ReportScopeSet.JsonSerializerOptions));
+
+        modelBuilder.Entity<MapModel>()
+            .Property(e => e.LastRefreshedOn)
+            .HasColumnType("text")
+            .HasConversion(
+                x => JsonSerializer.Serialize(x, ReportScopeSet.JsonSerializerOptions),
+                x => JsonSerializer.Deserialize<ScoreContextValue<DateTimeOffset>>(x, ReportScopeSet.JsonSerializerOptions));
     }
 }
