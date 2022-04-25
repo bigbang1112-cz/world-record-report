@@ -1,54 +1,52 @@
 ﻿using BigBang1112.Services;
 using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
-using BigBang1112.WorldRecordReportLib.Repos;
+using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
+using ManiaAPI.TMX;
 using Mapster;
 using Microsoft.Extensions.Logging;
-using System.IO.Compression;
-using System.Text.Json;
-using ManiaAPI.TMX;
+
+using TmxSite = BigBang1112.WorldRecordReportLib.Enums.TmxSite;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
-public class TmxReportService
+public class RefreshTmxService
 {
-    private readonly ITmxService _tmxService;
-    private readonly IWrRepo _repo;
-    private readonly IDiscordWebhookService _discordWebhookService;
-    private readonly IFileHostService _fileHostService;
-    private readonly ITmxRecordSetService _tmxRecordSetService;
-    private readonly ILogger<TmxReportService> _logger;
+    private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.Tmx)}:{nameof(ReportScopeTmx.Official)}:{nameof(ReportScopeTmxOfficial.WR)}";
 
-    public TmxReportService(ITmxService tmxService,
-                            IWrRepo repo,
+    private readonly ITmxService _tmxService;
+    private readonly IWrUnitOfWork _wrUnitOfWork;
+    private readonly RecordStorageService _recordStorageService;
+    private readonly IDiscordWebhookService _discordWebhookService;
+    private readonly ReportService _reportService;
+    private readonly ILogger<RefreshTmxService> _logger;
+
+    public RefreshTmxService(ITmxService tmxService,
+                            IWrUnitOfWork wrUnitOfWork,
+                            RecordStorageService recordStorageService,
                             IDiscordWebhookService discordWebhookService,
-                            IFileHostService fileHostService,
-                            ITmxRecordSetService tmxRecordSetService,
-                            ILogger<TmxReportService> logger)
+                            ReportService reportService,
+                            ILogger<RefreshTmxService> logger)
     {
         _tmxService = tmxService;
-        _repo = repo;
+        _wrUnitOfWork = wrUnitOfWork;
+        _recordStorageService = recordStorageService;
         _discordWebhookService = discordWebhookService;
-        _fileHostService = fileHostService;
-        _tmxRecordSetService = tmxRecordSetService;
+        _reportService = reportService;
         _logger = logger;
     }
 
     public async Task CleanupRemovedWorldRecordsAsync()
     {
-        var lastTmxWrs = await _repo.GetLastWorldRecordsInTMUFAsync(5);
+        var lastTmxWrs = await _wrUnitOfWork.WorldRecords.GetLatestByGameAsync(Game.TMUF, count: 5);
         await CleanupWorldRecordsAsync(lastTmxWrs, false);
     }
 
-    public async Task UpdateWorldRecordsAsync(TmxSite site, LeaderboardType leaderboardType)
+    public async Task UpdateWorldRecordsAsync(TmxSite tmxSite, LeaderboardType leaderboardType)
     {
-        var tmxSite = site switch
-        {
-            TmxSite.United => await _repo.GetUnitedTmxAsync(),
-            TmxSite.TMNForever => await _repo.GetTMNFTmxAsync(),
-            _ => throw new Exception()
-        };
+        var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
 
         var endOfNewActivities = false;
 
@@ -58,7 +56,7 @@ public class TmxReportService
         {
             _logger.LogInformation("Searching Nadeo United maps, most recent activity...");
 
-            recentTracks = await _tmxService.SearchAsync(site, new TrackSearchFilters
+            recentTracks = await _tmxService.SearchAsync(maniaApiTmxSite, new TrackSearchFilters
             {
                 PrimaryOrder = TrackOrder.ActivityMostRecent,
                 LeaderboardType = leaderboardType,
@@ -80,6 +78,13 @@ public class TmxReportService
         while (!endOfNewActivities && recentTracks.HasMorePages);
     }
 
+    private static ManiaAPI.TMX.TmxSite TmxSiteToManiaApiTmxSite(TmxSite site) => site switch
+    {
+        TmxSite.United => ManiaAPI.TMX.TmxSite.United,
+        TmxSite.TMNF => ManiaAPI.TMX.TmxSite.TMNForever,
+        _ => throw new NotImplementedException(),
+    };
+
     /// <summary>
     /// 
     /// </summary>
@@ -87,25 +92,27 @@ public class TmxReportService
     /// <param name="tmxTrack"></param>
     /// <param name="leaderboardType"></param>
     /// <returns>True if the end of activities was reached.</returns>
-    private async Task<bool> CheckTrackForNewRecordsAsync(TmxSiteModel tmxSite, TrackSearchItem tmxTrack, LeaderboardType leaderboardType)
+    private async Task<bool> CheckTrackForNewRecordsAsync(TmxSite tmxSite, TrackSearchItem tmxTrack, LeaderboardType leaderboardType)
     {
-        var map = await _repo.GetMapByMxIdAsync(tmxTrack.TrackId, tmxSite);
+        var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
+        
+        var map = await _wrUnitOfWork.Maps.GetByMxIdAsync(tmxTrack.TrackId, tmxSite);
 
         if (map is null)
         {
             return false;
         }
 
-        if (!_tmxRecordSetService.RecordSetExists(tmxSite, map))
+        if (!_recordStorageService.TmxLeaderboardExists(tmxSite, map.MapUid))
         {
-            var firstRecordSet = await _tmxService.GetReplaysAsync(tmxSite, tmxTrack.TrackId);
+            var firstRecordSet = await _tmxService.GetReplaysAsync(maniaApiTmxSite, tmxTrack.TrackId);
             
             if (firstRecordSet.Results.Length == 0)
             {
                 return false;
             }
 
-            await _tmxRecordSetService.SaveRecordSetAsync(tmxSite, map, firstRecordSet);
+            await _recordStorageService.SaveTmxLeaderboardAsync(firstRecordSet.Results.Adapt<TmxReplay[]>(), tmxSite, map.MapUid);
 
             await Task.Delay(500); // Give some breathing to TMX API
 
@@ -128,11 +135,11 @@ public class TmxReportService
 
         map.LastActivityOn = tmxTrack.ActivityAt.DateTime;
 
-        await _repo.SaveAsync();
+        await _wrUnitOfWork.SaveAsync();
 
         await Task.Delay(500);
 
-        var replays = await _tmxService.GetReplaysAsync(tmxSite, tmxTrack.TrackId);
+        var replays = await _tmxService.GetReplaysAsync(maniaApiTmxSite, tmxTrack.TrackId);
 
         if (replays.Results.Length == 0)
         {
@@ -140,7 +147,7 @@ public class TmxReportService
         }
 
         var recordSet = replays.Results.Adapt<TmxReplay[]>();
-        var prevRecordSet = await _tmxRecordSetService.GetRecordSetAsync(tmxSite, map);
+        var prevRecordSet = await _recordStorageService.GetTmxLeaderboardAsync(tmxSite, map.MapUid);
 
         if (prevRecordSet is not null)
         {
@@ -150,7 +157,7 @@ public class TmxReportService
         }
 
         // create a .json.gz file from replays.Results
-        await _tmxRecordSetService.SaveRecordSetAsync(tmxSite, map, recordSet);
+        await _recordStorageService.SaveTmxLeaderboardAsync(recordSet, tmxSite, map.MapUid);
 
         var currentWr = map.WorldRecords
             .Where(x => !x.Ignored)
@@ -221,7 +228,7 @@ public class TmxReportService
         return false;
     }
 
-    private void FindChangesInRecordSets(TmxReplay[] prevRecordSet, TmxReplay[] recordSet)
+    private void FindChangesInRecordSets(IEnumerable<TmxReplay> prevRecordSet, IEnumerable<TmxReplay> recordSet)
     {
         var changes = LeaderboardComparer.Compare(recordSet, prevRecordSet);
 
@@ -236,7 +243,7 @@ public class TmxReportService
         }
     }
 
-    private async Task<WorldRecordModel> ProcessNewWorldRecordAsync(TmxSiteModel tmxSite,
+    private async Task<WorldRecordModel> ProcessNewWorldRecordAsync(TmxSite tmxSite,
                                                                     MapModel map,
                                                                     WorldRecordModel? currentWr,
                                                                     int newTimeOrScore,
@@ -258,7 +265,7 @@ public class TmxReportService
         /*var wrModel = await AddNewWorldRecordAsync(db, tmxSite, map, newWr, previousWr,
             time.ToMilliseconds(), cancellationToken);*/
 
-        var tmxLogin = await _repo.GetOrAddTmxLoginAsync(user.UserId, tmxSite);
+        var tmxLogin = await _wrUnitOfWork.TmxLogins.GetOrAddAsync(user.UserId, tmxSite);
 
         tmxLogin.Nickname = user.Name;
         tmxLogin.LastSeenOn = DateTime.UtcNow;
@@ -276,99 +283,16 @@ public class TmxReportService
             ReplayId = replayId
         };
 
-        await _repo.AddWorldRecordAsync(wrModel);
+        await _wrUnitOfWork.WorldRecords.AddAsync(wrModel);
 
         if (!freshUpdate)
         {
-            var report = new ReportModel
-            {
-                Guid = Guid.NewGuid(),
-                Type = ReportModel.EType.NewWorldRecord,
-                HappenedOn = DateTime.UtcNow,
-                WorldRecord = wrModel
-            };
-
-            await _repo.AddReportAsync(report);
-
-            Discord.Embed embed;
-            if (map.Mode?.Name == NameConsts.MapModeStunts)
-                embed = _discordWebhookService.GetDefaultEmbed_NewStuntsWorldRecord(wrModel);
-            else
-                embed = _discordWebhookService.GetDefaultEmbed_NewWorldRecord(wrModel);
-
-            await SendMessageToAllWebhooksAsync(embed, report, leaderboardType);
+            await _reportService.ReportWorldRecordAsync(wrModel, ScopeOfficialWR);
         }
 
-        await _repo.SaveAsync();
+        await _wrUnitOfWork.SaveAsync();
 
         return wrModel;
-    }
-
-    private async Task SendMessageToAllWebhooksAsync(Discord.Embed embed, ReportModel report, LeaderboardType usedLeaderboardType)
-    {
-        foreach (var webhook in await _repo.GetDiscordWebhooksAsync())
-        {
-            if (string.IsNullOrWhiteSpace(webhook.Filter))
-            {
-                // Allows everything
-            }
-            else
-            {
-                try
-                {
-                    var filter = JsonHelper.Deserialize<DiscordWebhookFilter>(webhook.Filter);
-
-                    if (filter.ReportTMUF is null)
-                    {
-                        continue;
-                    }
-
-                    var map = report.WorldRecord.Map;
-
-                    if (map.TmxAuthor is null)
-                    {
-                        throw new Exception();
-                    }
-
-                    // If the filtered user+site do not match the map tmx author or leaderboard type
-                    if (!filter.ReportTMUF.Any(x =>
-                    {
-                        if (x.Site != map.TmxAuthor.Site.ShortName)
-                        {
-                            return false;
-                        }
-
-                        if (x.UserId is not null && x.UserId == map.TmxAuthor.UserId)
-                        {
-                            return true;
-                        }
-
-                        if (x.LeaderboardType == usedLeaderboardType)
-                        {
-                            return true;
-                        }
-
-                        return false;
-                    }))
-                    {
-                        continue;
-                    }
-                }
-                catch
-                {
-                    continue;
-                }
-            }
-
-            await _discordWebhookService.SendMessageAsync(webhook, snowflake => new DiscordWebhookMessageModel
-            {
-                MessageId = snowflake,
-                Report = report,
-                SentOn = DateTime.UtcNow,
-                ModifiedOn = DateTime.UtcNow,
-                Webhook = webhook
-            }, embeds: Enumerable.Repeat(embed, 1));
-        }
     }
 
     internal async Task CleanupWorldRecordsAsync(IEnumerable<WorldRecordModel> lastTmxWrs, bool onlyOneUser)
@@ -384,7 +308,7 @@ public class TmxReportService
 
             var map = wr.Map;
 
-            if (!map.MxId.HasValue)
+            if (map.MxId is null)
             {
                 throw new Exception();
             }
@@ -394,7 +318,7 @@ public class TmxReportService
 
             var replays = await _tmxService.GetReplaysAsync(siteEnum, tmxId);
 
-            if (map.Mode?.Name == NameConsts.MapModeStunts)
+            if (map.Mode?.Id == (int)MapMode.Stunts)
             {
                 // TODO
                 continue;
@@ -413,7 +337,7 @@ public class TmxReportService
 
             wr.Ignored = true;
 
-            var report = await _repo.GetReportFromWorldRecordAsync(wr);
+            var report = await _wrUnitOfWork.Reports.GetByWorldRecordAsync(wr);
 
             if (report is null)
             {
@@ -427,17 +351,17 @@ public class TmxReportService
 
             if (!onlyOneUser)
             {
-                await _repo.SaveAsync();
+                await _wrUnitOfWork.SaveAsync();
 
-                var otherWrsByThisUser = await _repo.GetWorldRecordsByTmxPlayerAsync(wr.TmxPlayer);
+                var otherWrsByThisUser = await _wrUnitOfWork.WorldRecords.GetByTmxPlayerAsync(wr.TmxPlayer);
 
-                if (otherWrsByThisUser.Count > 0)
+                if (otherWrsByThisUser.Any())
                 {
                     await CleanupWorldRecordsAsync(otherWrsByThisUser, true);
                 }
             }
 
-            await _repo.SaveAsync();
+            await _wrUnitOfWork.SaveAsync();
         }
     }
 }

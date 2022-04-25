@@ -16,6 +16,7 @@ public class RecordStorageService
         _fileHostService = fileHostService;
     }
 
+    // wtf is Standard?
     private static string GetStandardOfficialLeaderboardPath(Game game, string mapUid, string zone, string scoreContext)
     {
         var gameFolder = GetOfficialLeaderboardGameFolder(game);
@@ -24,10 +25,24 @@ public class RecordStorageService
 
         return $"records/{gameFolder}/{zone}/{mapUid}{scoreContext}";
     }
+    
+    private static string GetTmxLeaderboardPath(TmxSite site, string mapUid)
+    {
+        var gameFolder = GetTmxLeaderboardGameFolder(site);
+
+        return $"records/{gameFolder}/World/{mapUid}";
+    }
 
     public bool OfficialLeaderboardExists(Game game, string mapUid, string zone = "World", string scoreContext = "")
     {
         var path = GetStandardOfficialLeaderboardPath(game, mapUid, zone, scoreContext);
+
+        return _fileHostService.JsonExistsInApi(ApiVersion, path);
+    }
+
+    public bool TmxLeaderboardExists(TmxSite site, string mapUid)
+    {
+        var path = GetTmxLeaderboardPath(site, mapUid);
 
         return _fileHostService.JsonExistsInApi(ApiVersion, path);
     }
@@ -54,6 +69,13 @@ public class RecordStorageService
         await _fileHostService.SaveToApiAsync(records, ApiVersion, path, cancellationToken);
     }
 
+    public async Task SaveTmxLeaderboardAsync(IEnumerable<TmxReplay> records, TmxSite tmxSite, string mapUid, CancellationToken cancellationToken = default)
+    {
+        var path = GetTmxLeaderboardPath(tmxSite, mapUid);
+        
+        await _fileHostService.SaveToApiAsync(records, ApiVersion, path, cancellationToken);
+    }
+
     public ReadOnlyCollection<TM2020Record>? GetTM2020Leaderboard(string mapUid, string zone = "World", string scoreContext = "")
     {
         var path = GetStandardOfficialLeaderboardPath(Game.TM2020, mapUid, zone, scoreContext);
@@ -71,15 +93,15 @@ public class RecordStorageService
     public async Task<ReadOnlyCollection<TM2020Record>?> GetTM2020LeaderboardAsync(string mapUid, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
     {
         var path = GetStandardOfficialLeaderboardPath(Game.TM2020, mapUid, zone, scoreContext);
+        
+        return await GetFromApiAsCollectionAsync<TM2020Record>(path, cancellationToken);
+    }
 
-        var records = await _fileHostService.GetFromApiAsync<TM2020Record[]>(ApiVersion, path, cancellationToken);
+    public async Task<ReadOnlyCollection<TmxReplay>?> GetTmxLeaderboardAsync(TmxSite tmxSite, string mapUid, CancellationToken cancellationToken = default)
+    {
+        var path = GetTmxLeaderboardPath(tmxSite, mapUid);
 
-        if (records is null)
-        {
-            return null;
-        }
-
-        return new ReadOnlyCollection<TM2020Record>(records);
+        return await GetFromApiAsCollectionAsync<TmxReplay>(path, cancellationToken);
     }
 
     public DateTimeOffset? GetTM2020LeaderboardLastUpdatedOn(string mapUid, string zone = "World", string scoreContext = "")
@@ -89,11 +111,30 @@ public class RecordStorageService
         return _fileHostService.GetLastModifiedTimeFromApi(ApiVersion, path);
     }
 
+    private async Task<ReadOnlyCollection<T>?> GetFromApiAsCollectionAsync<T>(string path, CancellationToken cancellationToken)
+    {
+        var records = await _fileHostService.GetFromApiAsync<T[]>(ApiVersion, path, cancellationToken);
+
+        if (records is null)
+        {
+            return null;
+        }
+
+        return new ReadOnlyCollection<T>(records);
+    }
+
     private static string GetOfficialLeaderboardGameFolder(Game game) => game switch
     {
         Game.TM2 => "tm2",
         Game.TMUF => "tmuf",
         Game.TM2020 => "tm2020",
+        _ => throw new NotSupportedException(),
+    };
+
+    private static string GetTmxLeaderboardGameFolder(TmxSite site) => site switch
+    {
+        TmxSite.United => "tmx-united",
+        TmxSite.TMNF => "tmx-tmnf",
         _ => throw new NotSupportedException(),
     };
 }

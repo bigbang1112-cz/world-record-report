@@ -145,7 +145,7 @@ public class DiscordWebhookService : IDiscordWebhookService
                 map.Environment.Color[2]))
             .AddField("Map", TextFormatter.Deformat(map.Name), true)
             .AddField("Score", score, true)
-            .AddField("By", TextFormatter.Deformat(wr.Player?.Nickname ?? wr.TmxPlayer?.Nickname ?? "[unknown nickname]"), true);
+            .AddField("By", TextFormatter.Deformat(wr.Player?.GetMdLink() ?? wr.TmxPlayer?.GetMdLink() ?? "[unknown nickname]"), true);
 
         AddThumbnailAndUrl(builder, map);
 

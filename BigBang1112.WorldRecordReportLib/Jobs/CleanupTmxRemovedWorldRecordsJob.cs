@@ -6,9 +6,9 @@ namespace BigBang1112.WorldRecordReportLib.Jobs;
 [DisallowConcurrentExecution]
 public class CleanupTmxRemovedWorldRecordsJob : IJob
 {
-    private readonly TmxReportService tmxService;
+    private readonly RefreshTmxService tmxService;
 
-    public CleanupTmxRemovedWorldRecordsJob(TmxReportService tmxService)
+    public CleanupTmxRemovedWorldRecordsJob(RefreshTmxService tmxService)
     {
         this.tmxService = tmxService;
     }

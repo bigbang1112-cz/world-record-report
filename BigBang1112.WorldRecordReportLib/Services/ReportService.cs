@@ -19,7 +19,7 @@ public class ReportService
         _discordWebhookService = discordWebhookService;
     }
 
-    public async Task ReportWorldRecordAsync(WorldRecordModel wr, string scope, CancellationToken cancellationToken)
+    public async Task ReportWorldRecordAsync(WorldRecordModel wr, string scope, CancellationToken cancellationToken = default)
     {
         var embed = GetDefaultEmbed_NewWorldRecord(wr);
 
@@ -157,6 +157,13 @@ public class ReportService
                 {
                     All = true
                 }
+            },
+            Tmx = new()
+            {
+                Official = new()
+                {
+                    All = true
+                }
             }
         };
 
@@ -200,19 +207,27 @@ public class ReportService
         var map = wr.Map;
 
         var isTMUF = (Game)map.Game.Id == Game.TMUF;
+        var isStunts = map.IsStuntsMode();
 
-        var time = wr.TimeInt32.ToString(useHundredths: isTMUF);
+        var score = isStunts ? wr.Time.ToString() : wr.TimeInt32.ToString(useHundredths: isTMUF);
 
         if (wr.PreviousWorldRecord is not null)
         {
-            var delta = new TimeInt32(wr.Time - wr.PreviousWorldRecord.Time).TotalSeconds
-                .ToString(isTMUF ? "0.00" : "0.000", CultureInfo.InvariantCulture);
+            if (isStunts)
+            {
+                score += $" (+{wr.Time - wr.PreviousWorldRecord.Time})";
+            }
+            else
+            {
+                var delta = new TimeInt32(wr.Time - wr.PreviousWorldRecord.Time).TotalSeconds
+                    .ToString(isTMUF ? "0.00" : "0.000", CultureInfo.InvariantCulture);
 
-            time += $" ({delta})";
+                score += $" ({delta})";
+            }
         }
 
         var nickname = FilterOutNickname(
-            nickname: wr.GetPlayerNicknameDeformattedForDiscord(),
+            nickname: wr.GetPlayerNicknameMdLink(),
             loginIfFilteredOut: wr.GetPlayerLogin());
 
         return new Discord.EmbedBuilder()
@@ -224,8 +239,8 @@ public class ReportService
                 map.Environment.Color[1],
                 map.Environment.Color[2]))
             .WithThumbnailUrl(map.GetThumbnailUrl())
-            .AddField("Map", $"[{map.DeformattedName}]({map.GetInfoUrl()})", true)
-            .AddField("Time", time, true)
+            .AddField("Map", map.GetMdLink(), true)
+            .AddField(isStunts ? "Score" : "Time", score, true)
             .AddField("By", nickname, true)
             .Build();
     }
@@ -251,12 +266,12 @@ public class ReportService
             .WithThumbnailUrl(map.GetThumbnailUrl())
             .AddField("Map", $"[{map.DeformattedName}]({map.GetInfoUrl()})", true)
             .AddField("Time", time, true)
-            .AddField("By", previousWr.GetPlayerNicknameDeformattedForDiscord(), true);
+            .AddField("By", previousWr.GetPlayerNicknameMdLink(), true);
 
         if (currentWr is not null)
         {
             var prevTime = currentWr.TimeInt32.ToString();
-            var prevNickname = currentWr.GetPlayerNicknameDeformattedForDiscord();
+            var prevNickname = currentWr.GetPlayerNicknameMdLink();
 
             builder = builder
                 .AddField("New time", prevTime, true)
