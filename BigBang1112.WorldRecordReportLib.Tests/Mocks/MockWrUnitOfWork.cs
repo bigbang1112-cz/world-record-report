@@ -17,4 +17,5 @@ public class MockWrUnitOfWork : MockUnitOfWork, IWrUnitOfWork
     public IIgnoredLoginRepo IgnoredLogins { get; } = new MockIgnoredLoginRepo();
     public IDiscordWebhookRepo DiscordWebhooks { get; } = new MockDiscordWebhookRepo();
     public IReportRepo Reports { get; } = new MockReportRepo();
+    public ITmxLoginRepo TmxLogins { get; } = new MockTmxLoginRepo();
 }

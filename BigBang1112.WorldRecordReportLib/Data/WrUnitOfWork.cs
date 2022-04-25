@@ -15,6 +15,7 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
     public IIgnoredLoginRepo IgnoredLogins { get; }
     public IDiscordWebhookRepo DiscordWebhooks { get; }
     public IReportRepo Reports { get; }
+    public ITmxLoginRepo TmxLogins { get; }
 
     public WrUnitOfWork(WrContext context, ILogger<WrUnitOfWork> logger) : base(context, logger)
     {
@@ -28,5 +29,6 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
         IgnoredLogins = new IgnoredLoginRepo(context);
         DiscordWebhooks = new DiscordWebhookRepo(context);
         Reports = new ReportRepo(context);
+        TmxLogins = new TmxLoginRepo(context);
     }
 }

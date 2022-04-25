@@ -14,4 +14,5 @@ public interface IWrUnitOfWork : IUnitOfWork
     IIgnoredLoginRepo IgnoredLogins { get; }
     IDiscordWebhookRepo DiscordWebhooks { get; }
     IReportRepo Reports { get; }
+    ITmxLoginRepo TmxLogins { get; }
 }

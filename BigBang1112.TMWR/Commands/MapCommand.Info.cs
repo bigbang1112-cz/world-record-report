@@ -66,7 +66,7 @@ public partial class MapCommand
             if (wr is not null)
             {
                 builder.AddField("World record",
-                    $"**` {wr.GetTimeFormattedToGame()} `** by **{wr.GetPlayerNicknameDeformattedForDiscord()}**");
+                    $"**` {wr.GetTimeFormattedToGame()} `** by **{wr.GetPlayerNicknameMdLink()}**");
 
                 builder.AddField("World record driven on", wr.DrivenOn.ToTimestampTag(TimestampTagStyles.LongDateTime));
             }

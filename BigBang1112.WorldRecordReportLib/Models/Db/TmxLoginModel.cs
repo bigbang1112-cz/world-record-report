@@ -3,10 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class TmxLoginModel
+public class TmxLoginModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     public int UserId { get; set; }
 

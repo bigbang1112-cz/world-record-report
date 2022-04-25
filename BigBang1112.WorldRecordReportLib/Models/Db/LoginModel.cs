@@ -38,7 +38,7 @@ public class LoginModel : DbModel
         return string.IsNullOrWhiteSpace(Nickname) ? Name : TextFormatter.Deformat(Nickname).Trim();
     }
 
-    public string GetDeformattedNicknameForDiscord()
+    public string GetMdLink()
     {
         var escapedNickname = GetDeformattedNickname().EscapeDiscord();
 

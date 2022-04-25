@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BigBang1112.WorldRecordReportLib.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace BigBang1112.WorldRecordReportLib.Repos;
 
@@ -25,5 +26,24 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
         return await _context.WorldRecords
             .OrderByDescending(x => x.PublishedOn)
             .FirstOrDefaultAsync(x => x.Map.MapUid == mapUid && !x.Ignored, cancellationToken);
+    }
+
+    public async Task<IEnumerable<WorldRecordModel>> GetLatestByGameAsync(Game game, int count, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords
+            .Where(x => !x.Ignored && x.Map.Game.Id == (int)game)
+            .OrderByDescending(x => x.DrivenOn)
+            .Take(count)
+            .Include(x => x.Map)
+                .ThenInclude(x => x.Mode)
+            .Include(x => x.TmxPlayer)
+                .ThenInclude(x => x!.Site)
+            .Include(x => x.PreviousWorldRecord)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<WorldRecordModel>> GetByTmxPlayerAsync(TmxLoginModel tmxPlayer, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords.Where(x => x.TmxPlayer != null && x.TmxPlayer.Id == tmxPlayer.Id).ToListAsync(cancellationToken);
     }
 }

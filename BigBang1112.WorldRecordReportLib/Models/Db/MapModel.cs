@@ -199,6 +199,18 @@ public class MapModel : DbModel
 
         if (infoUrl is null)
         {
+            return DeformattedName;
+        }
+
+        return $"[{DeformattedName}]({infoUrl})";
+    }
+
+    public string GetMdLinkHumanized()
+    {
+        var infoUrl = GetInfoUrl();
+
+        if (infoUrl is null)
+        {
             return GetHumanizedDeformattedName();
         }
 

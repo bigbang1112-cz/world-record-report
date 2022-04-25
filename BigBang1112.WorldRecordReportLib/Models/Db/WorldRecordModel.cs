@@ -82,9 +82,9 @@ public class WorldRecordModel : DbModel
         return Player?.GetDeformattedNickname() ?? TmxPlayer?.Nickname ?? "[unknown player]";
     }
 
-    public string GetPlayerNicknameDeformattedForDiscord()
+    public string GetPlayerNicknameMdLink()
     {
-        return Player?.GetDeformattedNicknameForDiscord() ?? TmxPlayer?.Nickname?.EscapeDiscord() ?? "[unknown player]";
+        return Player?.GetMdLink() ?? TmxPlayer?.GetMdLink() ?? "[unknown player]";
     }
 
     public string GetTimeFormattedToGame()

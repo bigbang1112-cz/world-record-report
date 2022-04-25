@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BigBang1112.WorldRecordReportLib.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace BigBang1112.WorldRecordReportLib.Repos;
 
@@ -14,6 +15,11 @@ public class MapRepo : Repo<MapModel>, IMapRepo
     public async Task<List<MapModel>> GetByCampaignAsync(CampaignModel campaign, CancellationToken cancellationToken = default)
     {
         return await _context.Maps.Where(x => x.Campaign == campaign).ToListAsync(cancellationToken);
+    }
+
+    public async Task<MapModel?> GetByMxIdAsync(int trackId, TmxSite tmxSite, CancellationToken cancellationToken = default)
+    {
+        return await _context.Maps.SingleOrDefaultAsync(x => x.TmxAuthor != null && x.TmxAuthor.Site.Id == (int)tmxSite && x.MxId == trackId, cancellationToken);
     }
 
     public async Task<MapModel?> GetByUidAsync(string mapUid, CancellationToken cancellationToken = default)
