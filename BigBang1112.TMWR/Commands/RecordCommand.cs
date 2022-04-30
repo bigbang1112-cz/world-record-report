@@ -23,7 +23,7 @@ public class RecordCommand : MapRelatedWithUidCommand
     private readonly RecordStorageService _recordStorageService;
     private readonly IConfiguration _config;
 
-    private RecordSet? recordSet;
+    private LeaderboardTM2? recordSet;
     private TmxReplay[]? recordSetTmx;
     private ReadOnlyCollection<TM2020Record>? tm2020Leaderboard;
     private string nickname = "";
@@ -175,7 +175,7 @@ public class RecordCommand : MapRelatedWithUidCommand
 
         nickname = loginModel?.GetDeformattedNickname() ?? record.Login;
 
-        return new(record.Rank, record.Time, nickname, record.Login, DrivenOn: null);
+        return new(record.Rank, record.Time.TotalMilliseconds, nickname, record.Login, DrivenOn: null);
     }
 
     private async Task<DetailedRecord?> FindDetailedRecordFromTMUFAsync(MapModel map)

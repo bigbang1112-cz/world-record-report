@@ -76,6 +76,13 @@ public class RecordStorageService
         await _fileHostService.SaveToApiAsync(records, ApiVersion, path, cancellationToken);
     }
 
+    public async Task SaveTM2LeaderboardAsync(LeaderboardTM2 leaderboard, string mapUid, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
+    {
+        var path = GetStandardOfficialLeaderboardPath(Game.TM2, mapUid, zone, scoreContext);
+        
+        await _fileHostService.SaveToApiAsync(leaderboard, ApiVersion, path, cancellationToken);
+    }
+
     public ReadOnlyCollection<TM2020Record>? GetTM2020Leaderboard(string mapUid, string zone = "World", string scoreContext = "")
     {
         var path = GetStandardOfficialLeaderboardPath(Game.TM2020, mapUid, zone, scoreContext);
@@ -95,6 +102,13 @@ public class RecordStorageService
         var path = GetStandardOfficialLeaderboardPath(Game.TM2020, mapUid, zone, scoreContext);
         
         return await GetFromApiAsCollectionAsync<TM2020Record>(path, cancellationToken);
+    }
+
+    public async Task<LeaderboardTM2?> GetTM2LeaderboardAsync(string mapUid, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
+    {
+        var path = GetStandardOfficialLeaderboardPath(Game.TM2, mapUid, zone, scoreContext);
+
+        return await _fileHostService.GetFromApiAsync<LeaderboardTM2>(ApiVersion, path, cancellationToken);
     }
 
     public async Task<ReadOnlyCollection<TmxReplay>?> GetTmxLeaderboardAsync(TmxSite tmxSite, string mapUid, CancellationToken cancellationToken = default)

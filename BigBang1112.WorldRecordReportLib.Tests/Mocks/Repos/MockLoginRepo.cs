@@ -73,4 +73,24 @@ public class MockLoginRepo : MockRepo<LoginModel>, ILoginRepo
             .Select(x => x.Name)
             .ToList().AsEnumerable());
     }
+
+    public Task<LoginModel> GetOrAddAsync(Game game, string name, string nickname, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Dictionary<string, LoginModel>> GetByNamesAsync(Game game, IEnumerable<string> logins, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<IEnumerable<LoginModel>> GetAllFromTM2Async(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Dictionary<string, LoginModel>> GetOrAddByNamesAsync(Game game, Dictionary<string, string> loginNicknameDictionary, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 }

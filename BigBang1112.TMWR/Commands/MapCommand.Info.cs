@@ -82,7 +82,7 @@ public partial class MapCommand
 
             var lastTop10Change = await _repo.GetLastRecordSetDetailedChangeOnMapAsync(map);
 
-            var recordSet = default(RecordSet);
+            var recordSet = default(LeaderboardTM2);
 
             if (lastTop10Change is not null)
             {
@@ -122,7 +122,7 @@ public partial class MapCommand
             }
         }
 
-        private async Task<RecordSet?> AddLastTop10ActivityAsync(MapModel map,
+        private async Task<LeaderboardTM2?> AddLastTop10ActivityAsync(MapModel map,
                                                                  EmbedBuilder builder,
                                                                  RecordSetDetailedChangeModel lastTop10Change)
         {
@@ -164,7 +164,7 @@ public partial class MapCommand
 
                     if (record is not null)
                     {
-                        var time = new TimeInt32(record.Time);
+                        var time = record.Time;
                         var rank = record.Rank;
 
                         activityText = $"` {rank} ` **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** by **{lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}**";
@@ -186,7 +186,7 @@ public partial class MapCommand
 
                     if (record is not null)
                     {
-                        var time = new TimeInt32(record.Time);
+                        var time = record.Time;
                         var rank = record.Rank;
 
                         activityText = $"From: **` {prevTime.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {prevRank} `)\nTo: **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {rank} `)\nBy: **{lastTop10Change.Login.GetDeformattedNickname()}**";

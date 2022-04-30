@@ -18,6 +18,11 @@ public record TM2020Record : IRecord<Guid>
         init => Rank = value.GetValueOrDefault();
     }
 
+    public string GetDisplayNameMdLink()
+    {
+        return $"[{DisplayName?.EscapeDiscord() ?? PlayerId.ToString()}](https://trackmania.io/#/player/{PlayerId})";
+    }
+
     public override string ToString()
     {
         return $"{Time} by {DisplayName ?? PlayerId.ToString()}";

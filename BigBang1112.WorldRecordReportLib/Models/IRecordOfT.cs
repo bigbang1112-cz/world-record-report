@@ -7,4 +7,6 @@
 public interface IRecord<T> : IRecord where T : notnull
 {
     T PlayerId { get; init; }
+
+    string GetDisplayNameMdLink();
 }

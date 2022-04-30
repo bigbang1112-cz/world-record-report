@@ -13,11 +13,15 @@ using BigBang1112.WorldRecordReportLib.Services.Wrappers;
 using ManiaAPI.NadeoAPI;
 using ManiaAPI.TrackmaniaAPI;
 using BigBang1112.WorldRecordReport.DiscordBot;
+using BigBang1112.Services;
+using BigBang1112.WorldRecordReportLib.Converters.Json;
 
 var cultureInfo = (CultureInfo)CultureInfo.InvariantCulture.Clone();
 cultureInfo.NumberFormat.NumberGroupSeparator = " ";
 
 CultureInfo.CurrentCulture = cultureInfo;
+
+FileHostService.AddJsonConverter(new UniqueRecordConverter());
 
 var assembly = typeof(Program).Assembly;
 
@@ -50,10 +54,9 @@ builder.Services.AddScoped<IGameRepo, GameRepo>();
 builder.Services.AddScoped<IMapRepo, MapRepo>();
 builder.Services.AddScoped<ILoginRepo, LoginRepo>();
 
-builder.Services.AddScoped<IRecordSetService, RecordSetService>();
 builder.Services.AddScoped<IDiscordWebhookService, DiscordWebhookService>();
 builder.Services.AddScoped<ILeaderboardsManialinkService, LeaderboardsManialinkService>();
-builder.Services.AddScoped<ITM2ReportService, TM2ReportService>();
+builder.Services.AddScoped<RefreshTM2Service>();
 builder.Services.AddScoped<RefreshTM2020Service>();
 
 builder.Services.AddScoped<WrAuthService>();

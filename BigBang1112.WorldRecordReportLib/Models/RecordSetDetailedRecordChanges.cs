@@ -3,17 +3,17 @@
 public class RecordSetDetailedRecordChanges
 {
     public IEnumerable<string> NewRecords { get; init; }
-    public IEnumerable<RecordSetDetailedRecord> ImprovedRecords { get; init; }
-    public IEnumerable<RecordSetDetailedRecord> RemovedRecords { get; init; }
-    public IEnumerable<RecordSetDetailedRecord> WorsenRecords { get; init; }
-    public IEnumerable<RecordSetDetailedRecord> PushedOffRecords { get; init; }
+    public IEnumerable<TM2Record> ImprovedRecords { get; init; }
+    public IEnumerable<TM2Record> RemovedRecords { get; init; }
+    public IEnumerable<TM2Record> WorsenRecords { get; init; }
+    public IEnumerable<TM2Record> PushedOffRecords { get; init; }
 
     public RecordSetDetailedRecordChanges(
         IEnumerable<string> newRecords,
-        IEnumerable<RecordSetDetailedRecord> improvedRecords,
-        IEnumerable<RecordSetDetailedRecord> removedRecords,
-        IEnumerable<RecordSetDetailedRecord> worsenRecords,
-        IEnumerable<RecordSetDetailedRecord> pushedOffRecords)
+        IEnumerable<TM2Record> improvedRecords,
+        IEnumerable<TM2Record> removedRecords,
+        IEnumerable<TM2Record> worsenRecords,
+        IEnumerable<TM2Record> pushedOffRecords)
     {
         NewRecords = newRecords;
         ImprovedRecords = improvedRecords;

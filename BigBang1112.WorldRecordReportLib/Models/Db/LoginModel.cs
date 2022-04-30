@@ -11,6 +11,7 @@ public class LoginModel : DbModel
 {
     [Required]
     public virtual GameModel Game { get; set; } = default!;
+    public virtual int GameId { get; set; }
 
     [Required]
     [StringLength(255)]

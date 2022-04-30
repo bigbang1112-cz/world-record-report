@@ -77,7 +77,7 @@
 
         await _repo.AddReportAsync(report);
 
-        Discord.Embed embed;
+        /*Discord.Embed embed;
         if (wrModel.Map.Mode?.Name == NameConsts.MapModeStunts)
             embed = _discordWebhookService.GetDefaultEmbed_NewStuntsWorldRecord(wrModel);
         else
@@ -104,6 +104,6 @@
             }, embeds: Enumerable.Repeat(embed, 1));
 
             await _repo.SaveAsync();
-        }
+        }*/
     }
 }

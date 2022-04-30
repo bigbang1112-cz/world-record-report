@@ -22,6 +22,16 @@ public class MockWorldRecordRepo : MockRepo<WorldRecordModel>, IWorldRecordRepo
         return await Task.FromResult(Entities.SingleOrDefault(x => x.Map.MapUid == mapUid));
     }
 
+    public Task<IEnumerable<WorldRecordModel>> GetHistoryByMapAsync(MapModel map, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<IEnumerable<WorldRecordModel>> GetHistoriesByMapGroupAsync(MapGroupModel mapGroup, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<IEnumerable<WorldRecordModel>> GetLatestByGameAsync(Game game, int count, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();

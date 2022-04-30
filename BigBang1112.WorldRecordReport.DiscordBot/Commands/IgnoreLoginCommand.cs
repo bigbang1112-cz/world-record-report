@@ -83,7 +83,7 @@ public class IgnoreLoginCommand : DiscordBotCommand
 
         foreach (var map in await _wrUnitOfWork.WorldRecords.GetAllMapsOfPlayerAsync(loginModel))
         {
-            await _refreshTM2020Service.RefreshAsync(map.Adapt<MapRefreshData>(), forceUpdate: true);
+            await _refreshTM2020Service.RefreshAsync(map, forceUpdate: true);
         }
 
         return new DiscordBotMessage { Message = $"{loginModel.GetDeformattedNickname()} will eventually disappear." };

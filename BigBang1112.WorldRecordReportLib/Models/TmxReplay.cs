@@ -34,6 +34,12 @@ public class TmxReplay : IRecord<int>
         init => UserName = value;
     }
 
+    public string GetDisplayNameMdLink()
+    {
+        // It's hard to pass the site url to this one
+        return UserName?.EscapeDiscord() ?? UserId.ToString();
+    }
+
     public override string ToString()
     {
         return $"{Rank?.ToString() ?? "-"}) {new TimeInt32(ReplayTime)} by {UserId} ({ReplayAt})";

@@ -11,4 +11,9 @@ public record struct TM2020RecordFundamental : IRecord<Guid>
     Guid IRecord<Guid>.PlayerId { get => AccountId; init => AccountId = value; }
     TimeInt32 IRecord.Time { get => Score; init => Score = value; }
     string? IRecord.DisplayName { get; init; }
+
+    public string GetDisplayNameMdLink()
+    {
+        throw new NotImplementedException();
+    }
 }

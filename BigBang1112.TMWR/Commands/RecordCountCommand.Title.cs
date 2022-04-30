@@ -55,7 +55,7 @@ public partial class RecordCountCommand
 
                 await deferer.DeferAsync();
 
-                var recordCounts = new Dictionary<string, Task<RecordSet?>>();
+                var recordCounts = new Dictionary<string, Task<LeaderboardTM2?>>();
 
                 foreach (var group in titlePack.MapGroups)
                 {

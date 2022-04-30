@@ -3,10 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class RecordCountModel
+public class RecordCountModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     public virtual MapModel Map { get; set; } = default!;
 

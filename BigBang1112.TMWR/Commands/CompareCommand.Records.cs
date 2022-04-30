@@ -79,8 +79,8 @@ public partial class CompareCommand
                 var rec1LoginModel = await _repo.GetLoginAsync(rec1.Login);
                 var rec2LoginModel = await _repo.GetLoginAsync(rec2.Login);
 
-                record1 = new MiniRecord(rec1.Rank, rec1.Time, rec1LoginModel?.GetDeformattedNickname().EscapeDiscord() ?? rec1.Login);
-                record2 = new MiniRecord(rec2.Rank, rec2.Time, rec2LoginModel?.GetDeformattedNickname().EscapeDiscord() ?? rec2.Login);
+                record1 = new MiniRecord(rec1.Rank, rec1.Time.TotalMilliseconds, rec1LoginModel?.GetDeformattedNickname().EscapeDiscord() ?? rec1.Login);
+                record2 = new MiniRecord(rec2.Rank, rec2.Time.TotalMilliseconds, rec2LoginModel?.GetDeformattedNickname().EscapeDiscord() ?? rec2.Login);
             }
             else if (map.Game.IsTMUF())
             {

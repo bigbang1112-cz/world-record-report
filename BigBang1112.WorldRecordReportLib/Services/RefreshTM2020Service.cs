@@ -11,7 +11,7 @@ using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
-public class RefreshTM2020Service
+public class RefreshTM2020Service : RefreshService
 {
     private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.Official)}:{nameof(ReportScopeTM2020Official.WR)}";
     private const string ScopeOfficialTop10 = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.Official)}:{nameof(ReportScopeTM2020Official.Changes)}";
@@ -32,7 +32,7 @@ public class RefreshTM2020Service
                                 INadeoApiService nadeoApiService,
                                 ITrackmaniaApiService trackmaniaApiService,
                                 IGhostService ghostService,
-                                ILogger<RefreshTM2020Service> logger)
+                                ILogger<RefreshTM2020Service> logger) : base(logger)
     {
         _refreshSchedule = refreshSchedule;
         _recordStorageService = recordStorageService;
@@ -57,9 +57,9 @@ public class RefreshTM2020Service
         await RefreshAsync(map, forceUpdate, cancellationToken);
     }
 
-    public async Task RefreshAsync(MapRefreshData map, bool forceUpdate = false, CancellationToken cancellationToken = default)
+    public async Task RefreshAsync(MapModel map, bool forceUpdate = false, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Refreshing TM2020 map: {map}", map);
+        _logger.LogInformation("Refreshing TM2020 map: {map}", map.DeformattedName);
 
         var topLbCollection = await _nadeoApiService.GetTopLeaderboardAsync(map.MapUid, length: 20, cancellationToken: cancellationToken);
 
@@ -138,7 +138,9 @@ public class RefreshTM2020Service
         return hadNullLastNicknameChangeOn;
     }
 
-    private async Task CreateLeaderboardAsync(MapRefreshData map,
+    // This method has a major issue: it creates double WR in the database when the leaderboard files are deleted
+    // Solution: use the RefreshTM2Service way
+    private async Task CreateLeaderboardAsync(MapModel map,
                                               Record[] records,
                                               Dictionary<Guid, LoginModel> loginModels,
                                               IEnumerable<string> ignoredLoginNames,
@@ -185,7 +187,7 @@ public class RefreshTM2020Service
         return currentRecords.FirstOrDefault(x => x.Time > TimeInt32.Zero && !ignoredLoginNames.Contains(x.PlayerId.ToString()));
     }
 
-    private async Task CompareLeaderboardAsync(MapRefreshData map,
+    private async Task CompareLeaderboardAsync(MapModel map,
                                                Record[] records,
                                                Dictionary<Guid, LoginModel> loginModels,
                                                IEnumerable<string> ignoredLoginNames,
@@ -264,6 +266,28 @@ public class RefreshTM2020Service
         
         UpdateLastRefreshedOn(mapModel);
 
+        // add record changes
+        if (diffForDownloading is not null)
+        {
+            var goneLoginModels = await _wrUnitOfWork.Logins.GetByNamesAsync(Game.TM2020, diffForDownloading.PushedOffRecords.Concat(diffForDownloading.RemovedRecords).Select(x => x.PlayerId), cancellationToken);
+
+            foreach (var (playerId, loginModel) in goneLoginModels)
+            {
+                if (!loginModels.ContainsKey(playerId))
+                {
+                    loginModels[playerId] = loginModel;
+                }
+            }
+
+            var detailedChanges = CreateListOfRecordChanges(diffForDownloading, mapModel, loginModels);
+
+            foreach (var change in detailedChanges)
+            {
+                await _wrUnitOfWork.RecordSetDetailedChanges.AddAsync(change, cancellationToken);
+            }
+        }
+        //
+
         // Do not use the overload, as the cheated records have been already filtered
         var wr = GetWorldRecord(currentRecordsWithoutCheated);
 
@@ -312,7 +336,7 @@ public class RefreshTM2020Service
                 _logger.LogInformation("Ignoring the report - already reported.");
             }
         }
-
+        
         if (diffForReporting is not null)
         {
             await ReportDifferencesAsync(diffForReporting,
@@ -373,75 +397,19 @@ public class RefreshTM2020Service
                                               MapModel map,
                                               CancellationToken cancellationToken) where TPlayerId : notnull
     {
-        if (currentRecords.Count == 0)
+        var changes = CreateLeaderboardChangesRich(diff, currentRecords, previousRecords);
+
+        if (changes is null)
         {
-            // Can happen if record/s got removed to a point there are none in the leaderboard
             return;
         }
-
-        var newRecords = new List<IRecord<TPlayerId>>();
-        var improvedRecords = new List<(IRecord<TPlayerId>, IRecord<TPlayerId>)>();
-        var removedRecords = new List<IRecord<TPlayerId>>();
-        var pushedOffRecords = new List<IRecord<TPlayerId>>();
-        var worsenedRecords = new List<(IRecord<TPlayerId>, IRecord<TPlayerId>)>();
-
-        foreach (var rec in diff.NewRecords)
-        {
-            var currentRecord = currentRecords[rec.PlayerId];
-
-            _logger.LogInformation("New record: {rank}) {time} by {player}", currentRecord.Rank, currentRecord.Time, currentRecord.DisplayName);
-
-            newRecords.Add(currentRecord);
-        }
-
-        foreach (var rec in diff.ImprovedRecords)
-        {
-            var currentRecord = currentRecords[rec.PlayerId];
-            var prevRecord = previousRecords[rec.PlayerId];
-
-            _logger.LogInformation("Improved record: {previousRank}) {previousTime} to {currentRank}) {currentTime} by {player}",
-                prevRecord.Rank, prevRecord.Time, currentRecord.Rank, currentRecord.Time, currentRecord.DisplayName);
-
-            improvedRecords.Add((currentRecord, prevRecord));
-        }
-
-        foreach (var rec in diff.RemovedRecords)
-        {
-            var prevRecord = previousRecords[rec.PlayerId];
-
-            _logger.LogInformation("Removed record: {rank}) {time} by {player}", prevRecord.Rank, prevRecord.Time, prevRecord.DisplayName);
-
-            removedRecords.Add(prevRecord);
-        }
-
-        foreach (var rec in diff.PushedOffRecords)
-        {
-            var prevRecord = previousRecords[rec.PlayerId];
-
-            _logger.LogInformation("Pushed off record: {rank}) {time} by {player}", prevRecord.Rank, prevRecord.Time, prevRecord.DisplayName);
-
-            pushedOffRecords.Add(prevRecord);
-        }
-
-        foreach (var rec in diff.WorsenRecords)
-        {
-            var currentRecord = currentRecords[rec.PlayerId];
-            var prevRecord = previousRecords[rec.PlayerId];
-
-            _logger.LogInformation("Worsened record: {previousRank}) {previousTime} to {currentRank}) {currentTime} by {player}",
-                prevRecord.Rank, prevRecord.Time, currentRecord.Rank, currentRecord.Time, currentRecord.DisplayName);
-
-            worsenedRecords.Add((currentRecord, prevRecord));
-        }
-
-        var changes = new LeaderboardChangesRich<TPlayerId>(newRecords, improvedRecords, removedRecords, worsenedRecords, pushedOffRecords);
 
         await _reportService.ReportDifferencesAsync(changes, map, ScopeOfficialTop10, cancellationToken);
     }
 
     private async Task ReportWorldRecordAsync(WorldRecordModel wr, IEnumerable<WorldRecordModel> removedWrs, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("New WR: {time} by {player}", wr.Time, wr.GetPlayerNicknameDeformatted());
+        _logger.LogInformation("New WR: {time} by {player}", wr.TimeInt32, wr.GetPlayerNicknameDeformatted());
 
         if (removedWrs.Any())
         {
@@ -472,7 +440,7 @@ public class RefreshTM2020Service
         return wrModel;
     }
 
-    private async Task<List<TM2020Record>> SaveLeaderboardAsync(MapRefreshData map,
+    private async Task<List<TM2020Record>> SaveLeaderboardAsync(MapModel map,
                                                                 Record[] records,
                                                                 IEnumerable<Guid> accountIds,
                                                                 Dictionary<Guid, LoginModel> loginModels,
@@ -480,7 +448,7 @@ public class RefreshTM2020Service
                                                                 ReadOnlyCollection<TM2020Record>? prevRecords,
                                                                 CancellationToken cancellationToken)
     {
-        _logger.LogInformation("{map}: Saving the leaderboard...", map);
+        _logger.LogInformation("{map}: Saving the leaderboard...", map.DeformattedName);
 
         // Map GUID (not UID) is required for the MapRecords request to receive the ghost urls
         var mapId = await _wrUnitOfWork.Maps.GetMapIdByMapUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
@@ -500,7 +468,7 @@ public class RefreshTM2020Service
         await _recordStorageService.SaveTM2020LeaderboardAsync(tm2020Records, map.MapUid, cancellationToken: cancellationToken);
 //#endif
 
-        _logger.LogInformation("{map}: Leaderboard saved.", map);
+        _logger.LogInformation("{map}: Leaderboard saved.", map.DeformattedName);
 
         // Download ghosts from recordDetails to the Ghosts folder in this part of the code
         foreach (var rec in recordDetails)
@@ -517,7 +485,7 @@ public class RefreshTM2020Service
         return tm2020Records;
     }
 
-    private async Task DownloadMissingGhostsAsync(MapRefreshData map, IEnumerable<TM2020Record> records, CancellationToken cancellationToken)
+    private async Task DownloadMissingGhostsAsync(MapModel map, IEnumerable<TM2020Record> records, CancellationToken cancellationToken)
     {
         foreach (var rec in records)
         {

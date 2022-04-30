@@ -33,10 +33,24 @@ public class ReportService
 
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
-        await ReportToAllScopedWebhooksAsync(report, embed, scope, cancellationToken);
+        var embeds = new List<Discord.Embed> { embed };
+
+        if (wr.Unverified)
+        {
+            embeds.Add(
+                new Discord.EmbedBuilder()
+                    .WithFooter("This report was sent early using the Leaderboards manialink and will be verified within an hour.")
+                    .Build()
+            );
+        }
+
+        await ReportToAllScopedWebhooksAsync(report, embeds, scope, cancellationToken);
     }
 
-    public async Task ReportRemovedWorldRecordsAsync(WorldRecordModel wr, IEnumerable<WorldRecordModel> removedWrs, string scope, CancellationToken cancellationToken)
+    public async Task ReportRemovedWorldRecordsAsync(WorldRecordModel wr,
+                                                     IEnumerable<WorldRecordModel> removedWrs,
+                                                     string scope,
+                                                     CancellationToken cancellationToken = default)
     {
         var embed = GetDefaultEmbed_RemovedWorldRecord(wr, removedWrs);
 
@@ -51,13 +65,13 @@ public class ReportService
 
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
-        await ReportToAllScopedWebhooksAsync(report, embed, scope, cancellationToken);
+        await ReportToAllScopedWebhooksAsync(report, embed.Yield(), scope, cancellationToken);
     }
 
     public async Task ReportDifferencesAsync<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes,
                                                         MapModel map,
                                                         string scope,
-                                                        CancellationToken cancellationToken) where TPlayerId : notnull
+                                                        CancellationToken cancellationToken = default) where TPlayerId : notnull
     {
         var lines = CreateLeaderboardChangesStringsForDiscord(changes);
 
@@ -67,14 +81,16 @@ public class ReportService
         }
 
         var embed = new Discord.EmbedBuilder()
-            .WithTitle(map.GetHumanizedDeformattedName())
+            .WithTitle($"{map.GetHumanizedDeformattedName()}: Top 10 has changed!")
             .WithUrl(map.GetInfoUrl())
             .WithDescription(string.Join('\n', lines))
-            .WithBotFooter("Leaderboard changes within Top 10 | Powered by wr.bigbang1112.cz")
+            // .AddField("Top 10 has changed!", string.Join('\n', lines))
+            .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
             .WithColor(new Discord.Color(
                 map.Environment.Color[0],
                 map.Environment.Color[1],
                 map.Environment.Color[2]))
+            .WithCurrentTimestamp()
             .Build();
 
         var report = new ReportModel
@@ -86,7 +102,7 @@ public class ReportService
 
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
-        await ReportToAllScopedWebhooksAsync(report, embed, scope, cancellationToken);
+        await ReportToAllScopedWebhooksAsync(report, embed.Yield(), scope, cancellationToken);
     }
 
     private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
@@ -98,7 +114,7 @@ public class ReportService
 
         foreach (var record in newRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **[{record.DisplayName?.EscapeDiscord() ?? record.PlayerId.ToString()}](https://trackmania.io/#/player/{record.PlayerId})**");
+            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **{record.GetDisplayNameMdLink()}**");
         }
         
         foreach (var improvedRecord in improvedRecords)
@@ -111,12 +127,12 @@ public class ReportService
                 ? $"` {delta} `, from ` {previousRecord.Time} `"
                 : $"` {delta} `, from ` {previousRecord.Rank:00} ` ` {previousRecord.Time} `";
 
-            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"` {currentRecord.Rank:00} ` ` {currentRecord.Time} ` ({bracket}) by **[{currentRecord.DisplayName}](https://trackmania.io/#/player/{currentRecord.PlayerId})**");
+            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"` {currentRecord.Rank:00} ` ` {currentRecord.Time} ` ({bracket}) by **{currentRecord.GetDisplayNameMdLink()}**");
         }
 
         foreach (var record in changes.RemovedRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **[{record.DisplayName?.EscapeDiscord() ?? record.PlayerId.ToString()}](https://trackmania.io/#/player/{record.PlayerId})**");
+            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **{record.GetDisplayNameMdLink()}** was **removed**");
         }
 
         foreach (var item in dict)
@@ -125,7 +141,7 @@ public class ReportService
         }
     }
 
-    private async Task ReportToAllScopedWebhooksAsync(ReportModel report, Discord.Embed embed, string scope, CancellationToken cancellationToken)
+    private async Task ReportToAllScopedWebhooksAsync(ReportModel report, IEnumerable<Discord.Embed> embeds, string scope, CancellationToken cancellationToken)
     {        
         var scopePath = scope.Split(':');
 
@@ -143,7 +159,7 @@ public class ReportService
                 SentOn = DateTime.UtcNow,
                 ModifiedOn = DateTime.UtcNow,
                 Webhook = webhook
-            }, embeds: embed.Yield(), cancellationToken: cancellationToken);
+            }, embeds: embeds, cancellationToken: cancellationToken);
         }
     }
 
@@ -164,7 +180,14 @@ public class ReportService
                 {
                     All = true
                 }
-            }
+            },
+            TM2 = new()
+            {
+                Official = new()
+                {
+                    All = true
+                }
+            },
         };
 
         if (webhook.Scope is null)
@@ -206,23 +229,23 @@ public class ReportService
     {
         var map = wr.Map;
 
-        var isTMUF = (Game)map.Game.Id == Game.TMUF;
+        var isTMUF = map.Game.Id == (int)Game.TMUF;
         var isStunts = map.IsStuntsMode();
 
-        var score = isStunts ? wr.Time.ToString() : wr.TimeInt32.ToString(useHundredths: isTMUF);
+        var score = $"` {(isStunts ? wr.Time.ToString() : wr.TimeInt32.ToString(useHundredths: isTMUF))} `";
 
         if (wr.PreviousWorldRecord is not null)
         {
             if (isStunts)
             {
-                score += $" (+{wr.Time - wr.PreviousWorldRecord.Time})";
+                score += $" ` +{wr.Time - wr.PreviousWorldRecord.Time} `";
             }
             else
             {
                 var delta = new TimeInt32(wr.Time - wr.PreviousWorldRecord.Time).TotalSeconds
                     .ToString(isTMUF ? "0.00" : "0.000", CultureInfo.InvariantCulture);
 
-                score += $" ({delta})";
+                score += $" ` {delta} `";
             }
         }
 
@@ -241,7 +264,7 @@ public class ReportService
             .WithThumbnailUrl(map.GetThumbnailUrl())
             .AddField("Map", map.GetMdLink(), true)
             .AddField(isStunts ? "Score" : "Time", score, true)
-            .AddField("By", nickname, true)
+            .AddField("By", $"**{nickname}**", true)
             .Build();
     }
 
@@ -279,6 +302,21 @@ public class ReportService
         }
 
         return builder.Build();
+    }
+
+    public async Task UpdateWorldRecordReportAsync(ReportModel report, CancellationToken cancellationToken = default)
+    {
+        if (report.WorldRecord is null)
+        {
+            return;
+        }
+
+        var embed = GetDefaultEmbed_NewWorldRecord(report.WorldRecord);
+
+        foreach (var msg in report.DiscordWebhookMessages)
+        {
+            await _discordWebhookService.ModifyMessageAsync(msg, embeds: embed.Yield(), cancellationToken: cancellationToken);
+        }
     }
 
     private static string FilterOutNickname(string nickname, string loginIfFilteredOut)

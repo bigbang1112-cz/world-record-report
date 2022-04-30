@@ -18,4 +18,8 @@ public class MockWrUnitOfWork : MockUnitOfWork, IWrUnitOfWork
     public IDiscordWebhookRepo DiscordWebhooks { get; } = new MockDiscordWebhookRepo();
     public IReportRepo Reports { get; } = new MockReportRepo();
     public ITmxLoginRepo TmxLogins { get; } = new MockTmxLoginRepo();
+    public IMapGroupRepo MapGroups => throw new NotImplementedException();
+    public INicknameChangeRepo NicknameChanges => throw new NotImplementedException();
+    public IRecordSetDetailedChangeRepo RecordSetDetailedChanges => throw new NotImplementedException();
+    public IRecordCountRepo RecordCounts => throw new NotImplementedException();
 }

@@ -4,6 +4,7 @@ using System.Globalization;
 using TmEssentials;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Microsoft.Extensions.Logging;
+using Discord;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
@@ -20,7 +21,11 @@ public class DiscordWebhookService : IDiscordWebhookService
         _repo = repo;
     }
 
-    public async Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook, Func<ulong, DiscordWebhookMessageModel>? message = null, string? text = null, IEnumerable<Discord.Embed>? embeds = null, CancellationToken cancellationToken = default)
+    public async Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook,
+                                                                    Func<ulong, DiscordWebhookMessageModel>? message = null,
+                                                                    string? text = null,
+                                                                    IEnumerable<Embed>? embeds = null,
+                                                                    CancellationToken cancellationToken = default)
     {
         var webhookClient = CreateWebhookClientOrDisable(webhook);
 
@@ -41,6 +46,32 @@ public class DiscordWebhookService : IDiscordWebhookService
         await _repo.AddDiscordWebhookMessageAsync(msg);
 
         return msg;
+    }
+
+    public async Task ModifyMessageAsync(DiscordWebhookMessageModel msg,
+                                         string? text = null,
+                                         IEnumerable<Embed>? embeds = null,
+                                         CancellationToken cancellationToken = default)
+    {
+        var webhookClient = CreateWebhookClientOrDisable(msg.Webhook);
+
+        if (webhookClient is null)
+        {
+            return;
+        }
+
+        await webhookClient.ModifyMessageAsync(msg.MessageId, x =>
+        {
+            if (text is not null)
+            {
+                x.Content = text;
+            }
+
+            if (embeds is not null)
+            {
+                x.Embeds = new(embeds);
+            }
+        });
     }
 
     private DiscordWebhookClient? CreateWebhookClientOrDisable(DiscordWebhookModel webhook)
@@ -90,100 +121,6 @@ public class DiscordWebhookService : IDiscordWebhookService
         }
 
         return null;
-    }
-
-    public Discord.Embed GetDefaultEmbed_NewWorldRecord(WorldRecordModel wr)
-    {
-        var map = wr.Map;
-
-        var deltaFormat = map.Game.Name == NameConsts.GameTMUFName ? "0.00" : "0.000";
-
-        var time = wr.TimeInt32.ToString(map.Game.Name == NameConsts.GameTMUFName);
-
-        if (wr.PreviousWorldRecord is not null)
-        {
-            var delta = new TimeInt32(wr.Time - wr.PreviousWorldRecord.Time).TotalSeconds.ToString(deltaFormat, CultureInfo.InvariantCulture);
-            time += $" ({delta})";
-        }
-
-        var nickname = FilterOutNickname(
-            nickname: wr.GetPlayerNicknameDeformatted(),
-            loginIfFilteredOut: wr.GetPlayerLogin());
-
-        var builder = new Discord.EmbedBuilder()
-            .WithTitle("New world record!")
-            .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
-            .WithTimestamp(DateTime.SpecifyKind(wr.DrivenOn, DateTimeKind.Utc))
-            .WithColor(new Discord.Color(
-                map.Environment.Color[0],
-                map.Environment.Color[1],
-                map.Environment.Color[2]))
-            .AddField("Map", TextFormatter.Deformat(map.Name), true)
-            .AddField("Time", time, true)
-            .AddField("By", nickname, true);
-
-        AddThumbnailAndUrl(builder, map);
-
-        return builder.Build();
-    }
-
-    public Discord.Embed GetDefaultEmbed_NewStuntsWorldRecord(WorldRecordModel wr)
-    {
-        var map = wr.Map;
-
-        var score = wr.Time.ToString();
-        if (wr.PreviousWorldRecord is not null)
-            score += $" (+{wr.Time - wr.PreviousWorldRecord.Time})";
-
-        var builder = new Discord.EmbedBuilder()
-            .WithTitle("New world record!")
-            .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
-            .WithTimestamp(DateTime.SpecifyKind(wr.DrivenOn, DateTimeKind.Utc))
-            .WithColor(new Discord.Color(
-                map.Environment.Color[0],
-                map.Environment.Color[1],
-                map.Environment.Color[2]))
-            .AddField("Map", TextFormatter.Deformat(map.Name), true)
-            .AddField("Score", score, true)
-            .AddField("By", TextFormatter.Deformat(wr.Player?.GetMdLink() ?? wr.TmxPlayer?.GetMdLink() ?? "[unknown nickname]"), true);
-
-        AddThumbnailAndUrl(builder, map);
-
-        return builder.Build();
-    }
-
-    public Discord.Embed GetDefaultEmbed_RemovedWorldRecord(RemovedWorldRecord removedWr)
-    {
-        var previousWr = removedWr.Previous;
-        var map = previousWr.Map;
-        var time = previousWr.TimeInt32.ToString();
-
-        var builder = new Discord.EmbedBuilder()
-            .WithTitle("Removed world record detected")
-            .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
-            .WithColor(new Discord.Color(
-                map.Environment.Color[0],
-                map.Environment.Color[1],
-                map.Environment.Color[2]))
-            .AddField("Map", map.DeformattedName, true)
-            .AddField("Time", time, true)
-            .AddField("By", previousWr.GetPlayerNicknameDeformatted().EscapeDiscord(), true);
-
-        var currentWr = removedWr.Current;
-
-        if (currentWr is not null)
-        {
-            var prevTime = currentWr.TimeInt32.ToString();
-            var prevNickname = currentWr.GetPlayerNicknameDeformatted().EscapeDiscord();
-
-            builder
-                .AddField("New time", prevTime, true)
-                .AddField("Now by", prevNickname, true);
-        }
-
-        AddThumbnailAndUrl(builder, map);
-
-        return builder.Build();
     }
 
     private static Discord.EmbedBuilder AddThumbnailAndUrl(Discord.EmbedBuilder builder, MapModel map)

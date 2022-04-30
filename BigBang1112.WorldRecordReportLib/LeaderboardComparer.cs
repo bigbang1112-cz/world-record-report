@@ -1,5 +1,6 @@
 ﻿using BigBang1112.WorldRecordReportLib.Comparers;
 using BigBang1112.WorldRecordReportLib.Models;
+using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib;
 
@@ -68,5 +69,109 @@ public static class LeaderboardComparer
             removedRecords.ToList(),
             worsenRecords.ToList(),
             pushedOffRecords.ToList());
+    }
+
+    public static UniqueRecordChanges? CompareTimes(IEnumerable<UniqueRecord> records, IEnumerable<UniqueRecord> recordsPrev)
+    {
+        using var newTimesEnumerator = records.GetEnumerator();
+        using var prevTimesEnumerator = recordsPrev.GetEnumerator();
+
+        var newTotalRecordCount = records.Sum(x => x.Count);
+        var prevTotalRecordCount = recordsPrev.Sum(x => x.Count);
+
+        var mapRecordCountDifference = newTotalRecordCount - prevTotalRecordCount;
+
+        var newRecords = new List<UniqueRecord>();
+        var removedRecords = new List<UniqueRecord>();
+
+        var somethingChanged = false;
+
+        while (newTimesEnumerator.MoveNext() && prevTimesEnumerator.MoveNext())
+        {
+            while (true)
+            {
+                var (newUniqueTime, newTimeCount) = newTimesEnumerator.Current;
+                var (prevUniqueTime, prevTimeCount) = prevTimesEnumerator.Current;
+
+                // Fresh new record/s have appeared
+                if (newUniqueTime < prevUniqueTime)
+                {
+                    somethingChanged = true;
+
+                    var amountOfNewTimes = newTimeCount;
+
+                    newRecords.Add(new UniqueRecord(newUniqueTime, amountOfNewTimes));
+
+                    if (newTimesEnumerator.MoveNext())
+                    {
+                        continue;
+                    }
+                }
+
+                // One or more times have been removed and there's no other record with this time
+                if (newUniqueTime > prevUniqueTime)
+                {
+                    somethingChanged = true;
+
+                    var amountOfRemovedTimes = prevTimeCount;
+
+                    if (mapRecordCountDifference < 0)
+                    {
+                        // Possibly removed
+
+                        removedRecords.Add(new UniqueRecord(prevUniqueTime, amountOfRemovedTimes));
+                    }
+                    else
+                    {
+                        // Possibly improvement
+                    }
+
+                    if (prevTimesEnumerator.MoveNext())
+                    {
+                        continue;
+                    }
+                }
+
+                // New existing time/s
+                if (newTimeCount > prevTimeCount)
+                {
+                    somethingChanged = true;
+
+                    newRecords.Add(new UniqueRecord(newUniqueTime, newTimeCount - prevTimeCount));
+
+                    //newUniqueTime
+                }
+
+                // Removed time/s while at least one equal time still exists
+                // Or the time has been improved by the same person
+                if (newTimeCount < prevTimeCount)
+                {
+                    somethingChanged = true;
+
+                    //prevUniqueTime
+
+                    if (mapRecordCountDifference < 0)
+                    {
+                        // The record has been possibly removed
+
+                        removedRecords.Add(new UniqueRecord(prevUniqueTime, prevTimeCount - newTimeCount));
+                    }
+                    else
+                    {
+                        // Unpredictable behaviour, better to not investigate
+                        // An improvement or removed record while someone has driven a fresh record
+                    }
+                }
+
+                break;
+            }
+        }
+
+        if (!somethingChanged)
+        {
+            return null;
+        }
+
+        return new UniqueRecordChanges(newRecords, removedRecords);
     }
 }

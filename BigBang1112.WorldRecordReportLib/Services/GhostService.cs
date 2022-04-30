@@ -2,6 +2,7 @@
 using BigBang1112.WorldRecordReportLib.Models;
 using Microsoft.Extensions.Logging;
 using TmEssentials;
+using TmXmlRpc;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
@@ -28,29 +29,24 @@ public class GhostService : IGhostService
         return GhostExists(mapUid, time.TotalMilliseconds, login);
     }
 
-    public bool GhostExists(string mapUid, RecordSetDetailedRecord record)
+    public bool GhostExists(string mapUid, TM2Record record)
     {
-        return File.Exists(GetGhostFullPath(mapUid, new TimeInt32(record.Time), record.Login));
+        return File.Exists(GetGhostFullPath(mapUid, record.Time, record.Login));
     }
 
-    public async Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, LeaderboardRecord record)
+    public async Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, MapLeaderBoardPlayer record)
     {
-        if (record.IsFromManialink)
-        {
-            return record.Timestamp;
-        }
-
         return await DownloadGhostAndGetTimestampAsync(mapUid, record.ReplayUrl, record.Time, record.Login);
     }
 
-    public async Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, RecordSetDetailedRecord record)
+    public async Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, TM2Record record)
     {
         if (record.ReplayUrl is null)
         {
             return DateTimeOffset.UtcNow;
         }
 
-        return await DownloadGhostAndGetTimestampAsync(mapUid, record.ReplayUrl, new TimeInt32(record.Time), record.Login);
+        return await DownloadGhostAndGetTimestampAsync(mapUid, record.ReplayUrl, record.Time, record.Login);
     }
 
     public async Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, string replayUrl, TimeInt32 time, string login)

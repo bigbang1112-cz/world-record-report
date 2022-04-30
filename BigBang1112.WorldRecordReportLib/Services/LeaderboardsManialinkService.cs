@@ -18,6 +18,8 @@ using Microsoft.Extensions.Configuration;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Microsoft.AspNetCore.Http;
 using System.Net.Http.Json;
+using TmEssentials;
+using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
@@ -30,17 +32,22 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
     private readonly IConfiguration _config;
     private readonly IAccountsRepo _accountsRepo;
     private readonly IWrRepo _wrRepo;
-    private readonly ITM2ReportService _worldRecordTM2Service;
+    private readonly IWrUnitOfWork _wrUnitOfWork;
+    private readonly ReportService _reportService;
+    private readonly RefreshTM2Service _refreshTM2Service;
 
     public LeaderboardsManialinkService(IFileHostService fileHost, IMemoryCache cache, IConfiguration config,
-        IAccountsRepo accountsRepo, IWrRepo wrRepo, ITM2ReportService worldRecordTM2Service)
+        IAccountsRepo accountsRepo, IWrRepo wrRepo, IWrUnitOfWork wrUnitOfWork, ReportService reportService,
+        RefreshTM2Service refreshTM2Service)
     {
         _fileHost = fileHost;
         _cache = cache;
         _config = config;
         _accountsRepo = accountsRepo;
         _wrRepo = wrRepo;
-        _worldRecordTM2Service = worldRecordTM2Service;
+        _wrUnitOfWork = wrUnitOfWork;
+        _reportService = reportService;
+        _refreshTM2Service = refreshTM2Service;
     }
 
     public async Task<string> GetManialinkAsync(HttpContext httpContext, CancellationToken cancellationToken)
@@ -97,24 +104,56 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
     public async Task<OneOf<LbManialinkWorldRecordsResponse, AccountUnauthorized, AccountForbidden>>
         PostWorldRecordsAsync(HttpContext httpContext, LbManialinkMap lbManialinkMap)
     {
+        _ = lbManialinkMap ?? throw new ArgumentNullException(nameof(lbManialinkMap));
+
         if (!httpContext.Request.Headers.TryGetValue("X-ManiaPlanet-Token", out StringValues stringToken))
+        {
             return new AccountUnauthorized();
+        }
 
         var token = await DecryptAsync(stringToken.ToString());
 
         var mpAuth = await _accountsRepo.GetManiaPlanetAuthByAccessTokenAsync(token);
 
         if (mpAuth is null)
+        {
             return new AccountUnauthorized();
+        }
 
         if (!mpAuth.LbManialink.IsIWRUP)
+        {
             return new AccountForbidden();
+        }
 
         // can update wrs
-        var leaderboard = lbManialinkMap.Adapt<Leaderboard>();
 
-        await _worldRecordTM2Service.HandleLeaderboardAsync(lbManialinkMap.MapUid, leaderboard,
-            isManialinkReport: true);
+        var map = await _wrUnitOfWork.Maps.GetByUidAsync(lbManialinkMap.MapUid);
+
+        if (map is null || map.TitlePack is null)
+        {
+            return new AccountForbidden(); // Rather BadRequest
+        }
+
+        var loginModels = await _wrUnitOfWork.Logins.GetByNamesAsync(Enums.Game.TM2, lbManialinkMap.Records.Select(x => x.Login));
+
+        var records = lbManialinkMap.Records.Select(x => new TM2Record(
+            Rank: x.Rank,
+            Login: x.Login,
+            Time: new TimeInt32(x.Time),
+            DisplayName: x.Nickname,
+            ReplayUrl: x.ReplayUrl
+        ));
+
+        var changes = await _refreshTM2Service.CheckWorldRecordAsync(map, records, loginModels, isFromManialink: true, cancellationToken: default);
+
+        if (changes is not null && changes.WorldRecord is not null)
+        {
+            await _wrUnitOfWork.WorldRecords.AddAsync(changes.WorldRecord);
+
+            await _reportService.ReportWorldRecordAsync(changes.WorldRecord, $"{nameof(ReportScopeSet.TM2)}:{nameof(ReportScopeTM2.Official)}:{nameof(ReportScopeTM2Official.WR)}:{map.TitlePack.GetTitleUid()}");
+                
+            await _wrUnitOfWork.SaveAsync();
+        }
 
         return new LbManialinkWorldRecordsResponse();
     }

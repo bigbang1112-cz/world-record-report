@@ -28,5 +28,9 @@ public class WrMapper : Mapper
         TypeAdapterConfig<ManiaAPI.NadeoAPI.Record, TM2020RecordFundamental>
             .ForType()
             .Map(dest => dest.Rank, src => src.Position);
+
+        TypeAdapterConfig<MapGroupModel, MapGroupRefreshData>
+            .ForType()
+            .Map(dest => dest.TitleId, src => src.TitlePack != null ? src.TitlePack.GetTitleUid() : null);
     }
 }

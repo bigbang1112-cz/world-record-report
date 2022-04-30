@@ -15,4 +15,8 @@ public interface IWrUnitOfWork : IUnitOfWork
     IDiscordWebhookRepo DiscordWebhooks { get; }
     IReportRepo Reports { get; }
     ITmxLoginRepo TmxLogins { get; }
+    IMapGroupRepo MapGroups { get; }
+    INicknameChangeRepo NicknameChanges { get; }
+    IRecordSetDetailedChangeRepo RecordSetDetailedChanges { get; }
+    IRecordCountRepo RecordCounts { get; }
 }

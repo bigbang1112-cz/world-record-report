@@ -46,4 +46,20 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
     {
         return await _context.WorldRecords.Where(x => x.TmxPlayer != null && x.TmxPlayer.Id == tmxPlayer.Id).ToListAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<WorldRecordModel>> GetHistoriesByMapGroupAsync(MapGroupModel mapGroup, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords
+            .Where(x => x.Map.Group == mapGroup)
+            .Include(x => x.Map)
+            .OrderByDescending(x => x.PublishedOn).ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<WorldRecordModel>> GetHistoryByMapAsync(MapModel map, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords
+            .Where(x => x.Map == map)
+            .OrderByDescending(x => x.PublishedOn)
+            .ToListAsync(cancellationToken);
+    }
 }

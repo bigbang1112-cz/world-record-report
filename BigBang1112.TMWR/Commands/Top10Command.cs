@@ -192,7 +192,7 @@ public class Top10Command : MapRelatedWithUidCommand
         return recordSetTmx.Where(x => x.Rank is not null).Take(10);
     }
 
-    private async Task CreateTop10EmbedContentFromTM2Async(MapModel map, RecordSet recordSet, EmbedBuilder builder)
+    private async Task CreateTop10EmbedContentFromTM2Async(MapModel map, LeaderboardTM2 recordSet, EmbedBuilder builder)
     {
         var loginDictionary = await FetchLoginModelsAsync(recordSet);
         var miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, loginDictionary);
@@ -219,7 +219,7 @@ public class Top10Command : MapRelatedWithUidCommand
         }
     }
 
-    private static IEnumerable<MiniRecord> GetMiniRecordsFromRecordSet(IEnumerable<RecordSetDetailedRecord> records, IDictionary<string, LoginModel> loginDictionary)
+    private static IEnumerable<MiniRecord> GetMiniRecordsFromRecordSet(IEnumerable<TM2Record> records, IDictionary<string, LoginModel> loginDictionary)
     {
         foreach (var record in records)
         {
@@ -230,7 +230,7 @@ public class Top10Command : MapRelatedWithUidCommand
                 displayName = loginModel.GetDeformattedNickname().EscapeDiscord();
             }
 
-            yield return new MiniRecord(record.Rank, record.Time, displayName);
+            yield return new MiniRecord(record.Rank, record.Time.TotalMilliseconds, displayName);
         }
     }
 
@@ -242,7 +242,7 @@ public class Top10Command : MapRelatedWithUidCommand
         }
     }
 
-    private async Task<Dictionary<string, LoginModel>> FetchLoginModelsAsync(RecordSet recordSet)
+    private async Task<Dictionary<string, LoginModel>> FetchLoginModelsAsync(LeaderboardTM2 recordSet)
     {
         var loginDictionary = new Dictionary<string, LoginModel>();
 

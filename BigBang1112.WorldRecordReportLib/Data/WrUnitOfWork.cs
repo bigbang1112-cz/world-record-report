@@ -16,6 +16,10 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
     public IDiscordWebhookRepo DiscordWebhooks { get; }
     public IReportRepo Reports { get; }
     public ITmxLoginRepo TmxLogins { get; }
+    public IMapGroupRepo MapGroups { get; }
+    public INicknameChangeRepo NicknameChanges { get; }
+    public IRecordSetDetailedChangeRepo RecordSetDetailedChanges { get; }
+    public IRecordCountRepo RecordCounts { get; }
 
     public WrUnitOfWork(WrContext context, ILogger<WrUnitOfWork> logger) : base(context, logger)
     {
@@ -30,5 +34,9 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
         DiscordWebhooks = new DiscordWebhookRepo(context);
         Reports = new ReportRepo(context);
         TmxLogins = new TmxLoginRepo(context);
+        MapGroups = new MapGroupRepo(context);
+        NicknameChanges = new NicknameChangeRepo(context);
+        RecordSetDetailedChanges = new RecordSetDetailedChangeRepo(context);
+        RecordCounts = new RecordCountRepo(context);
     }
 }

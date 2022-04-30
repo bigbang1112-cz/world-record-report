@@ -12,4 +12,5 @@ public record ReportScopeSet : ReportScope
 
     public ReportScopeTM2020? TM2020 { get; init; }
     public ReportScopeTmx? Tmx { get; init; }
+    public ReportScopeTM2? TM2 { get; init; }
 }
