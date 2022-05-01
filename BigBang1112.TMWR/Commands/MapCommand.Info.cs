@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using BigBang1112.Extensions;
 using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -88,7 +89,9 @@ public partial class MapCommand
             var records = default(IEnumerable<IRecord>);
             var recordCount = default(int?);
 
-            switch ((Game)map.Game.Id)
+            var game = (Game)map.Game.Id;
+
+            switch (game)
             {
                 case Game.TM2:
                     var lb = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
@@ -98,11 +101,21 @@ public partial class MapCommand
                 case Game.TM2020:
                     records = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid);
                     break;
+                case Game.TMUF:
+                    if (map.TmxAuthor is not null)
+                    {
+                        records = await _recordStorageService.GetTmxLeaderboardAsync((TmxSite)map.TmxAuthor.Site.Id, map.MapUid);
+                    }
+                    break;
             }
 
             if (lastTop10Change is not null)
             {
                 await AddLastTop10ActivityAsync(map, builder, lastTop10Change, records);
+            }
+            else if (game == Game.TMUF)
+            {
+                await AddLastTop10ActivityTmxAsync(map, builder, records);
             }
 
             if (recordCount.HasValue)
@@ -235,6 +248,26 @@ public partial class MapCommand
             }
 
             builder.AddField($"{fieldName}  ➡️  {typeOfActivity}", activityText);
+        }
+
+        private async Task AddLastTop10ActivityTmxAsync(MapModel map, EmbedBuilder builder, IEnumerable<IRecord>? records)
+        {
+            var activityText = "No details available";
+
+            var typeOfActivity = "TODO";
+
+            if (records is not null)
+            {
+                var tmxRecords = records.Cast<TmxReplay>();
+                var newestRecord = tmxRecords.OrderByDescending(x => x.ReplayAt).FirstOrDefault();
+
+                if (newestRecord is not null)
+                {
+                    var recordsByNewestRecordUser = tmxRecords.Where(x => x.UserId == newestRecord.UserId).Take(2);
+                }
+            }
+
+            builder.AddField($"Last TMX activity  ➡️  {typeOfActivity}", activityText);
         }
 
         public override async Task<DiscordBotMessage?> ExecuteButtonAsync(SocketMessageComponent messageComponent, Deferer deferer)
