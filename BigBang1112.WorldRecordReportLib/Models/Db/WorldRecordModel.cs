@@ -87,6 +87,11 @@ public class WorldRecordModel : DbModel
         return Player?.GetMdLink() ?? TmxPlayer?.GetMdLink() ?? "[unknown player]";
     }
 
+    public string? GetPlayerInfoUrl()
+    {
+        return Player?.GetInfoUrl() ?? TmxPlayer?.GetInfoUrl();
+    }
+
     public string GetTimeFormattedToGame()
     {
         if (Map.IsStuntsMode())

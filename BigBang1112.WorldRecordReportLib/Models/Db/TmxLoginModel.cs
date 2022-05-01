@@ -22,6 +22,11 @@ public class TmxLoginModel : DbModel
 
     public string GetMdLink()
     {
-        return $"[{Nickname ?? UserId.ToString()}]({Site.Url}usershow/{UserId})";
+        return $"[{Nickname ?? UserId.ToString()}]({GetInfoUrl()})";
+    }
+
+    public string GetInfoUrl()
+    {
+        return $"{Site.Url}usershow/{UserId}";
     }
 }
