@@ -216,4 +216,24 @@ public class MapModel : DbModel
 
         return $"[{GetHumanizedDeformattedName()}]({infoUrl})";
     }
+
+    public string GetAuthorNickname()
+    {
+        return TmxAuthor?.Nickname ?? Author?.Nickname ?? "[unknown author]";
+    }
+
+    public string GetAuthorNicknameDeformatted()
+    {
+        return TmxAuthor?.Nickname ?? Author?.GetDeformattedNickname() ?? "[unknown author]";
+    }
+
+    public string GetAuthorNicknameMdLink()
+    {
+        return TmxAuthor?.GetMdLink() ?? Author?.GetMdLink() ?? "[unknown author]";
+    }
+
+    public string? GetAuthorInfoUrl()
+    {
+        return TmxAuthor?.GetInfoUrl() ?? Author?.GetInfoUrl();
+    }
 }
