@@ -118,6 +118,11 @@ public partial class MapCommand
 
         private static IEnumerable<string> EnumerateLinks(MapModel map)
         {
+            if (!map.Game.IsTM2020())
+            {
+                yield break;
+            }
+
             var tmxUrl = map.GetTmxUrl();
 
             if (tmxUrl is not null)
