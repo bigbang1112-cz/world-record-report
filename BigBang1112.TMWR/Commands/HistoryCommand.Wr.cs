@@ -1,4 +1,5 @@
-﻿using BigBang1112.Extensions;
+﻿using BigBang1112.Data;
+using BigBang1112.Extensions;
 using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -15,6 +16,9 @@ public partial class HistoryCommand
 
         public bool HideTimestamps { get; set; }
         public bool HideNicknames { get; set; }
+
+        [DiscordBotCommandOption("forcelinks", ApplicationCommandOptionType.Boolean, "Show the links by force when embed description limit is reached.")]
+        public bool ForceLinks { get; set; }
 
         public Wr(TmwrDiscordBotService tmwrDiscordBotService, IWrUnitOfWork wrUnitOfWork) : base(tmwrDiscordBotService, wrUnitOfWork)
         {
@@ -42,36 +46,21 @@ public partial class HistoryCommand
 
             var isStunts = map.IsStuntsMode();
 
-            var desc = string.Join('\n', wrs.Select((x, i) =>
+            var desc = string.Join('\n', EnumerateHistoryLines(isTMUF, wrs, wrCount, isStunts, links: true));
+
+            if (!ForceLinks && desc.Length > DiscordConsts.EmbedDescriptionLimit)
             {
-                var time = isStunts ? x.Time.ToString() : x.TimeInt32.ToString(useHundredths: isTMUF);
+                desc = string.Join('\n', EnumerateHistoryLines(isTMUF, wrs, wrCount, isStunts, links: ForceLinks));
 
-                var baseStr = $"` {wrCount - i} ` **` {time} `**";
+                desc += "\n\n*Links have not been included due to the embed description limit.*";
+            }
 
-                if (!HideNicknames && !HideTimestamps)
-                {
-                    baseStr = $"{baseStr} by **{x.GetPlayerNicknameDeformatted().EscapeDiscord()}** ({x.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
-                }
-                else if (HideNicknames && HideTimestamps)
-                {
-
-                }
-                else if (HideTimestamps)
-                {
-                    baseStr = $"{baseStr} by **{x.GetPlayerNicknameDeformatted().EscapeDiscord()}**";
-                }
-                else if (HideNicknames)
-                {
-                    baseStr = $"{baseStr} ({x.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
-                }
-
-                if (x.Ignored)
-                {
-                    return $"~~{baseStr}~~";
-                }
-
-                return baseStr;
-            }));
+            if (desc.Length > DiscordConsts.EmbedDescriptionLimit)
+            {
+                desc = string.Join('\n', EnumerateHistoryLines(isTMUF, wrs, wrCount, isStunts, links: ForceLinks));
+                desc = desc[0..4000] + "...";
+                desc += "\n\n*History is too long to fit into embed description.*";
+            }
 
             if (map.TitlePack is not null)
             {
@@ -84,6 +73,55 @@ public partial class HistoryCommand
             }
 
             builder.Description = desc;
+        }
+
+        private IEnumerable<string> EnumerateHistoryLines(bool isTMUF, IEnumerable<WorldRecordModel> wrs, int wrCount, bool isStunts, bool links)
+        {
+            var i = 0;
+
+            var formatter = wrCount switch
+            {
+                < 10 => "",
+                < 100 => "00",
+                _ => "000"
+            };
+
+            foreach (var wr in wrs)
+            {
+                var time = isStunts ? wr.Time.ToString() : wr.TimeInt32.ToString(useHundredths: isTMUF);
+
+                var baseStr = $"` {(wrCount - i).ToString(formatter)} ` **` {time} `**";
+
+                var displayName = links
+                    ? wr.GetPlayerNicknameMdLink()
+                    : wr.GetPlayerNicknameDeformatted().EscapeDiscord();
+
+                if (!HideNicknames && !HideTimestamps)
+                {
+                    baseStr = $"{baseStr} by **{displayName}** ({wr.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
+                }
+                else if (HideNicknames && HideTimestamps)
+                {
+
+                }
+                else if (HideTimestamps)
+                {
+                    baseStr = $"{baseStr} by **{displayName}**";
+                }
+                else if (HideNicknames)
+                {
+                    baseStr = $"{baseStr} ({wr.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
+                }
+
+                if (wr.Ignored)
+                {
+                    yield return $"~~{baseStr}~~";
+                }
+
+                yield return baseStr;
+
+                i++;
+            }
         }
     }
 }
