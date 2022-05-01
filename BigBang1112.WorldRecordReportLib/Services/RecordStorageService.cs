@@ -118,6 +118,21 @@ public class RecordStorageService
         return await GetFromApiAsCollectionAsync<TmxReplay>(path, cancellationToken);
     }
 
+    public async Task<IEnumerable<IRecord>?> GetOfficialLeaderboardAsync(Game game, string mapUid, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
+    {
+        return game switch
+        {
+            Game.TM2 => (await GetTM2LeaderboardAsync(mapUid, zone, scoreContext, cancellationToken))?.Records,
+            Game.TM2020 => await GetTM2020LeaderboardAsync(mapUid, zone, scoreContext, cancellationToken),
+            _ => null
+        };
+    }
+
+    public async Task<IEnumerable<IRecord>?> GetOfficialLeaderboardAsync(MapModel map, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
+    {
+        return await GetOfficialLeaderboardAsync((Game)map.Game.Id, map.MapUid, zone, scoreContext, cancellationToken);
+    }
+
     public DateTimeOffset? GetTM2020LeaderboardLastUpdatedOn(string mapUid, string zone = "World", string scoreContext = "")
     {
         var path = GetStandardOfficialLeaderboardPath(Game.TM2020, mapUid, zone, scoreContext);
