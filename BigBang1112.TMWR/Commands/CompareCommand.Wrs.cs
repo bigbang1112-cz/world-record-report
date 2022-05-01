@@ -71,17 +71,19 @@ public partial class CompareCommand
 
             var isTMUF = map.Game.IsTMUF();
 
-            builder.Description = $"**` {wr1.TimeInt32.ToString(useHundredths: isTMUF)} `** by **{wr1.GetPlayerNicknameDeformatted().EscapeDiscord()}**\n**` {wr2.TimeInt32.ToString(useHundredths: isTMUF)} `** by **{wr2.GetPlayerNicknameDeformatted().EscapeDiscord()}**";
+            builder.Description = $"**` {wr1.TimeInt32.ToString(useHundredths: isTMUF)} `** by **{wr1.GetPlayerNicknameMdLink()}**\n" +
+                                  $"**` {wr2.TimeInt32.ToString(useHundredths: isTMUF)} `** by **{wr2.GetPlayerNicknameMdLink()}**";
 
             var timeDiffStr = ((wr1.Time - wr2.Time) / 1000f).ToString(isTMUF ? "0.00" : "0.000");
 
             builder.AddField("Time difference", $"**` {timeDiffStr} `**", inline: true);
 
-            var mapNameStr = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
+            var previousWrAge = wr1.PublishedOn - wr2.PublishedOn;
 
-            var infoUrl = map.GetInfoUrl();
+            builder.AddField("Time span between records", $"{(int)previousWrAge.TotalDays} days, {previousWrAge.Hours} hours, {previousWrAge.Minutes} minutes");
 
-            builder.AddField("Map", infoUrl is null ? mapNameStr : $"[{mapNameStr}]({infoUrl})");
+            builder.AddField("Map", $"{map.GetMdLinkHumanized()} by {map.GetAuthorNicknameMdLink()}");
+            builder.ThumbnailUrl = map.GetThumbnailUrl();
         }
 
         public override Task<DiscordBotMessage?> SelectMenuAsync(SocketMessageComponent messageComponent, Deferer deferrer)
