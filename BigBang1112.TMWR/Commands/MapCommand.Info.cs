@@ -8,6 +8,8 @@ using BigBang1112.WorldRecordReportLib.Services;
 using Discord;
 using TmEssentials;
 
+using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
+
 namespace BigBang1112.TMWR.Commands;
 
 public partial class MapCommand
@@ -83,21 +85,29 @@ public partial class MapCommand
 
             var lastTop10Change = await _wrUnitOfWork.RecordSetDetailedChanges.GetLatestByMapAsync(map);
 
-            var recordSet = default(LeaderboardTM2);
+            var records = default(IEnumerable<IRecord>);
+            var recordCount = default(int?);
+
+            switch ((Game)map.Game.Id)
+            {
+                case Game.TM2:
+                    var lb = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
+                    records = lb?.Records;
+                    recordCount = lb?.GetRecordCount();
+                    break;
+                case Game.TM2020:
+                    records = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid);
+                    break;
+            }
 
             if (lastTop10Change is not null)
             {
-                recordSet = await AddLastTop10ActivityAsync(map, builder, lastTop10Change);
+                await AddLastTop10ActivityAsync(map, builder, lastTop10Change, records);
             }
 
-            if (recordSet is null)
+            if (recordCount.HasValue)
             {
-                recordSet = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
-            }
-
-            if (recordSet is not null)
-            {
-                builder.AddField("Record count", recordSet.GetRecordCount().ToString("N0"));
+                builder.AddField("Record count", recordCount.Value.ToString("N0"));
             }
 
             if (map.FileLastModifiedOn.HasValue)
@@ -123,10 +133,18 @@ public partial class MapCommand
             }
         }
 
-        private async Task<LeaderboardTM2?> AddLastTop10ActivityAsync(MapModel map,
-                                                                 EmbedBuilder builder,
-                                                                 RecordSetDetailedChangeModel lastTop10Change)
+        private async Task AddLastTop10ActivityAsync(MapModel map,
+                                                     EmbedBuilder builder,
+                                                     RecordSetDetailedChangeModel lastTop10Change,
+                                                     IEnumerable<IRecord>? records)
         {
+            var fieldName = (Game)map.Game.Id switch
+            {
+                Game.TM2 => "Last Top 10 activity",
+                Game.TM2020 => "Last Top 20 activity",
+                _ => "Last activity"
+            };
+
             if (lastTop10Change.DrivenBefore.HasValue)
             {
                 var oldestChange = (await _wrUnitOfWork.RecordSetDetailedChanges.GetOldestByMapAsync(map))?.DrivenBefore;
@@ -140,7 +158,7 @@ public partial class MapCommand
                     timestampTag += "+";
                 }
 
-                builder.AddField("Last Top 10 activity", timestampTag, inline: true);
+                builder.AddField(fieldName, timestampTag, inline: true);
             }
 
             var typeOfActivity = lastTop10Change.Type switch
@@ -153,58 +171,65 @@ public partial class MapCommand
                 _ => "Unknown activity"
             };
 
-            var recordSet = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
-
             var activityText = "No details available";
 
-            if (lastTop10Change.Type == RecordSetDetailedChangeType.New)
+            switch (lastTop10Change.Type)
             {
-                if (recordSet is not null)
-                {
-                    var record = recordSet.Records.FirstOrDefault(x => x.Login == lastTop10Change.Login.Name);
-
-                    if (record is not null)
+                case RecordSetDetailedChangeType.New:
                     {
-                        var time = record.Time;
-                        var rank = record.Rank;
+                        if (records is null)
+                        {
+                            break;
+                        }
 
-                        activityText = $"` {rank} ` **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** by **{lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}**";
+                        var record = records.FirstOrDefault(x => x.GetPlayerId() == lastTop10Change.Login.Name);
+
+                        if (record is not null)
+                        {
+                            var time = record.Time;
+                            var rank = record.Rank;
+
+                            activityText = $"` {rank} ` **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** by **{lastTop10Change.Login.GetMdLink()}**";
+                        }
+
+                        break;
                     }
-                }
-            }
-            else if (lastTop10Change.Type == RecordSetDetailedChangeType.Improvement)
-            {
-                var prevTime = new TimeInt32(lastTop10Change.Time.GetValueOrDefault());
-                var prevRank = lastTop10Change.Rank.GetValueOrDefault().ToString();
 
-                if (recordSet is null)
-                {
-                    activityText = $"{prevTime.ToString(useHundredths: map.Game.IsTMUF())} (rank: {prevRank}) to [unknown] by **{lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}**";
-                }
-                else
-                {
-                    var record = recordSet.Records.FirstOrDefault(x => x.Login == lastTop10Change.Login.Name);
-
-                    if (record is not null)
+                case RecordSetDetailedChangeType.Improvement:
                     {
-                        var time = record.Time;
-                        var rank = record.Rank;
+                        var prevTime = new TimeInt32(lastTop10Change.Time.GetValueOrDefault());
+                        var prevRank = lastTop10Change.Rank.GetValueOrDefault().ToString();
 
-                        activityText = $"From: **` {prevTime.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {prevRank} `)\nTo: **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {rank} `)\nBy: **{lastTop10Change.Login.GetDeformattedNickname()}**";
+                        if (records is null)
+                        {
+                            activityText = $"{prevTime.ToString(useHundredths: map.Game.IsTMUF())} (rank: {prevRank}) to [unknown] by **{lastTop10Change.Login.GetMdLink()}**";
+                            break;
+                        }
+
+                        var record = records.FirstOrDefault(x => x.GetPlayerId() == lastTop10Change.Login.Name);
+
+                        if (record is not null)
+                        {
+                            var time = record.Time;
+                            var rank = record.Rank;
+
+                            activityText = $"From: **` {prevTime.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {prevRank} `)\nTo: **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {rank} `)\nBy: **{lastTop10Change.Login.GetMdLink()}**";
+                        }
+
+                        break;
                     }
-                }
+
+                default:
+                    {
+                        var time = new TimeInt32(lastTop10Change.Time.GetValueOrDefault());
+                        var rank = lastTop10Change.Rank.GetValueOrDefault().ToString();
+
+                        activityText = $"` {rank} ` **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** by **{lastTop10Change.Login.GetMdLink()}**";
+                        break;
+                    }
             }
-            else
-            {
-                var time = new TimeInt32(lastTop10Change.Time.GetValueOrDefault());
-                var rank = lastTop10Change.Rank.GetValueOrDefault().ToString();
 
-                activityText = $"` {rank} ` **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** by **{lastTop10Change.Login.GetDeformattedNickname().EscapeDiscord()}**";
-            }
-
-            builder.AddField($"Last Top 10 activity  ➡️  {typeOfActivity}", activityText);
-
-            return recordSet;
+            builder.AddField($"{fieldName}  ➡️  {typeOfActivity}", activityText);
         }
 
         public override async Task<DiscordBotMessage?> ExecuteButtonAsync(SocketMessageComponent messageComponent, Deferer deferer)
