@@ -29,6 +29,11 @@ public record TM2Record(int Rank,
         return name.EscapeDiscord();
     }
 
+    public string GetPlayerId()
+    {
+        return Login;
+    }
+
     public override string ToString()
     {
         return $"{Rank}) {Time} by {Login}";

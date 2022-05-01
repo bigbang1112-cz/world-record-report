@@ -40,6 +40,11 @@ public class TmxReplay : IRecord<int>
         return UserName?.EscapeDiscord() ?? UserId.ToString();
     }
 
+    public string GetPlayerId()
+    {
+        return UserId.ToString();
+    }
+
     public override string ToString()
     {
         return $"{Rank?.ToString() ?? "-"}) {new TimeInt32(ReplayTime)} by {UserId} ({ReplayAt})";

@@ -16,4 +16,9 @@ public record struct TM2020RecordFundamental : IRecord<Guid>
     {
         throw new NotImplementedException();
     }
+
+    public string GetPlayerId()
+    {
+        return AccountId.ToString();
+    }
 }

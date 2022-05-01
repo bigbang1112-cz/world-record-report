@@ -10,4 +10,6 @@ public interface IRecord
     int? Rank { get; init; }
     TimeInt32 Time { get; init; }
     string? DisplayName { get; init; }
+
+    string GetPlayerId();
 }

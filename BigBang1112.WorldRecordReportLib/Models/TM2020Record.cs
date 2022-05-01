@@ -23,6 +23,11 @@ public record TM2020Record : IRecord<Guid>
         return $"[{DisplayName?.EscapeDiscord() ?? PlayerId.ToString()}](https://trackmania.io/#/player/{PlayerId})";
     }
 
+    public string GetPlayerId()
+    {
+        return PlayerId.ToString();
+    }
+
     public override string ToString()
     {
         return $"{Time} by {DisplayName ?? PlayerId.ToString()}";
