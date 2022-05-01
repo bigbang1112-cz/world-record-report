@@ -120,4 +120,9 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
             .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<WorldRecordModel?> GetNextAsync(WorldRecordModel wr, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords.FirstOrDefaultAsync(x => x.PreviousWorldRecord == wr, cancellationToken);
+    }
 }

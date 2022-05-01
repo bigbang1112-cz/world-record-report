@@ -15,4 +15,5 @@ public interface IWorldRecordRepo : IRepo<WorldRecordModel>
     Task<IEnumerable<string>> GetAllGuidsLikeAsync(string value, int limit = 25, CancellationToken cancellationToken = default);
     Task<DateTime?> GetStartingDateOfHistoryTrackingByTitlePackAsync(TitlePackModel titlePack, CancellationToken cancellationToken = default);
     Task<IEnumerable<WorldRecordModel>> GetRecentByTitlePackAsync(string titleIdPart, string titleAuthorPart, int limit, CancellationToken cancellationToken = default);
+    Task<WorldRecordModel?> GetNextAsync(WorldRecordModel wr, CancellationToken cancellationToken = default);
 }
