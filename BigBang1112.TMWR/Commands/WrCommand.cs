@@ -1,4 +1,5 @@
 ﻿using BigBang1112.Extensions;
+using BigBang1112.TMWR.Extensions;
 using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -108,14 +109,7 @@ public class WrCommand : MapRelatedWithUidCommand
             ? "No world record!"
             : $"{wr.GetTimeFormattedToGame()} by {wr.GetPlayerNicknameDeformatted().EscapeDiscord()}";
 
-        builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
-
-        var infoUrl = map.GetInfoUrl();
-
-        if (infoUrl is not null)
-        {
-            builder.Description = $"[{builder.Description}]({infoUrl})";
-        }
+        builder.Description = $"{map.GetMdLinkHumanized()} by {map.GetAuthorNicknameMdLink()}";
 
         if (wr is null)
         {
@@ -135,9 +129,29 @@ public class WrCommand : MapRelatedWithUidCommand
             _ => "Login"
         };
 
+        var infoUrl = wr.GetPlayerInfoUrl();
+
+        if (infoUrl is not null)
+        {
+            login = $"[{login}]({infoUrl})";
+        }
+
         builder.AddField(idType, login, inline: isLoginUnder16Chars);
 
         builder.AddField("Driven on", wr.DrivenOn.ToTimestampTag(TimestampTagStyles.LongDateTime), inline: isLoginUnder16Chars);
+
+
+        var age = DateTime.UtcNow - wr.PublishedOn;
+
+        var nextWr = await _wrUnitOfWork.WorldRecords.GetNextAsync(wr);
+
+        if (nextWr is not null)
+        {
+            age = nextWr.PublishedOn - wr.PublishedOn;
+        }
+
+        builder.AddField("Age", $"{(int)age.TotalDays} days, {age.Hours} hours, {age.Minutes} minutes");
+
         builder.WithBotFooter(wr.Guid.ToString());
     }
 
