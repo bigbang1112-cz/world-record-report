@@ -47,6 +47,6 @@ public class TmxReplay : IRecord<int>
 
     public override string ToString()
     {
-        return $"{Rank?.ToString() ?? "-"}) {new TimeInt32(ReplayTime)} by {UserId} ({ReplayAt})";
+        return $"{Rank?.ToString() ?? "-"}) {new TimeInt32(ReplayTime)} by {UserName} ({ReplayAt})";
     }
 }
