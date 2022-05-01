@@ -43,11 +43,23 @@ public class LoginModel : DbModel
     {
         var escapedNickname = GetDeformattedNickname().EscapeDiscord();
 
-        if (Game.IsTM2020())
+        var infoUrl = GetInfoUrl();
+
+        if (infoUrl is not null)
         {
-            return $"[{escapedNickname}](https://trackmania.io/#/player/{Name})";
+            return $"[{escapedNickname}]({infoUrl})";
         }
 
         return escapedNickname;
+    }
+
+    public string? GetInfoUrl()
+    {
+        if (Game.IsTM2020())
+        {
+            return $"https://trackmania.io/#/player/{Name}";
+        }
+
+        return null;
     }
 }
