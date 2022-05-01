@@ -75,7 +75,18 @@ public class RefreshTM2Service : RefreshService
         var wrHistories = await GetWorldRecordHistoriesByMapGroupAsync(mapGroup);
         var mapDictionary = wrHistories.ToDictionary(x => x.Key, x => x.Value.Key);
 
-        var leaderboards = await leaderboardsTask;
+        GetMapLeaderBoardSummaries<RequestGameManiaPlanet>.Response leaderboards;
+
+        try
+        {
+            leaderboards = await leaderboardsTask;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning("HTTP request exception when requesting TM2 solo leaderboards in RefreshTM2Service: {msg} (status code: {code})", ex.Message, ex.StatusCode);
+            return;
+        }
+
         var executionTime = leaderboards.ExecutionTime.TotalSeconds;
         var sizeStr = leaderboards.ByteSize.HasValue ? ByteSize.FromBytes(leaderboards.ByteSize.Value).ToString() : "unknown size";
 
@@ -220,10 +231,19 @@ public class RefreshTM2Service : RefreshService
     private static async Task<GetMapLeaderBoardSummaries<RequestGameManiaPlanet>.Response>
         GetLeaderboardsFromMapsAsync(IList<GetMapLeaderBoardSummaries<RequestGameManiaPlanet>.Map> maps)
     {
-        MasterServer.Client.DefaultRequestHeaders.Date = DateTime.UtcNow; //
-        var task = await server.GetMapLeaderBoardSummariesAsync(maps);
-        MasterServer.Client.DefaultRequestHeaders.Date = null;
-        return task;
+        try
+        {
+            MasterServer.Client.DefaultRequestHeaders.Date = DateTime.UtcNow; //
+            return await server.GetMapLeaderBoardSummariesAsync(maps);
+        }
+        catch
+        {
+            throw;
+        }
+        finally
+        {
+            MasterServer.Client.DefaultRequestHeaders.Date = null;
+        }
     }
 
     private async Task VerifyUnverifiedRecordsAsync(MapLeaderBoard leaderboard, IEnumerable<WorldRecordModel> unverifiedRecords)
