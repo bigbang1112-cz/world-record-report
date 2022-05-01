@@ -1,4 +1,5 @@
-﻿using BigBang1112.WorldRecordReportLib.Repos;
+﻿using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Repos;
 
 namespace BigBang1112.TMWR.Commands;
 
@@ -8,7 +9,7 @@ public partial class CheckpointsCommand
     [UnfinishedDiscordBotCommand]
     public class Wr : MapRelatedWithUidCommand
     {
-        public Wr(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo) : base(tmwrDiscordBotService, repo)
+        public Wr(TmwrDiscordBotService tmwrDiscordBotService, IWrUnitOfWork wrUnitOfWork) : base(tmwrDiscordBotService, wrUnitOfWork)
         {
 
         }

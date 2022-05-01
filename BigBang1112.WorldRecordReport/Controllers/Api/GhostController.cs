@@ -55,7 +55,7 @@ public class GhostController : ControllerBase
             return File(stream, MimeConsts.ApplicationGbx, _ghostService.GetGhostFileName(mapUid, timeInMilliseconds, login));
         }
 
-        var loginModel = await _loginRepo.GetByGameAndNameAsync(map.Game, login, cancellationToken);
+        var loginModel = await _loginRepo.GetByNameAsync(map.Game, login, cancellationToken);
 
         var nickname = loginModel?.GetDeformattedNickname() ?? login;
 

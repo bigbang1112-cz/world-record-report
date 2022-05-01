@@ -7,7 +7,7 @@ namespace BigBang1112.WorldRecordReportLib.Tests.Mocks.Repos;
 
 public class MockLoginRepo : MockRepo<LoginModel>, ILoginRepo
 {
-    public Task<LoginModel?> GetByGameAndNameAsync(GameModel game, string name, CancellationToken cancellationToken = default)
+    public Task<LoginModel?> GetByNameAsync(GameModel game, string name, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(Entities.SingleOrDefault(x => x.Game == game && x.Name == name));
     }
@@ -90,6 +90,11 @@ public class MockLoginRepo : MockRepo<LoginModel>, ILoginRepo
     }
 
     public Task<Dictionary<string, LoginModel>> GetOrAddByNamesAsync(Game game, Dictionary<string, string> loginNicknameDictionary, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<LoginModel?> GetByNameAsync(Game game, string name, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

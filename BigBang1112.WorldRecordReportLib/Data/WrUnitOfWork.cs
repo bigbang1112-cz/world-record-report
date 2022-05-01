@@ -20,6 +20,9 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
     public INicknameChangeRepo NicknameChanges { get; }
     public IRecordSetDetailedChangeRepo RecordSetDetailedChanges { get; }
     public IRecordCountRepo RecordCounts { get; }
+    public ITitlePackRepo TitlePacks { get; }
+    public IDiscordWebhookMessageRepo DiscordWebhookMessages { get; }
+    public IAssociatedAccountRepo AssociatedAccounts { get; }
 
     public WrUnitOfWork(WrContext context, ILogger<WrUnitOfWork> logger) : base(context, logger)
     {
@@ -38,5 +41,8 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
         NicknameChanges = new NicknameChangeRepo(context);
         RecordSetDetailedChanges = new RecordSetDetailedChangeRepo(context);
         RecordCounts = new RecordCountRepo(context);
+        TitlePacks = new TitlePackRepo(context);
+        DiscordWebhookMessages = new DiscordWebhookMessageRepo(context);
+        AssociatedAccounts = new AssociatedAccountRepo(context);
     }
 }

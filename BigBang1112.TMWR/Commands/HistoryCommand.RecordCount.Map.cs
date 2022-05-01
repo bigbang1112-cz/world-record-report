@@ -1,4 +1,5 @@
 ﻿using BigBang1112.Extensions;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
@@ -23,16 +24,16 @@ public partial class HistoryCommand
         [UnfinishedDiscordBotCommand]
         public class Map : MapRelatedWithUidCommand
         {
-            private readonly IWrRepo _repo;
+            private readonly IWrUnitOfWork _wrUnitOfWork;
 
-            public Map(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo) : base(tmwrDiscordBotService, repo)
+            public Map(TmwrDiscordBotService tmwrDiscordBotService, IWrUnitOfWork wrUnitOfWork) : base(tmwrDiscordBotService, wrUnitOfWork)
             {
-                _repo = repo;
+                _wrUnitOfWork = wrUnitOfWork;
             }
 
             protected override async Task<FileAttachment?> CreateAttachmentAsync(MapModel map, Deferer deferer)
             {
-                var counts = await _repo.GetRecordCountsOnMapAsync(map);
+                var counts = await _wrUnitOfWork.RecordCounts.GetAllByMapAsync(map);
 
                 await deferer.DeferAsync();
 
@@ -80,7 +81,7 @@ public partial class HistoryCommand
 
             protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
             {
-                var date = await _repo.GetStartingDateOfRecordCountTrackingAsync(map);
+                var date = await _wrUnitOfWork.RecordCounts.GetStartingDateOfTrackingAsync(map);
 
                 builder.Title = $"{map.GetHumanizedDeformattedName()}";
                 builder.Url = map.GetInfoUrl();

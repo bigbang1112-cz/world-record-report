@@ -12,4 +12,9 @@ public class MockEnvRepo : MockEnumRepo<EnvModel, Env>, IEnvRepo
     {
         Entities = EnumData.Create<EnvModel, Env, EnvAttribute>(WrEnumData.EnvAttributeToModel).ToList();
     }
+
+    public Task<IEnumerable<string>> GetAllNamesLikeAsync(string value, int limit = 25, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 }

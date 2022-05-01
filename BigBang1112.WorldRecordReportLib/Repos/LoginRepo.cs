@@ -32,9 +32,14 @@ public class LoginRepo : Repo<LoginModel>, ILoginRepo
         return loginModel;
     }
 
-    public async Task<LoginModel?> GetByGameAndNameAsync(GameModel game, string name, CancellationToken cancellationToken = default)
+    public async Task<LoginModel?> GetByNameAsync(GameModel game, string name, CancellationToken cancellationToken = default)
     {
         return await _context.Logins.SingleOrDefaultAsync(x => x.Game == game && string.Equals(x.Name, name), cancellationToken);
+    }
+
+    public async Task<LoginModel?> GetByNameAsync(Game game, string name, CancellationToken cancellationToken = default)
+    {
+        return await _context.Logins.SingleOrDefaultAsync(x => x.Game.Id == (int)game && string.Equals(x.Name, name), cancellationToken);
     }
 
     public async Task<LoginModel> GetOrAddAsync(GameModel game, string name, string nickname, CancellationToken cancellationToken = default)

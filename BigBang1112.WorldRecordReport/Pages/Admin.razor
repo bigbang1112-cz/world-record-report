@@ -3,7 +3,7 @@
 
 @attribute [Authorize(Roles = "SuperAdmin")]
 
-@inject IWrRepo _repo
+@inject IWrUnitOfWork _wrUnitOfWork
 @inject IDiscordWebhookService _discordWebhookService
 @inject TMWR.TmwrDiscordBotService _tmwr
 
@@ -60,7 +60,7 @@
 
         var wrGuid = new Guid((string)partsEnumerator.Current);
 
-        var wrModel = await _repo.GetWorldRecordAsync(wrGuid);
+        var wrModel = await _wrUnitOfWork.WorldRecords.GetByGuidAsync(wrGuid);
 
         if (wrModel is null)
         {
@@ -75,7 +75,7 @@
             WorldRecord = wrModel
         };
 
-        await _repo.AddReportAsync(report);
+        await _wrUnitOfWork.Reports.AddAsync(report);
 
         /*Discord.Embed embed;
         if (wrModel.Map.Mode?.Name == NameConsts.MapModeStunts)

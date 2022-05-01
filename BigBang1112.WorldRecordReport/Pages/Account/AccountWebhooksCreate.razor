@@ -2,8 +2,7 @@
 @attribute [Authorize]
 
 @inject AccountService _accountService
-@inject IAccountsRepo _accountsRepo
-@inject IWrRepo _wrRepo
+@inject IWrUnitOfWork _wrUnitOfWork
 @inject WrAuthService _wrAuthService
 @inject IDiscordWebhookService _discordWebhookService
 @inject NavigationManager NavigationManager
@@ -120,7 +119,7 @@
             return;
         }
 
-        var webhookLimitReached = await _wrRepo.HasReachedWebhookLimitAsync(associatedAccount);
+        var webhookLimitReached = await _wrAuthService.HasReachedWebhookLimitAsync(associatedAccount);
 
         if (webhookLimitReached)
         {
@@ -197,11 +196,11 @@
                 Webhook = webhook
             };
 
-            await _wrRepo.AddDiscordWebhookMessageAsync(message);
+            await _wrUnitOfWork.DiscordWebhookMessages.AddAsync(message);
         }
 
-        await _wrRepo.AddDiscordWebhookAsync(webhook);
-        await _wrRepo.SaveAsync();
+        await _wrUnitOfWork.DiscordWebhooks.AddAsync(webhook);
+        await _wrUnitOfWork.SaveAsync();
 
         NavigationManager.NavigateTo("/");
     }

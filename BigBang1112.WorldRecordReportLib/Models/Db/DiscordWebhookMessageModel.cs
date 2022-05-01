@@ -3,10 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class DiscordWebhookMessageModel
+public class DiscordWebhookMessageModel : DbModel
 {
-    public int Id { get; set; }
-
     public ulong MessageId { get; set; }
 
     [Column(TypeName = "datetime")]

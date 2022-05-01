@@ -1,4 +1,5 @@
 ﻿using BigBang1112.Extensions;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
@@ -7,11 +8,11 @@ namespace BigBang1112.TMWR.Commands;
 
 public abstract class MapRelatedCommand : DiscordBotCommand
 {
-    private readonly IWrRepo _repo;
+    private readonly IWrUnitOfWork _wrUnitOfWork;
 
-    protected MapRelatedCommand(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo) : base(tmwrDiscordBotService)
+    protected MapRelatedCommand(TmwrDiscordBotService tmwrDiscordBotService, IWrUnitOfWork wrUnitOfWork) : base(tmwrDiscordBotService)
     {
-        _repo = repo;
+        _wrUnitOfWork = wrUnitOfWork;
     }
 
     [DiscordBotCommandOption("name", ApplicationCommandOptionType.String, "Name of the map.")]
@@ -19,7 +20,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
 
     public async Task<IEnumerable<string>> AutocompleteMapNameAsync(string value)
     {
-        return await _repo.GetMapNamesAsync(value);
+        return await _wrUnitOfWork.Maps.GetAllDeformattedNamesLikeAsync(value);
     }
 
     [DiscordBotCommandOption("env", ApplicationCommandOptionType.String, "Environment of the map.")]
@@ -27,7 +28,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
 
     public async Task<IEnumerable<string>> AutocompleteEnvironmentAsync(string value)
     {
-        return await _repo.GetEnvNamesAsync(value);
+        return await _wrUnitOfWork.Envs.GetAllNamesLikeAsync(value);
     }
 
     [DiscordBotCommandOption("title", ApplicationCommandOptionType.String, "Title pack of the map.")]
@@ -35,7 +36,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
 
     public async Task<IEnumerable<string>> AutocompleteTitlePackAsync(string value)
     {
-        return await _repo.GetTitlePacksAsync(value);
+        return await _wrUnitOfWork.TitlePacks.GetAllUidsLikeAsync(value);
     }
 
     [DiscordBotCommandOption("authorlogin", ApplicationCommandOptionType.String, "Author login of the map.")]
@@ -43,7 +44,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
 
     public async Task<IEnumerable<string>> AutocompleteAuthorLoginAsync(string value)
     {
-        return await _repo.GetMapAuthorLoginsAsync(value);
+        return await _wrUnitOfWork.Maps.GetAllAuthorLoginsLikeAsync(value);
     }
 
     [DiscordBotCommandOption("authornickname", ApplicationCommandOptionType.String, "Author nickname of the map.")]
@@ -51,12 +52,12 @@ public abstract class MapRelatedCommand : DiscordBotCommand
 
     public async Task<IEnumerable<string>> AutocompleteAuthorNicknameAsync(string value)
     {
-        return await _repo.GetMapAuthorNicknamesAsync(value);
+        return await _wrUnitOfWork.Maps.GetAllAuthorNicknamesLikeAsync(value);
     }
 
     public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand, Deferer deferer)
     {
-        var maps = await _repo.GetMapsByMultipleParamsAsync(MapName, Environment, TitlePack, AuthorLogin, AuthorNickname);
+        var maps = await _wrUnitOfWork.Maps.GetByMultipleParamsAsync(MapName, Environment, TitlePack, AuthorLogin, AuthorNickname);
 
         if (maps.Any())
         {
@@ -169,7 +170,7 @@ public abstract class MapRelatedCommand : DiscordBotCommand
 
         var mapUid = messageComponent.Data.Values.First();
 
-        var map = await _repo.GetMapByUidAsync(mapUid);
+        var map = await _wrUnitOfWork.Maps.GetByUidAsync(mapUid);
 
         if (map is null)
         {

@@ -11,14 +11,14 @@ namespace BigBang1112.WorldRecordReportLib.Services;
 public class DiscordWebhookService : IDiscordWebhookService
 {
     private readonly ILogger<DiscordWebhookService> _logger;
-    private readonly IWrRepo _repo;
+    private readonly IWrUnitOfWork _wrUnitOfWork;
 
     public const string LogoIconUrl = "https://bigbang1112.cz/assets/images/logo_small.png";
 
-    public DiscordWebhookService(ILogger<DiscordWebhookService> logger, IWrRepo repo)
+    public DiscordWebhookService(ILogger<DiscordWebhookService> logger, IWrUnitOfWork wrUnitOfWork)
     {
         _logger = logger;
-        _repo = repo;
+        _wrUnitOfWork = wrUnitOfWork;
     }
 
     public async Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook,
@@ -43,7 +43,7 @@ public class DiscordWebhookService : IDiscordWebhookService
 
         var msg = message.Invoke(msgId);
 
-        await _repo.AddDiscordWebhookMessageAsync(msg);
+        await _wrUnitOfWork.DiscordWebhookMessages.AddAsync(msg);
 
         return msg;
     }

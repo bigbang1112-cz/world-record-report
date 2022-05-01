@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using BigBang1112.Extensions;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -15,14 +16,14 @@ public partial class MapCommand
     public class Info : MapRelatedWithUidCommand
     {
         private readonly TmwrDiscordBotService _tmwrDiscordBotService;
-        private readonly IWrRepo _repo;
-        private readonly IRecordSetService _recordSetService;
+        private readonly RecordStorageService _recordStorageService;
+        private readonly IWrUnitOfWork _wrUnitOfWork;
 
-        public Info(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo, IRecordSetService recordSetService) : base(tmwrDiscordBotService, repo)
+        public Info(TmwrDiscordBotService tmwrDiscordBotService, RecordStorageService recordStorageService, IWrUnitOfWork wrUnitOfWork) : base(tmwrDiscordBotService, wrUnitOfWork)
         {
             _tmwrDiscordBotService = tmwrDiscordBotService;
-            _repo = repo;
-            _recordSetService = recordSetService;
+            _recordStorageService = recordStorageService;
+            _wrUnitOfWork = wrUnitOfWork;
         }
 
         protected override Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, bool isModified)
@@ -61,7 +62,7 @@ public partial class MapCommand
                 builder.AddField("Campaign", map.Campaign.Name, inline: true);
             }
 
-            var wr = await _repo.GetWorldRecordAsync(map);
+            var wr = await _wrUnitOfWork.WorldRecords.GetCurrentByMapAsync(map);
 
             if (wr is not null)
             {
@@ -80,7 +81,7 @@ public partial class MapCommand
                 builder.AddField(label, map.LastActivityOn.Value.ToTimestampTag(TimestampTagStyles.Relative), inline: true);
             }
 
-            var lastTop10Change = await _repo.GetLastRecordSetDetailedChangeOnMapAsync(map);
+            var lastTop10Change = await _wrUnitOfWork.RecordSetDetailedChanges.GetLatestByMapAsync(map);
 
             var recordSet = default(LeaderboardTM2);
 
@@ -91,7 +92,7 @@ public partial class MapCommand
 
             if (recordSet is null)
             {
-                recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+                recordSet = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
             }
 
             if (recordSet is not null)
@@ -128,7 +129,7 @@ public partial class MapCommand
         {
             if (lastTop10Change.DrivenBefore.HasValue)
             {
-                var oldestChange = (await _repo.GetOldestRecordSetDetailedChangeOnMapAsync(map))?.DrivenBefore;
+                var oldestChange = (await _wrUnitOfWork.RecordSetDetailedChanges.GetOldestByMapAsync(map))?.DrivenBefore;
 
                 var drivenBefore = lastTop10Change.DrivenBefore.Value;
 
@@ -152,7 +153,7 @@ public partial class MapCommand
                 _ => "Unknown activity"
             };
 
-            var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+            var recordSet = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
 
             var activityText = "No details available";
 

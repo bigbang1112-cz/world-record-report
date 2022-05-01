@@ -36,4 +36,29 @@ public class MockWorldRecordRepo : MockRepo<WorldRecordModel>, IWorldRecordRepo
     {
         throw new NotImplementedException();
     }
+
+    public Task<WorldRecordModel?> GetCurrentByMapAsync(MapModel map, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<WorldRecordModel?> GetByGuidAsync(Guid guid, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<IEnumerable<string>> GetAllGuidsLikeAsync(string value, int limit = 25, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<DateTime?> GetStartingDateOfHistoryTrackingByTitlePackAsync(TitlePackModel titlePack, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<IEnumerable<WorldRecordModel>> GetRecentByTitlePackAsync(string titleIdPart, string titleAuthorPart, int limit, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 }

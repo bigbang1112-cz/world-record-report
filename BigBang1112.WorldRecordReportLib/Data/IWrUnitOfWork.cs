@@ -19,4 +19,7 @@ public interface IWrUnitOfWork : IUnitOfWork
     INicknameChangeRepo NicknameChanges { get; }
     IRecordSetDetailedChangeRepo RecordSetDetailedChanges { get; }
     IRecordCountRepo RecordCounts { get; }
+    ITitlePackRepo TitlePacks { get; }
+    IDiscordWebhookMessageRepo DiscordWebhookMessages { get; }
+    IAssociatedAccountRepo AssociatedAccounts { get; }
 }

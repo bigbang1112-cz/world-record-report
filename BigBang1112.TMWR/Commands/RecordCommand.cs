@@ -1,6 +1,6 @@
 ﻿using BigBang1112.Extensions;
 using BigBang1112.TMWR.Models;
-using BigBang1112.WorldRecordReportLib.Enums;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -17,8 +17,7 @@ namespace BigBang1112.TMWR.Commands;
 [DiscordBotCommand("record", "Shows information about a certain record.")]
 public class RecordCommand : MapRelatedWithUidCommand
 {
-    private readonly IWrRepo _repo;
-    private readonly IRecordSetService _recordSetService;
+    private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly ITmxRecordSetService _tmxRecordSetService;
     private readonly RecordStorageService _recordStorageService;
     private readonly IConfiguration _config;
@@ -36,14 +35,12 @@ public class RecordCommand : MapRelatedWithUidCommand
     public long Rank { get; set; }
 
     public RecordCommand(TmwrDiscordBotService tmwrDiscordBotService,
-                         IWrRepo repo,
-                         IRecordSetService recordSetService,
+                         IWrUnitOfWork wrUnitOfWork,
                          ITmxRecordSetService tmxRecordSetService,
                          RecordStorageService recordStorageService,
-                         IConfiguration config) : base(tmwrDiscordBotService, repo)
+                         IConfiguration config) : base(tmwrDiscordBotService, wrUnitOfWork)
     {
-        _repo = repo;
-        _recordSetService = recordSetService;
+        _wrUnitOfWork = wrUnitOfWork;
         _tmxRecordSetService = tmxRecordSetService;
         _recordStorageService = recordStorageService;
         _config = config;
@@ -157,7 +154,7 @@ public class RecordCommand : MapRelatedWithUidCommand
 
     private async Task<DetailedRecord?> FindDetailedRecordFromTM2Async(MapModel map)
     {
-        recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+        recordSet = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
 
         if (recordSet is null)
         {
@@ -171,7 +168,7 @@ public class RecordCommand : MapRelatedWithUidCommand
             return null;
         }
 
-        var loginModel = await _repo.GetLoginAsync(record.Login);
+        var loginModel = await _wrUnitOfWork.Logins.GetByNameAsync(Game.TM2, record.Login);
 
         nickname = loginModel?.GetDeformattedNickname() ?? record.Login;
 
@@ -224,7 +221,7 @@ public class RecordCommand : MapRelatedWithUidCommand
             return null;
         }
 
-        var loginModel = await _repo.GetLoginAsync(record.PlayerId.ToString());
+        var loginModel = await _wrUnitOfWork.Logins.GetByNameAsync(Game.TM2020, record.PlayerId.ToString());
 
         nickname = loginModel?.GetDeformattedNickname() ?? record.PlayerId.ToString();
 

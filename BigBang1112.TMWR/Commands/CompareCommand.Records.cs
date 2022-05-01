@@ -1,11 +1,15 @@
 ﻿using BigBang1112.Extensions;
 using BigBang1112.TMWR.Models;
+using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using BigBang1112.WorldRecordReportLib.Services;
 using Discord;
 using System.Text.RegularExpressions;
 using TmEssentials;
+
+using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
 
 namespace BigBang1112.TMWR.Commands;
 
@@ -14,8 +18,8 @@ public partial class CompareCommand
     [DiscordBotSubCommand("records", "Compare two records with each other.")]
     public class Records : MapRelatedWithUidCommand
     {
-        private readonly IWrRepo _repo;
-        private readonly IRecordSetService _recordSetService;
+        private readonly IWrUnitOfWork _wrUnitOfWork;
+        private readonly RecordStorageService _recordStorageService;
         private readonly ITmxRecordSetService _tmxRecordSetService;
 
         [DiscordBotCommandOption("rank1", ApplicationCommandOptionType.Integer,
@@ -31,12 +35,12 @@ public partial class CompareCommand
         public long Rank2 { get; set; }
 
         public Records(TmwrDiscordBotService tmwrDiscordBotService,
-                       IWrRepo repo,
-                       IRecordSetService recordSetService,
-                       ITmxRecordSetService tmxRecordSetService) : base(tmwrDiscordBotService, repo)
+                       IWrUnitOfWork wrUnitOfWork,
+                       RecordStorageService recordStorageService,
+                       ITmxRecordSetService tmxRecordSetService) : base(tmwrDiscordBotService, wrUnitOfWork)
         {
-            _repo = repo;
-            _recordSetService = recordSetService;
+            _wrUnitOfWork = wrUnitOfWork;
+            _recordStorageService = recordStorageService;
             _tmxRecordSetService = tmxRecordSetService;
         }
 
@@ -52,7 +56,7 @@ public partial class CompareCommand
 
             if (map.Game.IsTM2())
             {
-                var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+                var recordSet = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
 
                 if (recordSet is null)
                 {
@@ -76,8 +80,10 @@ public partial class CompareCommand
                     return;
                 }
 
-                var rec1LoginModel = await _repo.GetLoginAsync(rec1.Login);
-                var rec2LoginModel = await _repo.GetLoginAsync(rec2.Login);
+                var loginModels = await _wrUnitOfWork.Logins.GetByNamesAsync(Game.TM2, new[] { rec1.Login, rec2.Login });
+
+                _ = loginModels.TryGetValue(rec1.Login, out LoginModel? rec1LoginModel);
+                _ = loginModels.TryGetValue(rec2.Login, out LoginModel? rec2LoginModel);
 
                 record1 = new MiniRecord(rec1.Rank, rec1.Time.TotalMilliseconds, rec1LoginModel?.GetDeformattedNickname().EscapeDiscord() ?? rec1.Login);
                 record2 = new MiniRecord(rec2.Rank, rec2.Time.TotalMilliseconds, rec2LoginModel?.GetDeformattedNickname().EscapeDiscord() ?? rec2.Login);
@@ -114,8 +120,10 @@ public partial class CompareCommand
                     return;
                 }
 
-                var rec1LoginModel = await _repo.GetTmxLoginAsync(rec1.UserId);
-                var rec2LoginModel = await _repo.GetTmxLoginAsync(rec2.UserId);
+                var loginModels = await _wrUnitOfWork.TmxLogins.GetByUserIdsAsync(new[] { rec1.UserId, rec2.UserId }, (TmxSite)map.TmxAuthor.Site.Id);
+
+                _ = loginModels.TryGetValue(rec1.UserId, out var rec1LoginModel);
+                _ = loginModels.TryGetValue(rec2.UserId, out var rec2LoginModel);
 
                 record1 = new MiniRecord(rec1.Rank.GetValueOrDefault(), rec1.ReplayTime, rec1LoginModel?.Nickname ?? rec1.UserId.ToString());
                 record2 = new MiniRecord(rec2.Rank.GetValueOrDefault(), rec2.ReplayTime, rec2LoginModel?.Nickname ?? rec2.UserId.ToString());

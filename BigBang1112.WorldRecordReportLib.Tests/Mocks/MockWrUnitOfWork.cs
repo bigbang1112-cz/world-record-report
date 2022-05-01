@@ -22,4 +22,7 @@ public class MockWrUnitOfWork : MockUnitOfWork, IWrUnitOfWork
     public INicknameChangeRepo NicknameChanges => throw new NotImplementedException();
     public IRecordSetDetailedChangeRepo RecordSetDetailedChanges => throw new NotImplementedException();
     public IRecordCountRepo RecordCounts => throw new NotImplementedException();
+    public ITitlePackRepo TitlePacks => throw new NotImplementedException();
+    public IDiscordWebhookMessageRepo DiscordWebhookMessages => throw new NotImplementedException();
+    public IAssociatedAccountRepo AssociatedAccounts => throw new NotImplementedException();
 }

@@ -1,4 +1,5 @@
 ﻿using BigBang1112.Extensions;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
@@ -11,7 +12,7 @@ namespace BigBang1112.TMWR.Commands;
 public class WrCommand : MapRelatedWithUidCommand
 {
     private readonly TmwrDiscordBotService _tmwrDiscordBotService;
-    private readonly IWrRepo _repo;
+    private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly IConfiguration _config;
 
     [DiscordBotCommandOption("guid",
@@ -21,13 +22,13 @@ public class WrCommand : MapRelatedWithUidCommand
 
     public async Task<IEnumerable<string>> AutocompleteGuidAsync(string value)
     {
-        return await _repo.GetWorldRecordGuidsAsync(value);
+        return await _wrUnitOfWork.WorldRecords.GetAllGuidsLikeAsync(value);
     }
 
-    public WrCommand(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo, IConfiguration config) : base(tmwrDiscordBotService, repo)
+    public WrCommand(TmwrDiscordBotService tmwrDiscordBotService, IWrUnitOfWork wrUnitOfWork, IConfiguration config) : base(tmwrDiscordBotService, wrUnitOfWork)
     {
         _tmwrDiscordBotService = tmwrDiscordBotService;
-        _repo = repo;
+        _wrUnitOfWork = wrUnitOfWork;
         _config = config;
     }
 
@@ -38,7 +39,7 @@ public class WrCommand : MapRelatedWithUidCommand
             return await base.ExecuteAsync(slashCommand, deferer);
         }
 
-        var wr = await _repo.GetWorldRecordAsync(new Guid(Guid));
+        var wr = await _wrUnitOfWork.WorldRecords.GetByGuidAsync(new Guid(Guid));
 
         if (wr is null)
         {
@@ -52,8 +53,8 @@ public class WrCommand : MapRelatedWithUidCommand
     protected override async Task<ComponentBuilder?> CreateComponentsAsync(MapModel map, bool isModified)
     {
         var wr = Guid is null
-            ? await _repo.GetWorldRecordAsync(map)
-            : await _repo.GetWorldRecordAsync(new Guid(Guid));
+            ? await _wrUnitOfWork.WorldRecords.GetCurrentByMapAsync(map)
+            : await _wrUnitOfWork.WorldRecords.GetByGuidAsync(new Guid(Guid));
 
         if (wr is null)
         {
@@ -93,8 +94,8 @@ public class WrCommand : MapRelatedWithUidCommand
     protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
     {
         var wr = Guid is null
-            ? await _repo.GetWorldRecordAsync(map)
-            : await _repo.GetWorldRecordAsync(new Guid(Guid));
+            ? await _wrUnitOfWork.WorldRecords.GetCurrentByMapAsync(map)
+            : await _wrUnitOfWork.WorldRecords.GetByGuidAsync(new Guid(Guid));
 
         var thumbnailUrl = map.GetThumbnailUrl();
 
@@ -151,7 +152,7 @@ public class WrCommand : MapRelatedWithUidCommand
         }
 
         var wrGuid = new Guid(split[1].Replace('_', '-'));
-        var wr = await _repo.GetWorldRecordAsync(wrGuid);
+        var wr = await _wrUnitOfWork.WorldRecords.GetByGuidAsync(wrGuid);
 
         if (wr is null)
         {

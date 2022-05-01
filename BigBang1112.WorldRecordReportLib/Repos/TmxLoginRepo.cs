@@ -12,6 +12,15 @@ public class TmxLoginRepo : Repo<TmxLoginModel>, ITmxLoginRepo
         _context = context;
     }
 
+    public async Task<Dictionary<int, TmxLoginModel>> GetByUserIdsAsync(IEnumerable<int> userIds, TmxSite tmxSite, CancellationToken cancellationToken = default)
+    {
+        var list = await _context.TmxLogins
+            .Where(x => x.Site.Id == (int)tmxSite && userIds.Contains(x.UserId))
+            .ToListAsync(cancellationToken);
+
+        return list.ToDictionary(x => x.UserId, x => x);
+    }
+
     public async Task<TmxLoginModel> GetOrAddAsync(int userId, TmxSite tmxSite, CancellationToken cancellationToken = default)
     {
         var loginModel = await _context.TmxLogins.SingleOrDefaultAsync(x => x.UserId == userId && x.Site.Id == (int)tmxSite, cancellationToken);

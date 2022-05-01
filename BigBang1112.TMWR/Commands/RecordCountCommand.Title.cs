@@ -1,5 +1,6 @@
 ﻿using BigBang1112.DiscordBot;
 using BigBang1112.Extensions;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -15,8 +16,8 @@ public partial class RecordCountCommand
     [DiscordBotSubCommand("title", "Shows the amount of records in the title pack overall.")]
     public class Title : DiscordBotCommand
     {
-        private readonly IWrRepo _repo;
-        private readonly IRecordSetService _recordSetService;
+        private readonly IWrUnitOfWork _wrUnitOfWork;
+        private readonly RecordStorageService _recordStorageService;
         private readonly IMemoryCache _memoryCache;
 
         //[DiscordBotCommandOption("graph", ApplicationCommandOptionType.Boolean, "Shows the record count \"as the map group progresses\" graph instead.")]
@@ -27,22 +28,22 @@ public partial class RecordCountCommand
 
         public async Task<IEnumerable<string>> AutocompleteTitlePackAsync(string value)
         {
-            return await _repo.GetTitlePacksAsync(value);
+            return await _wrUnitOfWork.TitlePacks.GetAllUidsLikeAsync(value);
         }
 
         public Title(DiscordBotService discordBotService,
-                     IWrRepo repo,
-                     IRecordSetService recordSetService,
+                     IWrUnitOfWork wrUnitOfWork,
+                     RecordStorageService recordStorageService,
                      IMemoryCache memoryCache) : base(discordBotService)
         {
-            _repo = repo;
-            _recordSetService = recordSetService;
+            _wrUnitOfWork = wrUnitOfWork;
+            _recordStorageService = recordStorageService;
             _memoryCache = memoryCache;
         }
 
         public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand, Deferer deferer)
         {
-            var titlePack = await _repo.GetTitlePackAsync(TitlePack);
+            var titlePack = await _wrUnitOfWork.TitlePacks.GetByFullUidAsync(TitlePack);
 
             if (titlePack is null)
             {
@@ -61,7 +62,7 @@ public partial class RecordCountCommand
                 {
                     foreach (var map in group.Maps)
                     {
-                        recordCounts.Add(map.MapUid, _recordSetService.GetFromMapAsync("World", map.MapUid));
+                        recordCounts.Add(map.MapUid, _recordStorageService.GetTM2LeaderboardAsync(map.MapUid));
                     }
                 }
 

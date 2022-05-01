@@ -1,4 +1,5 @@
 ﻿using BigBang1112.DiscordBot;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
 
@@ -10,7 +11,7 @@ public partial class RecordCountCommand
     [UnfinishedDiscordBotCommand]
     public class MapGroup : DiscordBotCommand
     {
-        private readonly IWrRepo _repo;
+        private readonly IWrUnitOfWork _wrUnitOfWork;
 
         //[DiscordBotCommandOption("graph", ApplicationCommandOptionType.Boolean, "Shows the record count \"as the map group progresses\" graph instead.")]
         //public bool Graph { get; set; }
@@ -20,7 +21,7 @@ public partial class RecordCountCommand
 
         public async Task<IEnumerable<string>> AutocompleteTitlePackAsync(string value)
         {
-            return await _repo.GetTitlePacksAsync(value);
+            return await _wrUnitOfWork.TitlePacks.GetAllUidsLikeAsync(value);
         }
 
         [DiscordBotCommandOption("campaign", ApplicationCommandOptionType.String, "Campaign to use.")]
@@ -31,15 +32,15 @@ public partial class RecordCountCommand
 
         public async Task<IEnumerable<string>> AutocompleteGroupNameAsync(string value)
         {
-            return await _repo.GetMapGroupNamesAsync(value);
+            return await _wrUnitOfWork.MapGroups.GetAllNamesLikeAsync(value);
         }
 
         [DiscordBotCommandOption("groupnum", ApplicationCommandOptionType.Integer, "Map group to use.")]
         public string GroupNum { get; set; } = default!;
 
-        public MapGroup(DiscordBotService discordBotService, IWrRepo repo) : base(discordBotService)
+        public MapGroup(DiscordBotService discordBotService, IWrUnitOfWork wrUnitOfWork) : base(discordBotService)
         {
-            _repo = repo;
+            _wrUnitOfWork = wrUnitOfWork;
         }
     }
 }

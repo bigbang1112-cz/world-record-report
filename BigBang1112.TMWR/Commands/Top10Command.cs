@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using BigBang1112.Extensions;
 using BigBang1112.TMWR.Models;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -8,26 +9,25 @@ using BigBang1112.WorldRecordReportLib.Services;
 using Discord;
 using TmEssentials;
 
+using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
+
 namespace BigBang1112.TMWR.Commands;
 
 [DiscordBotCommand("top10", "Shows the Top 10 world leaderboard.")]
 public class Top10Command : MapRelatedWithUidCommand
 {
     private readonly TmwrDiscordBotService _tmwrDiscordBotService;
-    private readonly IWrRepo _repo;
-    private readonly IRecordSetService _recordSetService;
+    private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly ITmxRecordSetService _tmxRecordSetService;
     private readonly RecordStorageService _recordStorageService;
 
     public Top10Command(TmwrDiscordBotService tmwrDiscordBotService,
-                        IWrRepo repo,
-                        IRecordSetService recordSetService,
+                        IWrUnitOfWork wrUnitOfWork,
                         ITmxRecordSetService tmxRecordSetService,
-                        RecordStorageService recordStorageService) : base(tmwrDiscordBotService, repo)
+                        RecordStorageService recordStorageService) : base(tmwrDiscordBotService, wrUnitOfWork)
     {
         _tmwrDiscordBotService = tmwrDiscordBotService;
-        _repo = repo;
-        _recordSetService = recordSetService;
+        _wrUnitOfWork = wrUnitOfWork;
         _tmxRecordSetService = tmxRecordSetService;
         _recordStorageService = recordStorageService;
     }
@@ -60,7 +60,7 @@ public class Top10Command : MapRelatedWithUidCommand
 
         if (map.Game.IsTM2())
         {
-            var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+            var recordSet = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
 
             if (recordSet is not null)
             {
@@ -142,7 +142,7 @@ public class Top10Command : MapRelatedWithUidCommand
             return true;
         }
 
-        var recordSet = await _recordSetService.GetFromMapAsync("World", map.MapUid);
+        var recordSet = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
 
         if (recordSet is not null)
         {
@@ -199,7 +199,7 @@ public class Top10Command : MapRelatedWithUidCommand
         var miniRecordStrings = ConvertMiniRecordsToStrings(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
 
         builder.Description = string.Join('\n', miniRecordStrings);
-        builder.AddField("Record count", recordSet.GetRecordCount());
+        builder.AddField("Record count", recordSet.GetRecordCount().ToString("N0"));
     }
 
     private static IEnumerable<MiniRecord> GetMiniRecordsFromTmxReplays(IEnumerable<TmxReplay> records, MapModel map, bool formattable)
@@ -244,19 +244,7 @@ public class Top10Command : MapRelatedWithUidCommand
 
     private async Task<Dictionary<string, LoginModel>> FetchLoginModelsAsync(LeaderboardTM2 recordSet)
     {
-        var loginDictionary = new Dictionary<string, LoginModel>();
-
-        foreach (var login in recordSet.Records.Select(x => x.Login))
-        {
-            var loginModel = await _repo.GetLoginAsync(login);
-
-            if (loginModel is not null)
-            {
-                loginDictionary[login] = loginModel;
-            }
-        }
-
-        return loginDictionary;
+        return await _wrUnitOfWork.Logins.GetByNamesAsync(Game.TM2, recordSet.Records.Select(x => x.Login));
     }
 
     public override async Task<DiscordBotMessage?> SelectMenuAsync(SocketMessageComponent messageComponent, Deferer deferer)

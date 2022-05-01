@@ -59,7 +59,7 @@ public class IgnoreLoginCommand : DiscordBotCommand
             return new DiscordBotMessage { Message = $"{Game} not found." };
         }
 
-        var loginModel = await _wrUnitOfWork.Logins.GetByGameAndNameAsync(gameModel, Name);
+        var loginModel = await _wrUnitOfWork.Logins.GetByNameAsync(gameModel, Name);
 
         if (loginModel is null)
         {

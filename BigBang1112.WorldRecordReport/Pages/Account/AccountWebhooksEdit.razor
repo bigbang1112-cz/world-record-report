@@ -2,8 +2,6 @@
 @attribute [Authorize]
 
 @inject AccountService _accountService
-@inject IAccountsRepo _accountsRepo
-@inject IWrRepo _wrRepo
 @inject WrAuthService _wrAuthService
 @inject NavigationManager NavigationManager
 @inject IDiscordWebhookService _discordWebhookService
@@ -280,7 +278,7 @@
 
         webhook.Filter = JsonSerializer.Serialize(filter);
 
-        await _wrRepo.SaveAsync();
+        await _wrAuthService.SaveAsync();
 
         NavigationManager.NavigateTo("/");
     }

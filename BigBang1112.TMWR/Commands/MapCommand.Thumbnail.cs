@@ -1,6 +1,6 @@
 ﻿using BigBang1112.Extensions;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models.Db;
-using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
 
 namespace BigBang1112.TMWR.Commands;
@@ -10,7 +10,7 @@ public partial class MapCommand
     [DiscordBotSubCommand("thumbnail", "Gets the thumbnail of the map.")]
     public class Thumbnail : MapRelatedWithUidCommand
     {
-        public Thumbnail(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo) : base(tmwrDiscordBotService, repo)
+        public Thumbnail(TmwrDiscordBotService tmwrDiscordBotService, IWrUnitOfWork wrUnitOfWork) : base(tmwrDiscordBotService, wrUnitOfWork)
         {
 
         }

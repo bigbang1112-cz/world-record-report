@@ -11,7 +11,7 @@ public record LeaderboardTM2(IEnumerable<TM2Record> Records, IEnumerable<UniqueR
     {
         if (cachedRecordCount is null)
         {
-            cachedRecordCount = Times.Where(x => x.Time is null).Sum(x => x.Count);
+            cachedRecordCount = Times.Where(x => x.Time.HasValue).Sum(x => x.Count);
         }
 
         return cachedRecordCount.Value;

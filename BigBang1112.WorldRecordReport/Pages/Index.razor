@@ -1,7 +1,6 @@
 ﻿@page "/"
 
-@inject IAccountsRepo _accountsRepo
-@inject IWrRepo _wrRepo
+@inject IWrUnitOfWork _wrUnitOfWork
 @inject WrAuthService _wrAuthService
 @inject AccountService _accountService
 @inject IDiscordWebhookService _discordWebhookService
@@ -26,7 +25,7 @@
 						}
 						else
 						{
-							@if (webhooks.Count > 0)
+							@if (webhooks.Any())
 							{
 								<table class="webhook-table">
 									<colgroup>
@@ -57,7 +56,7 @@
 								</table>
 							}
 
-							@if (webhooks.Count < 5)
+							@if (webhooks.Count() < 5)
 							{
 								<a href="account/webhooks/create" class="button button-block" style="width: 100%; padding-top: 0.4rem; padding-bottom: 0.4rem">Create a new webhook</a>
 							}
@@ -90,7 +89,7 @@
 
 @code {
 	private AccountModel? account;
-	private List<DiscordWebhookModel>? webhooks;
+	private IEnumerable<DiscordWebhookModel>? webhooks;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -160,7 +159,7 @@
 	private async Task<DiscordWebhookModel?> GetAndAuthenticateWebhookAsync(Guid guid)
 	{
 		// Check if it still exists
-		var webhook = await _wrRepo.GetDiscordWebhookByGuidAsync(guid);
+		var webhook = await _wrUnitOfWork.DiscordWebhooks.GetByGuidAsync(guid);
 
 		if (webhook is null)
 		{

@@ -1,4 +1,5 @@
 ﻿using BigBang1112.WorldRecordReportLib.Enums;
+using EFCoreSecondLevelCacheInterceptor;
 using Microsoft.EntityFrameworkCore;
 
 namespace BigBang1112.WorldRecordReportLib.Repos;
@@ -26,6 +27,13 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
         return await _context.WorldRecords
             .OrderByDescending(x => x.PublishedOn)
             .FirstOrDefaultAsync(x => x.Map.MapUid == mapUid && !x.Ignored, cancellationToken);
+    }
+
+    public async Task<WorldRecordModel?> GetCurrentByMapAsync(MapModel map, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords
+            .OrderByDescending(x => x.PublishedOn)
+            .FirstOrDefaultAsync(x => x.Map == map && !x.Ignored, cancellationToken);
     }
 
     public async Task<IEnumerable<WorldRecordModel>> GetLatestByGameAsync(Game game, int count, CancellationToken cancellationToken = default)
@@ -60,6 +68,56 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
         return await _context.WorldRecords
             .Where(x => x.Map == map)
             .OrderByDescending(x => x.PublishedOn)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<WorldRecordModel?> GetByGuidAsync(Guid guid, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords
+            .Cacheable()
+            .FirstOrDefaultAsync(x => x.Guid == guid, cancellationToken);
+    }
+
+    public async Task<IEnumerable<string>> GetAllGuidsLikeAsync(string value, int limit = 25, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords.Select(x => x.Guid.ToString())
+            .Where(x => x.StartsWith(value))
+            .Distinct()
+            .OrderByDescending(x => x.StartsWith(value))
+            .ThenBy(x => x)
+            .Take(limit)
+            .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<DateTime?> GetStartingDateOfHistoryTrackingByTitlePackAsync(TitlePackModel titlePack, CancellationToken cancellationToken = default)
+    {
+        var startingWr = await _context.WorldRecords
+            .Include(x => x.Map)
+            .Where(x => x.Map.TitlePack == titlePack && x.PreviousWorldRecord != null && !x.Ignored)
+            .OrderBy(x => x.DrivenOn)
+            .Cacheable()
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return startingWr?.DrivenOn;
+    }
+
+    public async Task<IEnumerable<WorldRecordModel>> GetRecentByTitlePackAsync(string titleIdPart, string titleAuthorPart, int limit, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords
+            .Include(x => x.Map)
+                .ThenInclude(x => x.TitlePack)
+                    .ThenInclude(x => x!.Author)
+            .Include(x => x.Player)
+            .Include(x => x.PreviousWorldRecord)
+                .ThenInclude(x => x!.Player)
+            .Where(x => !x.Ignored
+                && x.Map.TitlePack != null
+                && x.Map.TitlePack.Name == titleIdPart
+                && x.Map.TitlePack.Author.Name == titleAuthorPart)
+            .OrderByDescending(x => x.DrivenOn)
+            .Take(limit)
+            .Cacheable(CacheExpirationMode.Absolute, TimeSpan.FromMinutes(1))
             .ToListAsync(cancellationToken);
     }
 }

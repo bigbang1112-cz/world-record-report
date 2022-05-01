@@ -1,4 +1,5 @@
 ﻿using BigBang1112.Extensions;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
@@ -10,32 +11,34 @@ public partial class HistoryCommand
     [DiscordBotSubCommand("wr", "Gets the world record history of a map.")]
     public class Wr : MapRelatedWithUidCommand
     {
-        private readonly IWrRepo _repo;
+        private readonly IWrUnitOfWork _wrUnitOfWork;
 
         public bool HideTimestamps { get; set; }
         public bool HideNicknames { get; set; }
 
-        public Wr(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo) : base(tmwrDiscordBotService, repo)
+        public Wr(TmwrDiscordBotService tmwrDiscordBotService, IWrUnitOfWork wrUnitOfWork) : base(tmwrDiscordBotService, wrUnitOfWork)
         {
-            _repo = repo;
+            _wrUnitOfWork = wrUnitOfWork;
         }
 
         protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
         {
             var isTMUF = map.Game.IsTMUF();
 
-            var wrs = await _repo.GetWorldRecordHistoryFromMapAsync(map);
+            var wrs = await _wrUnitOfWork.WorldRecords.GetHistoryByMapAsync(map);
 
             builder.Title = map.GetHumanizedDeformattedName();
             builder.ThumbnailUrl = map.GetThumbnailUrl();
             builder.Url = map.GetInfoUrl();
             builder.Footer = null;
 
-            if (wrs.Count == 0)
+            if (!wrs.Any())
             {
                 builder.Description = "No world records were tracked.";
                 return;
             }
+
+            var wrCount = wrs.Count();
 
             var isStunts = map.IsStuntsMode();
 
@@ -43,7 +46,7 @@ public partial class HistoryCommand
             {
                 var time = isStunts ? x.Time.ToString() : x.TimeInt32.ToString(useHundredths: isTMUF);
 
-                var baseStr = $"` {wrs.Count - i} ` **` {time} `**";
+                var baseStr = $"` {wrCount - i} ` **` {time} `**";
 
                 if (!HideNicknames && !HideTimestamps)
                 {
@@ -72,8 +75,12 @@ public partial class HistoryCommand
 
             if (map.TitlePack is not null)
             {
-                var historyStartDate = await _repo.GetStartingDateOfHistoryTrackingAsync(map.TitlePack);
-                desc += $"\n\nHistory is tracked since {historyStartDate.ToTimestampTag(TimestampTagStyles.ShortDate)}.";
+                var historyStartDate = await _wrUnitOfWork.WorldRecords.GetStartingDateOfHistoryTrackingByTitlePackAsync(map.TitlePack);
+
+                if (historyStartDate.HasValue)
+                {
+                    desc += $"\n\nHistory is tracked since {historyStartDate.Value.ToTimestampTag(TimestampTagStyles.ShortDate)}.";
+                }
             }
 
             builder.Description = desc;

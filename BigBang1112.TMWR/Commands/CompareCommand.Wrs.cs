@@ -1,4 +1,5 @@
 ﻿using BigBang1112.Extensions;
+using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
@@ -10,7 +11,7 @@ public partial class CompareCommand
     [DiscordBotSubCommand("wrs", "Compare two world records with each other.")]
     public class Wrs : MapRelatedWithUidCommand
     {
-        private readonly IWrRepo _repo;
+        private readonly IWrUnitOfWork _wrUnitOfWork;
 
         [DiscordBotCommandOption("guid1", ApplicationCommandOptionType.String,
             "GUID of the world record to select for comparison.",
@@ -19,7 +20,7 @@ public partial class CompareCommand
 
         public async Task<IEnumerable<string>> AutocompleteGuid1Async(string value)
         {
-            return await _repo.GetWorldRecordGuidsAsync(value);
+            return await _wrUnitOfWork.WorldRecords.GetAllGuidsLikeAsync(value);
         }
 
         [DiscordBotCommandOption("guid2", ApplicationCommandOptionType.String,
@@ -29,12 +30,12 @@ public partial class CompareCommand
 
         public async Task<IEnumerable<string>> AutocompleteGuid2Async(string value)
         {
-            return await _repo.GetWorldRecordGuidsAsync(value);
+            return await _wrUnitOfWork.WorldRecords.GetAllGuidsLikeAsync(value);
         }
 
-        public Wrs(TmwrDiscordBotService tmwrDiscordBotService, IWrRepo repo) : base(tmwrDiscordBotService, repo)
+        public Wrs(TmwrDiscordBotService tmwrDiscordBotService, IWrUnitOfWork wrUnitOfWork) : base(tmwrDiscordBotService, wrUnitOfWork)
         {
-            _repo = repo;
+            _wrUnitOfWork = wrUnitOfWork;
         }
 
         protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
@@ -44,7 +45,7 @@ public partial class CompareCommand
             var guid1 = new Guid(Guid1);
             var guid2 = new Guid(Guid2);
 
-            var wr1 = await _repo.GetWorldRecordAsync(guid1);
+            var wr1 = await _wrUnitOfWork.WorldRecords.GetByGuidAsync(guid1);
 
             if (wr1 is null)
             {
@@ -52,7 +53,7 @@ public partial class CompareCommand
                 return;
             }
 
-            var wr2 = await _repo.GetWorldRecordAsync(guid2);
+            var wr2 = await _wrUnitOfWork.WorldRecords.GetByGuidAsync(guid2);
 
             if (wr2 is null)
             {
