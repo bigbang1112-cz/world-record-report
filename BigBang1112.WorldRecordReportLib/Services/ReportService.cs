@@ -21,7 +21,7 @@ public class ReportService
 
     public async Task ReportWorldRecordAsync(WorldRecordModel wr, string scope, CancellationToken cancellationToken = default)
     {
-        var embed = GetDefaultEmbed_NewWorldRecord(wr);
+        CreateDiscordEmbeds_NewWorldRecord(wr, out var webhookEmbed, out var botEmbed);
 
         var report = new ReportModel
         {
@@ -33,18 +33,20 @@ public class ReportService
 
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
-        var embeds = new List<Discord.Embed> { embed };
+        var webhookEmbeds = new List<Discord.Embed> { webhookEmbed };
+        var botEmbeds = new List<Discord.Embed> { botEmbed };
 
         if (wr.Unverified)
         {
-            embeds.Add(
-                new Discord.EmbedBuilder()
-                    .WithFooter("This report was sent early using the Leaderboards manialink and will be verified within an hour.")
-                    .Build()
-            );
+            var lbManialinkEmbed = new Discord.EmbedBuilder()
+                .WithFooter("This report was sent early using the Leaderboards manialink and will be verified within an hour.")
+                .Build();
+
+            webhookEmbeds.Add(lbManialinkEmbed);
+            botEmbeds.Add(lbManialinkEmbed);
         }
 
-        await ReportToAllScopedWebhooksAsync(report, embeds, scope, cancellationToken);
+        await ReportToAllScopedWebhooksAsync(report, webhookEmbeds, scope, cancellationToken);
     }
 
     public async Task ReportRemovedWorldRecordsAsync(WorldRecordModel wr,
@@ -80,19 +82,20 @@ public class ReportService
             return;
         }
 
-        var embed = new Discord.EmbedBuilder()
-            .WithTitle($"{map.GetHumanizedDeformattedName()}: Top 10 has changed!")
+        var embedBuilder = new Discord.EmbedBuilder()
+            .WithTitle($"{map.GetHumanizedDeformattedName()} => Top 10 has changed!")
             .WithUrl(map.GetInfoUrl())
             .WithDescription(string.Join('\n', lines))
-            // .AddField("Top 10 has changed!", string.Join('\n', lines))
             .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
             .WithColor(new Discord.Color(
                 map.Environment.Color[0],
                 map.Environment.Color[1],
                 map.Environment.Color[2]))
-            .WithCurrentTimestamp()
-            .Build();
+            .WithCurrentTimestamp();
 
+        var embedWebhook = embedBuilder.Build();
+        var embedBot = embedBuilder.WithFooter("", UrlConsts.Favicon).Build();
+        
         var report = new ReportModel
         {
             Guid = Guid.NewGuid(),
@@ -102,7 +105,7 @@ public class ReportService
 
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
-        await ReportToAllScopedWebhooksAsync(report, embed.Yield(), scope, cancellationToken);
+        await ReportToAllScopedWebhooksAsync(report, embedWebhook.Yield(), scope, cancellationToken);
     }
 
     private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
@@ -225,7 +228,7 @@ public class ReportService
         return true;
     }
 
-    public static Discord.Embed GetDefaultEmbed_NewWorldRecord(WorldRecordModel wr)
+    public static Discord.EmbedBuilder GetDefaultEmbedBuilder_NewWorldRecord(WorldRecordModel wr)
     {
         var map = wr.Map;
 
@@ -264,8 +267,7 @@ public class ReportService
             .WithThumbnailUrl(map.GetThumbnailUrl())
             .AddField("Map", map.GetMdLink(), true)
             .AddField(isStunts ? "Score" : "Time", score, true)
-            .AddField("By", $"**{nickname}**", true)
-            .Build();
+            .AddField("By", $"**{nickname}**", true);
     }
 
     public static Discord.Embed GetDefaultEmbed_RemovedWorldRecord(WorldRecordModel? currentWr, IEnumerable<WorldRecordModel> removedWrs)
@@ -311,12 +313,20 @@ public class ReportService
             return;
         }
 
-        var embed = GetDefaultEmbed_NewWorldRecord(report.WorldRecord);
+        CreateDiscordEmbeds_NewWorldRecord(report.WorldRecord, out var webhookEmbed, out var botEmbed);
 
         foreach (var msg in report.DiscordWebhookMessages)
         {
-            await _discordWebhookService.ModifyMessageAsync(msg, embeds: embed.Yield(), cancellationToken: cancellationToken);
+            await _discordWebhookService.ModifyMessageAsync(msg, embeds: webhookEmbed.Yield(), cancellationToken: cancellationToken);
         }
+    }
+
+    private static void CreateDiscordEmbeds_NewWorldRecord(WorldRecordModel wr, out Discord.Embed webhookEmbed, out Discord.Embed botEmbed)
+    {
+        var embedBuilder = GetDefaultEmbedBuilder_NewWorldRecord(wr);
+
+        webhookEmbed = embedBuilder.Build();
+        botEmbed = embedBuilder.WithFooter(wr.Guid.ToString(), UrlConsts.Favicon).Build();
     }
 
     private static string FilterOutNickname(string nickname, string loginIfFilteredOut)
