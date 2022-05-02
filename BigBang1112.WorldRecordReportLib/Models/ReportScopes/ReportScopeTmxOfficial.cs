@@ -2,6 +2,6 @@
 
 public record ReportScopeTmxOfficial : ReportScope
 {
-    public ReportScopeChanges? Changes { get; init; }
-    public ReportScopeWorldRecord? WR { get; init; }
+    public ReportScopeTmxSearchFilter? Changes { get; init; }
+    public ReportScopeTmxSearchFilter? WR { get; init; }
 }

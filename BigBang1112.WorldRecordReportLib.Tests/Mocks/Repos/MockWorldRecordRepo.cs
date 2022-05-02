@@ -61,4 +61,9 @@ public class MockWorldRecordRepo : MockRepo<WorldRecordModel>, IWorldRecordRepo
     {
         throw new NotImplementedException();
     }
+
+    public Task<WorldRecordModel?> GetNextAsync(WorldRecordModel wr, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 }

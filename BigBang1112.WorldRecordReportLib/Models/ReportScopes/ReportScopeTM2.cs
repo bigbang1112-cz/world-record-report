@@ -2,5 +2,5 @@
 
 public record ReportScopeTM2 : ReportScope
 {
-    public ReportScopeTM2Official? Official { get; init; }
+    public ReportScopeTM2Nadeo? Nadeo { get; init; }
 }

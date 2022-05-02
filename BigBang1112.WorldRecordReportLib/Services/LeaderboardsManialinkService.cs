@@ -148,7 +148,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
         {
             await _wrUnitOfWork.WorldRecords.AddAsync(changes.WorldRecord);
 
-            await _reportService.ReportWorldRecordAsync(changes.WorldRecord, $"{nameof(ReportScopeSet.TM2)}:{nameof(ReportScopeTM2.Official)}:{nameof(ReportScopeTM2Official.WR)}:{map.TitlePack.GetTitleUid()}");
+            await _reportService.ReportWorldRecordAsync(changes.WorldRecord, $"{nameof(ReportScopeSet.TM2)}:{nameof(ReportScopeTM2.Nadeo)}:{nameof(ReportScopeTM2Nadeo.WR)}:{map.TitlePack.GetTitleUid()}");
                 
             await _wrUnitOfWork.SaveAsync();
         }
