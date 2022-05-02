@@ -42,6 +42,8 @@ var options = new EssentialsOptions
 // Add services to the container.
 builder.Services.AddEssentials(options);
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddDbContext2<WrContext>(options.Config, "WrDb");
 builder.Services.AddDbContext2<DiscordBotContext>(options.Config, "DiscordBotDb");
 

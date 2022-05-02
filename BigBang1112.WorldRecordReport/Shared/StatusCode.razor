@@ -1,0 +1,21 @@
+﻿@inject IHttpContextAccessor _httpContextAccessor
+
+<span>@Message</span>
+
+@code {
+    [Parameter]
+    public int Value { get; set; }
+    
+    [Parameter]
+    public string? Message { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var context = _httpContextAccessor.HttpContext;
+
+        if (context is not null && !context.Response.HasStarted)
+        {
+            context.Response.StatusCode = Value;
+        }
+    }
+}

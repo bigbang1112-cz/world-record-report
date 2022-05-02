@@ -16,8 +16,8 @@ public class RefreshTM2Service : RefreshService
 {
     private static readonly MasterServerTm2 server = new();
     
-    private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2.Official)}:{nameof(ReportScopeTM2Official.WR)}";
-    private const string ScopeOfficialTop10 = $"{nameof(ReportScopeSet.TM2)}:{nameof(ReportScopeTM2.Official)}:{nameof(ReportScopeTM2Official.Changes)}";
+    private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2.Nadeo)}:{nameof(ReportScopeTM2Nadeo.WR)}";
+    private const string ScopeOfficialTop10 = $"{nameof(ReportScopeSet.TM2)}:{nameof(ReportScopeTM2.Nadeo)}:{nameof(ReportScopeTM2Nadeo.Changes)}";
 
     private readonly ILogger<RefreshTM2Service> _logger;
     private readonly IWrUnitOfWork _wrUnitOfWork;
