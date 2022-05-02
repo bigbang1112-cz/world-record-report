@@ -186,7 +186,7 @@ public class ReportService
             },
             TM2 = new()
             {
-                Official = new()
+                Nadeo = new()
                 {
                     All = true
                 }
