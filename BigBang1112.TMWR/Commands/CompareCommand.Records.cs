@@ -125,8 +125,8 @@ public partial class CompareCommand
                 _ = loginModels.TryGetValue(rec1.UserId, out var rec1LoginModel);
                 _ = loginModels.TryGetValue(rec2.UserId, out var rec2LoginModel);
 
-                record1 = new MiniRecord(rec1.Rank.GetValueOrDefault(), rec1.ReplayTime, rec1LoginModel?.Nickname ?? rec1.UserId.ToString());
-                record2 = new MiniRecord(rec2.Rank.GetValueOrDefault(), rec2.ReplayTime, rec2LoginModel?.Nickname ?? rec2.UserId.ToString());
+                record1 = new MiniRecord(rec1.Rank.GetValueOrDefault(), rec1.ReplayTime.TotalMilliseconds, rec1LoginModel?.Nickname ?? rec1.UserId.ToString());
+                record2 = new MiniRecord(rec2.Rank.GetValueOrDefault(), rec2.ReplayTime.TotalMilliseconds, rec2LoginModel?.Nickname ?? rec2.UserId.ToString());
             }
             else
             {

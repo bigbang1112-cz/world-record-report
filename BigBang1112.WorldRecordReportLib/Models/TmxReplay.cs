@@ -5,7 +5,7 @@ namespace BigBang1112.WorldRecordReportLib.Models;
 public class TmxReplay : IRecord<int>
 {
     public int ReplayId { get; init; }
-    public int ReplayTime { get; init; }
+    public TimeInt32 ReplayTime { get; init; }
     public int ReplayScore { get; init; }
     public int ReplayRespawns { get; init; }
     public DateTime ReplayAt { get; init; }
@@ -24,8 +24,8 @@ public class TmxReplay : IRecord<int>
     
     TimeInt32 IRecord.Time
     {
-        get => new(ReplayTime);
-        init => ReplayTime = value.TotalMilliseconds;
+        get => ReplayTime;
+        init => ReplayTime = value;
     }
     
     string? IRecord.DisplayName
@@ -47,6 +47,6 @@ public class TmxReplay : IRecord<int>
 
     public override string ToString()
     {
-        return $"{Rank?.ToString() ?? "-"}) {new TimeInt32(ReplayTime)} by {UserName} ({ReplayAt})";
+        return $"{Rank?.ToString() ?? "-"}) {ReplayTime} by {UserName} ({ReplayAt})";
     }
 }

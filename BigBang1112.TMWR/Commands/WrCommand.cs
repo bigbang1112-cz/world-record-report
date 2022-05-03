@@ -4,6 +4,7 @@ using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Discord;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
 

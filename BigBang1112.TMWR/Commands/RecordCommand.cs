@@ -198,11 +198,11 @@ public class RecordCommand : MapRelatedWithUidCommand
 
         var score = map.IsStuntsMode()
             ? record.ReplayScore.ToString()
-            : new TimeInt32(record.ReplayTime).ToString(useHundredths: map.Game.IsTMUF());
+            : record.ReplayTime.ToString(useHundredths: map.Game.IsTMUF());
 
         nickname = record.UserName?.EscapeDiscord() ?? record.UserId.ToString();
 
-        return new(record.Rank.GetValueOrDefault(), map.IsStuntsMode() ? record.ReplayScore : record.ReplayTime, nickname, record.UserId.ToString(), record.ReplayAt);
+        return new(record.Rank.GetValueOrDefault(), map.IsStuntsMode() ? record.ReplayScore : record.ReplayTime.TotalMilliseconds, nickname, record.UserId.ToString(), record.ReplayAt);
     }
 
     private async Task<DetailedRecord?> FindDetailedRecordFromTM2020Async(MapModel map)

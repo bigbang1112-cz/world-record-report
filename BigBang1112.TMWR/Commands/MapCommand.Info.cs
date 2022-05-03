@@ -77,11 +77,7 @@ public partial class MapCommand
 
             if (map.LastActivityOn.HasValue)
             {
-                var label = map.TmxAuthor is null
-                    ? "Last activity"
-                    : "Last TMX activity";
-
-                builder.AddField(label, map.LastActivityOn.Value.ToTimestampTag(TimestampTagStyles.Relative), inline: true);
+                builder.AddField("Last activity", (map.TmxAuthor is null ? "" : "**TMX:** ") + map.LastActivityOn.Value.ToTimestampTag(TimestampTagStyles.Relative), inline: true);
             }
 
             var lastTop10Change = await _wrUnitOfWork.RecordSetDetailedChanges.GetLatestByMapAsync(map);
@@ -115,7 +111,7 @@ public partial class MapCommand
             }
             else if (game == Game.TMUF)
             {
-                await AddLastTop10ActivityTmxAsync(map, builder, records);
+                AddLastTop10ActivityTmx(map, builder, records);
             }
 
             if (recordCount.HasValue)
@@ -231,7 +227,9 @@ public partial class MapCommand
                             var time = record.Time;
                             var rank = record.Rank;
 
-                            activityText = $"From: **` {prevTime.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {prevRank} `)\nTo: **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {rank} `)\nBy: **{lastTop10Change.Login.GetMdLink()}**";
+                            activityText = $"From: **` {prevTime.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {prevRank} `)\n" +
+                                           $"To: **` {time.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {rank} `)\n" +
+                                           $"By: **{lastTop10Change.Login.GetMdLink()}**";
                         }
 
                         break;
@@ -250,24 +248,36 @@ public partial class MapCommand
             builder.AddField($"{fieldName}  ➡️  {typeOfActivity}", activityText);
         }
 
-        private async Task AddLastTop10ActivityTmxAsync(MapModel map, EmbedBuilder builder, IEnumerable<IRecord>? records)
+        private void AddLastTop10ActivityTmx(MapModel map, EmbedBuilder builder, IEnumerable<IRecord>? records)
         {
-            var activityText = "No details available";
-
-            var typeOfActivity = "TODO";
-
-            if (records is not null)
+            if (records is null || !records.Any())
             {
-                var tmxRecords = records.Cast<TmxReplay>();
-                var newestRecord = tmxRecords.OrderByDescending(x => x.ReplayAt).FirstOrDefault();
-
-                if (newestRecord is not null)
-                {
-                    var recordsByNewestRecordUser = tmxRecords.Where(x => x.UserId == newestRecord.UserId).Take(2);
-                }
+                return;
             }
 
-            builder.AddField($"Last TMX activity  ➡️  {typeOfActivity}", activityText);
+            var tmxRecords = records.Cast<TmxReplay>();
+            var newestRecord = tmxRecords.OrderByDescending(x => x.ReplayAt).Where(x => x.Rank <= 10).First();
+
+            builder.AddField("Last Top 10 activity", "**TMX:** " + newestRecord.ReplayAt.ToTimestampTag(TimestampTagStyles.Relative), inline: true);
+
+            var recordsByNewestRecordUser = tmxRecords.Where(x => x.UserId == newestRecord.UserId).Take(2);
+
+            var olderRecord = recordsByNewestRecordUser.ElementAtOrDefault(1);
+
+            if (newestRecord.Rank is null)
+            {
+                throw new Exception("Rank is null even though this should be a ranked record");
+            }
+
+            var activityText = olderRecord is null
+                ? $"` {newestRecord.Rank.Value} ` **` {newestRecord.ReplayTime.ToString(useHundredths: map.Game.IsTMUF())} `** by **{newestRecord.GetDisplayNameMdLink()}**"
+                : $"From: **` {olderRecord.ReplayTime.ToString(useHundredths: map.Game.IsTMUF())} `**\n" +
+                  $"To: **` {newestRecord.ReplayTime.ToString(useHundredths: map.Game.IsTMUF())} `** (rank: ` {newestRecord.Rank} `)\n" +
+                  $"By: **{newestRecord.GetDisplayNameMdLink()}**";
+            
+            var typeOfActivity = olderRecord is null ? "New record" : "Improved record";
+
+            builder.AddField($"Last Top 10 TMX activity  ➡️  {typeOfActivity}", activityText);
         }
 
         public override async Task<DiscordBotMessage?> ExecuteButtonAsync(SocketMessageComponent messageComponent, Deferer deferer)
