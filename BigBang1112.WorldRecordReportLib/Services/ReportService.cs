@@ -83,10 +83,10 @@ public class ReportService
         }
 
         var embedBuilder = new Discord.EmbedBuilder()
-            .WithTitle($"{map.GetHumanizedDeformattedName()} => Top 10 has changed!")
+            .WithTitle(map.GetHumanizedDeformattedName())
             .WithUrl(map.GetInfoUrl())
             .WithDescription(string.Join('\n', lines))
-            .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
+            .WithFooter("Top 10 has changed! | Powered by wr.bigbang1112.cz", LogoIconUrl)
             .WithColor(new Discord.Color(
                 map.Environment.Color[0],
                 map.Environment.Color[1],
