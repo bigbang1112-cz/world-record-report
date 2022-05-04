@@ -26,7 +26,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigBang1112.WorldRecordReport.DiscordBot", "BigBang1112.WorldRecordReport.DiscordBot\BigBang1112.WorldRecordReport.DiscordBot.csproj", "{5BE2A4C1-256B-4F11-A6C7-338F26994592}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BigBang1112.WorldRecordReport.DiscordBot", "BigBang1112.WorldRecordReport.DiscordBot\BigBang1112.WorldRecordReport.DiscordBot.csproj", "{5BE2A4C1-256B-4F11-A6C7-338F26994592}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -49,7 +49,7 @@ builder.Services.AddDbContext2<DiscordBotContext>(options.Config, "DiscordBotDb"
 
 builder.Services.AddScoped<IWrUnitOfWork, WrUnitOfWork>();
 
-builder.Services.AddScoped<IDiscordBotRepo, DiscordBotRepo>();
+builder.Services.AddScoped<IDiscordBotUnitOfWork, DiscordBotUnitOfWork>();
 builder.Services.AddScoped<ICampaignRepo, CampaignRepo>();
 builder.Services.AddScoped<IGameRepo, GameRepo>();
 builder.Services.AddScoped<IMapRepo, MapRepo>();

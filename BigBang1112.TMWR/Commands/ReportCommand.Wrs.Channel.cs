@@ -12,7 +12,7 @@ public partial class ReportCommand
         [UnfinishedDiscordBotCommand]
         public class Channel : DiscordBotCommand
         {
-            private readonly IDiscordBotRepo _discordBotRepo;
+            private readonly IDiscordBotUnitOfWork _discordBotUnitOfWork;
 
             [DiscordBotCommandOption("set", ApplicationCommandOptionType.Boolean, "If True, world records will be reported in this channel [ManageChannels].")]
             public bool? Set { get; set; }
@@ -20,9 +20,9 @@ public partial class ReportCommand
             [DiscordBotCommandOption("other", ApplicationCommandOptionType.Channel, "Specify other channel to apply/see the subscription to/of.")]
             public SocketChannel? OtherChannel { get; set; }
 
-            public Channel(DiscordBotService discordBotService, IDiscordBotRepo discordBotRepo) : base(discordBotService)
+            public Channel(DiscordBotService discordBotService, IDiscordBotUnitOfWork discordBotUnitOfWork) : base(discordBotService)
             {
-                _discordBotRepo = discordBotRepo;
+                _discordBotUnitOfWork = discordBotUnitOfWork;
             }
 
             public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand)
@@ -77,7 +77,7 @@ public partial class ReportCommand
                     return false;
                 }
 
-                var reportSubscription = await _discordBotRepo.GetReportChannelAsync(discordBotGuid.Value, textChannel);
+                var reportSubscription = await _discordBotUnitOfWork.WorldRecordReportChannels.GetByBotAndTextChannelAsync(discordBotGuid.Value, textChannel);
 
                 return reportSubscription is not null && reportSubscription.Enabled;
             }
@@ -91,9 +91,9 @@ public partial class ReportCommand
                     throw new Exception("Missing discord bot guid");
                 }
 
-                await _discordBotRepo.AddOrUpdateWorldRecordReportChannelAsync(discordBotGuid.Value, textChannel, set);
+                await _discordBotUnitOfWork.WorldRecordReportChannels.AddOrUpdateAsync(discordBotGuid.Value, textChannel, set);
 
-                await _discordBotRepo.SaveAsync();
+                await _discordBotUnitOfWork.SaveAsync();
             }
 
             private static DiscordBotMessage RespondWithDescriptionEmbed(string description)
