@@ -174,21 +174,21 @@ public class ReportService
             {
                 Official = new()
                 {
-                    All = true
+                    WR = new()
                 }
             },
             Tmx = new()
             {
                 Official = new()
                 {
-                    All = true
+                    WR = new()
                 }
             },
             TM2 = new()
             {
                 Nadeo = new()
                 {
-                    All = true
+                    Changes = new() { Param = "TMLagoon@nadeo" }
                 }
             },
         };
@@ -220,6 +220,16 @@ public class ReportService
             if (scopeObjLayer.All)
             {
                 return true;
+            }
+
+            if (scopeObjLayer is ReportScopeWithParam scopeWithParam)
+            {
+                if (scopeWithParam.Param is null)
+                {
+                    return true;
+                }
+
+                return scope.StartsWith(scopeWithParam.Param);
             }
 
             scopeTypeLayer = prop.PropertyType;
