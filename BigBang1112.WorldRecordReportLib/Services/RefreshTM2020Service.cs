@@ -14,7 +14,7 @@ namespace BigBang1112.WorldRecordReportLib.Services;
 public class RefreshTM2020Service : RefreshService
 {
     private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.Official)}:{nameof(ReportScopeTM2020Official.WR)}";
-    private const string ScopeOfficialTop10 = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.Official)}:{nameof(ReportScopeTM2020Official.Changes)}";
+    private const string ScopeOfficialChanges = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.Official)}:{nameof(ReportScopeTM2020Official.Changes)}";
 
     private readonly RefreshScheduleService _refreshSchedule;
     private readonly RecordStorageService _recordStorageService;
@@ -404,7 +404,7 @@ public class RefreshTM2020Service : RefreshService
             return;
         }
 
-        await _reportService.ReportDifferencesAsync(changes, map, ScopeOfficialTop10, cancellationToken);
+        await _reportService.ReportDifferencesAsync(changes, map, ScopeOfficialChanges, cancellationToken);
     }
 
     private async Task ReportWorldRecordAsync(WorldRecordModel wr, IEnumerable<WorldRecordModel> removedWrs, CancellationToken cancellationToken)

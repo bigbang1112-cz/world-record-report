@@ -12,9 +12,10 @@ using TmxSite = BigBang1112.WorldRecordReportLib.Enums.TmxSite;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
-public class RefreshTmxService
+public class RefreshTmxService : RefreshService
 {
-    private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.Tmx)}:{nameof(ReportScopeTmx.Official)}:{nameof(ReportScopeTmxOfficial.WR)}";
+    private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TMX)}:{nameof(ReportScopeTmx.Official)}:{nameof(ReportScopeTmxOfficial.WR)}";
+    private const string ScopeOfficialChanges = $"{nameof(ReportScopeSet.TMX)}:{nameof(ReportScopeTmx.Official)}:{nameof(ReportScopeTmxOfficial.Changes)}";
 
     private readonly ITmxService _tmxService;
     private readonly IWrUnitOfWork _wrUnitOfWork;
@@ -28,7 +29,7 @@ public class RefreshTmxService
                             RecordStorageService recordStorageService,
                             IDiscordWebhookService discordWebhookService,
                             ReportService reportService,
-                            ILogger<RefreshTmxService> logger)
+                            ILogger<RefreshTmxService> logger) : base(logger)
     {
         _tmxService = tmxService;
         _wrUnitOfWork = wrUnitOfWork;
@@ -153,7 +154,7 @@ public class RefreshTmxService
         {
             // check for leaderboard changes
             // ...
-            FindChangesInRecordSets(prevRecordSet, recordSet);
+            await ReportChangesInRecordsAsync(map, recordSet, prevRecordSet);
         }
 
         // create a .json.gz file from replays.Results
@@ -228,19 +229,25 @@ public class RefreshTmxService
         return false;
     }
 
-    private void FindChangesInRecordSets(IEnumerable<TmxReplay> prevRecordSet, IEnumerable<TmxReplay> recordSet)
+    private async ValueTask ReportChangesInRecordsAsync(MapModel map, IEnumerable<TmxReplay> records, IEnumerable<TmxReplay> prevRecords)
     {
-        var changes = LeaderboardComparer.Compare(recordSet, prevRecordSet);
+        var changes = LeaderboardComparer.Compare(records, prevRecords);
 
         if (changes is null)
         {
             return;
         }
 
-        if (changes.ImprovedRecords.Any())
+        var rich = CreateLeaderboardChangesRich(changes,
+            records.Where(x => x.Rank.HasValue).ToDictionary(x => x.UserId, x => x as IRecord<int>),
+            prevRecords.Where(x => x.Rank.HasValue).ToDictionary(x => x.UserId, x => x as IRecord<int>));
+
+        if (rich is null)
         {
-            
+            return;
         }
+
+        await _reportService.ReportDifferencesAsync(rich, map, ScopeOfficialChanges);
     }
 
     private async Task<WorldRecordModel> ProcessNewWorldRecordAsync(TmxSite tmxSite,

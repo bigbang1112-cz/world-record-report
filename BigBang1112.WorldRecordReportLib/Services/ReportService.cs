@@ -177,11 +177,11 @@ public class ReportService
                     WR = new()
                 }
             },
-            Tmx = new()
+            TMX = new()
             {
                 Official = new()
                 {
-                    WR = new()
+                    Changes = new() { All = true }
                 }
             },
             TM2 = new()
