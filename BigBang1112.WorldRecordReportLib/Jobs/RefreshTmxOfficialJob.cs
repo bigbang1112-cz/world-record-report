@@ -19,8 +19,8 @@ public class RefreshTmxOfficialJob : IJob
 
     public async Task Execute(IJobExecutionContext context)
     {
-        await _tmx.UpdateWorldRecordsAsync(TmxSite.United, LeaderboardType.Nadeo);
-        await _tmx.UpdateWorldRecordsAsync(TmxSite.United, LeaderboardType.Star);
-        await _tmx.UpdateWorldRecordsAsync(TmxSite.TMNF, LeaderboardType.Nadeo);
+        await _tmx.UpdateWorldRecordsAsync(TmxSite.United, LeaderboardType.Nadeo, "NadeoTMUF");
+        await _tmx.UpdateWorldRecordsAsync(TmxSite.United, LeaderboardType.Star, "StarTrack");
+        await _tmx.UpdateWorldRecordsAsync(TmxSite.TMNF, LeaderboardType.Nadeo, "NadeoTMNF");
     }
 }

@@ -404,7 +404,7 @@ public class RefreshTM2020Service : RefreshService
             return;
         }
 
-        await _reportService.ReportDifferencesAsync(changes, map, ScopeOfficialChanges, cancellationToken);
+        await _reportService.ReportDifferencesAsync(changes, map, ScopeOfficialChanges, cancellationToken: cancellationToken);
     }
 
     private async Task ReportWorldRecordAsync(WorldRecordModel wr, IEnumerable<WorldRecordModel> removedWrs, CancellationToken cancellationToken)

@@ -45,7 +45,7 @@ public class RefreshTmxService : RefreshService
         await CleanupWorldRecordsAsync(lastTmxWrs, false);
     }
 
-    public async Task UpdateWorldRecordsAsync(TmxSite tmxSite, LeaderboardType leaderboardType)
+    public async Task UpdateWorldRecordsAsync(TmxSite tmxSite, LeaderboardType leaderboardType, string subScope)
     {
         var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
 
@@ -68,7 +68,7 @@ public class RefreshTmxService : RefreshService
 
             foreach (var tmxTrack in recentTracks.Results)
             {
-                endOfNewActivities = await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, leaderboardType);
+                endOfNewActivities = await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope);
 
                 if (endOfNewActivities)
                 {
@@ -93,7 +93,7 @@ public class RefreshTmxService : RefreshService
     /// <param name="tmxTrack"></param>
     /// <param name="leaderboardType"></param>
     /// <returns>True if the end of activities was reached.</returns>
-    private async Task<bool> CheckTrackForNewRecordsAsync(TmxSite tmxSite, TrackSearchItem tmxTrack, LeaderboardType leaderboardType)
+    private async Task<bool> CheckTrackForNewRecordsAsync(TmxSite tmxSite, TrackSearchItem tmxTrack, string subScope)
     {
         var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
         
@@ -134,7 +134,7 @@ public class RefreshTmxService : RefreshService
             freshUpdate = true;
         }
 
-        map.LastActivityOn = tmxTrack.ActivityAt.DateTime;
+        map.LastActivityOn = tmxTrack.ActivityAt.DateTime; // TODO: UtcDateTime
 
         await _wrUnitOfWork.SaveAsync();
 
@@ -211,17 +211,17 @@ public class RefreshTmxService : RefreshService
                 _logger.LogWarning("Time is not legit!");
                 continue;
             }
-
+            
             var wrModel = await ProcessNewWorldRecordAsync(
                 tmxSite,
                 map,
                 currentWr,
                 newTimeOrScore,
                 newWr.User,
-                newWr.ReplayAt.DateTime,
+                newWr.ReplayAt.DateTime, //TODO: should be UtcDateTime
                 newWr.ReplayId,
                 freshUpdate,
-                leaderboardType);
+                subScope);
 
             previousWr = wrModel;
         }
@@ -247,7 +247,7 @@ public class RefreshTmxService : RefreshService
             return;
         }
 
-        await _reportService.ReportDifferencesAsync(rich, map, ScopeOfficialChanges);
+        await _reportService.ReportDifferencesAsync(rich, map, ScopeOfficialChanges, maxRank: 1000);
     }
 
     private async Task<WorldRecordModel> ProcessNewWorldRecordAsync(TmxSite tmxSite,
@@ -258,7 +258,7 @@ public class RefreshTmxService : RefreshService
                                                                     DateTime replayAt,
                                                                     int replayId,
                                                                     bool freshUpdate,
-                                                                    LeaderboardType leaderboardType)
+                                                                    string subScope)
     {
         _logger.LogInformation("New world record!");
 
@@ -294,7 +294,7 @@ public class RefreshTmxService : RefreshService
 
         if (!freshUpdate)
         {
-            await _reportService.ReportWorldRecordAsync(wrModel, ScopeOfficialWR);
+            await _reportService.ReportWorldRecordAsync(wrModel, $"{ScopeOfficialWR}:{subScope}");
         }
 
         await _wrUnitOfWork.SaveAsync();

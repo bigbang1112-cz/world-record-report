@@ -2,5 +2,5 @@
 
 public abstract record ReportScope
 {
-    public bool All { get; set; }
+    
 }

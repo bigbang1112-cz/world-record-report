@@ -73,9 +73,10 @@ public class ReportService
     public async Task ReportDifferencesAsync<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes,
                                                         MapModel map,
                                                         string scope,
+                                                        int maxRank = 10,
                                                         CancellationToken cancellationToken = default) where TPlayerId : notnull
     {
-        var lines = CreateLeaderboardChangesStringsForDiscord(changes);
+        var lines = CreateLeaderboardChangesStringsForDiscord(changes, maxRank);
 
         if (!lines.Any())
         {
@@ -108,12 +109,12 @@ public class ReportService
         await ReportToAllScopedWebhooksAsync(report, embedWebhook.Yield(), scope, cancellationToken);
     }
 
-    private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
+    private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes, int maxRank) where TPlayerId : notnull
     {
         var dict = new SortedDictionary<int, string>();
 
-        var newRecords = changes.NewRecords.Where(x => x.Rank <= 10).OrderBy(x => x.Time);
-        var improvedRecords = changes.ImprovedRecords.Where(x => x.Item1.Rank <= 10).OrderBy(x => x.Item1.Time);
+        var newRecords = changes.NewRecords.Where(x => x.Rank <= maxRank).OrderBy(x => x.Time);
+        var improvedRecords = changes.ImprovedRecords.Where(x => x.Item1.Rank <= maxRank).OrderBy(x => x.Item1.Time);
 
         foreach (var record in newRecords)
         {
@@ -181,7 +182,7 @@ public class ReportService
             {
                 Official = new()
                 {
-                    Changes = new() { All = true }
+                    Changes = new()
                 }
             },
             TM2 = new()
@@ -201,8 +202,25 @@ public class ReportService
         var scopeObjLayer = (ReportScope)webhook.Scope;
         var scopeTypeLayer = webhook.Scope.GetType();
 
+        // Loops through the scope triggered by the report itself (not the user scope preference)
+        // 'scope' is taken as each child in scope sequence
         foreach (var scope in scopePath)
         {
+            // This check is about making sure that the current sub-scope is static or varies
+            // It cannot be at the end because varying scopes have less strict rules
+            if (scopeObjLayer is ReportScopeWithParam scopeWithParam)
+            {
+                // Parameter that doesn't try to tell anything is taken as valid parent scope
+                // Child scopes aren't taken into consideration as they are not allowed with Param type of scope
+                if (string.IsNullOrWhiteSpace(scopeWithParam.Param))
+                {
+                    return true;
+                }
+
+                // That the parameter just starts with the wanted scope is enough, as Param scope cannot have child scopes
+                return scope.StartsWith(scopeWithParam.Param);
+            }
+
             var prop = scopeTypeLayer.GetProperty(scope);
             
             if (prop is null)
@@ -212,24 +230,11 @@ public class ReportService
 
             scopeObjLayer = prop.GetValue(scopeObjLayer) as ReportScope;
 
+            // If report scope is simply not present
             if (scopeObjLayer is null)
             {
-                return false;
-            }
-
-            if (scopeObjLayer.All)
-            {
-                return true;
-            }
-
-            if (scopeObjLayer is ReportScopeWithParam scopeWithParam)
-            {
-                if (scopeWithParam.Param is null)
-                {
-                    return true;
-                }
-
-                return scope.StartsWith(scopeWithParam.Param);
+                // Report if it's at least the root scope
+                return scopeObjLayer is not ReportScopeSet;
             }
 
             scopeTypeLayer = prop.PropertyType;
@@ -289,7 +294,7 @@ public class ReportService
 
         var previousWr = removedWrs.First();
         var map = previousWr.Map;
-        var time = previousWr.TimeInt32.ToString();
+        var time = $"` {previousWr.TimeInt32} `";
 
         var builder = new Discord.EmbedBuilder()
             .WithTitle("Removed world record")
@@ -301,12 +306,12 @@ public class ReportService
             .WithThumbnailUrl(map.GetThumbnailUrl())
             .AddField("Map", $"[{map.DeformattedName}]({map.GetInfoUrl()})", true)
             .AddField("Time", time, true)
-            .AddField("By", previousWr.GetPlayerNicknameMdLink(), true);
+            .AddField("By", $"**{previousWr.GetPlayerNicknameMdLink()}**", true);
 
         if (currentWr is not null)
         {
-            var prevTime = currentWr.TimeInt32.ToString();
-            var prevNickname = currentWr.GetPlayerNicknameMdLink();
+            var prevTime = $"` {currentWr.TimeInt32} `";
+            var prevNickname = $"**{currentWr.GetPlayerNicknameMdLink()}**";
 
             builder = builder
                 .AddField("New time", prevTime, true)
