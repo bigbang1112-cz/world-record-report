@@ -247,7 +247,7 @@ public class RefreshTmxService : RefreshService
             return;
         }
 
-        await _reportService.ReportDifferencesAsync(rich, map, ScopeOfficialChanges, maxRank: 1000);
+        await _reportService.ReportDifferencesAsync(rich, map, ScopeOfficialChanges, maxRank: 10);
     }
 
     private async Task<WorldRecordModel> ProcessNewWorldRecordAsync(TmxSite tmxSite,
