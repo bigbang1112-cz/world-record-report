@@ -4,6 +4,7 @@
 public class ReportScopeParamAttribute : Attribute
 {
     public string Value { get; }
+    public string? DisplayValue { get; set; }
 
     public ReportScopeParamAttribute(string value)
     {

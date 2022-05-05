@@ -2,8 +2,8 @@
 
 namespace BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 
-[ReportScopeParam("Nadeo TMUF")]
-[ReportScopeParam("Nadeo TMNF")]
+[ReportScopeParam("NadeoTMUF", DisplayValue = "Nadeo TMUF")]
+[ReportScopeParam("NadeoTMNF", DisplayValue = "Nadeo TMNF")]
 [ReportScopeParam("StarTrack")]
 [ReportScopeParam("Classic")]
 public record ReportScopeTmxSearchFilter : ReportScopeWithParam
