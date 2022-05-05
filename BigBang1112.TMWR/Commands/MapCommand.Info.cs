@@ -116,7 +116,12 @@ public partial class MapCommand
 
             if (recordCount.HasValue)
             {
-                builder.AddField("Record count", recordCount.Value.ToString("N0"));
+                builder.AddField("Record count", recordCount.Value.ToString("N0"), inline: game == Game.TMUF);
+            }
+
+            if (records is not null && game == Game.TMUF)
+            {
+                builder.AddField("Record count (TMX)", records.Count().ToString("N0"), inline: true);
             }
 
             if (map.FileLastModifiedOn.HasValue)
