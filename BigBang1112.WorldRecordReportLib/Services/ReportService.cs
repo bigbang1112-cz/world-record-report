@@ -76,7 +76,7 @@ public class ReportService
                                                         int maxRank = 10,
                                                         CancellationToken cancellationToken = default) where TPlayerId : notnull
     {
-        var lines = CreateLeaderboardChangesStringsForDiscord(changes, maxRank);
+        var lines = CreateLeaderboardChangesStringsForDiscord(map, changes, maxRank);
 
         if (!lines.Any())
         {
@@ -109,18 +109,26 @@ public class ReportService
         await ReportToAllScopedWebhooksAsync(report, embedWebhook.Yield(), scope, cancellationToken);
     }
 
-    private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes, int maxRank) where TPlayerId : notnull
+    private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(
+        MapModel map,
+        LeaderboardChangesRich<TPlayerId> changes,
+        int maxRank) where TPlayerId : notnull
     {
         var dict = new SortedDictionary<int, string>();
 
-        var newRecords = changes.NewRecords.Where(x => x.Rank <= maxRank).OrderBy(x => x.Time);
-        var improvedRecords = changes.ImprovedRecords.Where(x => x.Item1.Rank <= maxRank).OrderBy(x => x.Item1.Time);
+        var newRecords = changes.NewRecords
+            .Where(x => x.Rank <= maxRank)
+            .OrderBy(x => x.Time);
+
+        var improvedRecords = changes.ImprovedRecords
+            .Where(x => x.Item1.Rank <= maxRank)
+            .OrderBy(x => x.Item1.Time);
 
         foreach (var record in newRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **{record.GetDisplayNameMdLink()}**");
+            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **{GetDisplayNameMdLink(map, record)}**");
         }
-        
+
         foreach (var improvedRecord in improvedRecords)
         {
             var (currentRecord, previousRecord) = improvedRecord;
@@ -131,18 +139,25 @@ public class ReportService
                 ? $"` {delta} `, from ` {previousRecord.Time} `"
                 : $"` {delta} `, from ` {previousRecord.Rank:00} ` ` {previousRecord.Time} `";
 
-            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"` {currentRecord.Rank:00} ` ` {currentRecord.Time} ` ({bracket}) by **{currentRecord.GetDisplayNameMdLink()}**");
+            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"` {currentRecord.Rank:00} ` ` {currentRecord.Time} ` ({bracket}) by **{GetDisplayNameMdLink(map, currentRecord)}**");
         }
 
         foreach (var record in changes.RemovedRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **{record.GetDisplayNameMdLink()}** was **removed**");
+            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
         }
 
         foreach (var item in dict)
         {
             yield return item.Value;
         }
+    }
+
+    private static string GetDisplayNameMdLink<TPlayerId>(MapModel map, IRecord<TPlayerId> record) where TPlayerId : notnull
+    {
+        return record is TmxReplay tmxReplay && map.TmxAuthor is not null
+            ? tmxReplay.GetDisplayNameMdLink((TmxSite)map.TmxAuthor.Site.Id)
+            : record.GetDisplayNameMdLink();
     }
 
     private async Task ReportToAllScopedWebhooksAsync(ReportModel report, IEnumerable<Discord.Embed> embeds, string scope, CancellationToken cancellationToken)
