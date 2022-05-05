@@ -1,6 +1,7 @@
 ﻿using BigBang1112.Extensions;
 using BigBang1112.TMWR.Models;
 using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -18,12 +19,11 @@ namespace BigBang1112.TMWR.Commands;
 public class RecordCommand : MapRelatedWithUidCommand
 {
     private readonly IWrUnitOfWork _wrUnitOfWork;
-    private readonly ITmxRecordSetService _tmxRecordSetService;
     private readonly RecordStorageService _recordStorageService;
     private readonly IConfiguration _config;
 
     private LeaderboardTM2? recordSet;
-    private TmxReplay[]? recordSetTmx;
+    private ReadOnlyCollection<TmxReplay>? recordSetTmx;
     private ReadOnlyCollection<TM2020Record>? tm2020Leaderboard;
     private string nickname = "";
 
@@ -36,12 +36,10 @@ public class RecordCommand : MapRelatedWithUidCommand
 
     public RecordCommand(TmwrDiscordBotService tmwrDiscordBotService,
                          IWrUnitOfWork wrUnitOfWork,
-                         ITmxRecordSetService tmxRecordSetService,
                          RecordStorageService recordStorageService,
                          IConfiguration config) : base(tmwrDiscordBotService, wrUnitOfWork)
     {
         _wrUnitOfWork = wrUnitOfWork;
-        _tmxRecordSetService = tmxRecordSetService;
         _recordStorageService = recordStorageService;
         _config = config;
     }
@@ -182,7 +180,7 @@ public class RecordCommand : MapRelatedWithUidCommand
             return null;
         }
 
-        recordSetTmx = await _tmxRecordSetService.GetRecordSetAsync(map.TmxAuthor.Site, map);
+        recordSetTmx = await _recordStorageService.GetTmxLeaderboardAsync((TmxSite)map.TmxAuthor.Site.Id, map.MapUid);
 
         if (recordSetTmx is null)
         {

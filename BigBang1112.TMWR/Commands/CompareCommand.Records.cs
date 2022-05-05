@@ -20,7 +20,6 @@ public partial class CompareCommand
     {
         private readonly IWrUnitOfWork _wrUnitOfWork;
         private readonly RecordStorageService _recordStorageService;
-        private readonly ITmxRecordSetService _tmxRecordSetService;
 
         [DiscordBotCommandOption("rank1", ApplicationCommandOptionType.Integer,
             "Rank of the record to select for comparison.",
@@ -36,12 +35,10 @@ public partial class CompareCommand
 
         public Records(TmwrDiscordBotService tmwrDiscordBotService,
                        IWrUnitOfWork wrUnitOfWork,
-                       RecordStorageService recordStorageService,
-                       ITmxRecordSetService tmxRecordSetService) : base(tmwrDiscordBotService, wrUnitOfWork)
+                       RecordStorageService recordStorageService) : base(tmwrDiscordBotService, wrUnitOfWork)
         {
             _wrUnitOfWork = wrUnitOfWork;
             _recordStorageService = recordStorageService;
-            _tmxRecordSetService = tmxRecordSetService;
         }
 
         protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
@@ -95,7 +92,7 @@ public partial class CompareCommand
                     return;
                 }
 
-                var recordSetTmx = await _tmxRecordSetService.GetRecordSetAsync(map.TmxAuthor.Site, map);
+                var recordSetTmx = await _recordStorageService.GetTmxLeaderboardAsync((TmxSite)map.TmxAuthor.Site.Id, map.MapUid);
 
                 if (recordSetTmx is null)
                 {

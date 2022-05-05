@@ -2,6 +2,7 @@
 using BigBang1112.Extensions;
 using BigBang1112.TMWR.Models;
 using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Repos;
@@ -18,17 +19,14 @@ public class Top10Command : MapRelatedWithUidCommand
 {
     private readonly TmwrDiscordBotService _tmwrDiscordBotService;
     private readonly IWrUnitOfWork _wrUnitOfWork;
-    private readonly ITmxRecordSetService _tmxRecordSetService;
     private readonly RecordStorageService _recordStorageService;
 
     public Top10Command(TmwrDiscordBotService tmwrDiscordBotService,
                         IWrUnitOfWork wrUnitOfWork,
-                        ITmxRecordSetService tmxRecordSetService,
                         RecordStorageService recordStorageService) : base(tmwrDiscordBotService, wrUnitOfWork)
     {
         _tmwrDiscordBotService = tmwrDiscordBotService;
         _wrUnitOfWork = wrUnitOfWork;
-        _tmxRecordSetService = tmxRecordSetService;
         _recordStorageService = recordStorageService;
     }
 
@@ -78,7 +76,7 @@ public class Top10Command : MapRelatedWithUidCommand
                 return new ComponentBuilder();
             }
 
-            var recordSetTmx = await _tmxRecordSetService.GetRecordSetAsync(map.TmxAuthor.Site, map);
+            var recordSetTmx = await _recordStorageService.GetTmxLeaderboardAsync((TmxSite)map.TmxAuthor.Site.Id, map.MapUid);
 
             if (recordSetTmx is null)
             {
@@ -156,7 +154,7 @@ public class Top10Command : MapRelatedWithUidCommand
             return false;
         }
 
-        var recordSetTmx = await _tmxRecordSetService.GetRecordSetAsync(map.TmxAuthor.Site, map);
+        var recordSetTmx = await _recordStorageService.GetTmxLeaderboardAsync((TmxSite)map.TmxAuthor.Site.Id, map.MapUid);
 
         if (recordSetTmx is null)
         {
@@ -178,7 +176,7 @@ public class Top10Command : MapRelatedWithUidCommand
         builder.Description = string.Join('\n', miniRecordStrings);
     }
 
-    private static void CreateTop10EmbedContentFromTmx(MapModel map, TmxReplay[] recordSetTmx, EmbedBuilder builder)
+    private static void CreateTop10EmbedContentFromTmx(MapModel map, IEnumerable<TmxReplay> recordSetTmx, EmbedBuilder builder)
     {
         var top10records = GetTop10(recordSetTmx);
         var miniRecords = GetMiniRecordsFromTmxReplays(top10records, map, formattable: true);
