@@ -1,4 +1,5 @@
-﻿using TmEssentials;
+﻿using BigBang1112.WorldRecordReportLib.Enums;
+using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Models;
 
@@ -38,6 +39,23 @@ public class TmxReplay : IRecord<int>
     {
         // It's hard to pass the site url to this one
         return UserName?.EscapeDiscord() ?? UserId.ToString();
+    }
+
+    public string GetDisplayNameMdLink(TmxSite tmxSite)
+    {
+        var site = tmxSite switch
+        {
+            TmxSite.United => "united",
+            TmxSite.TMNF => "tmnforever",
+            _ => null
+        };
+
+        if(site is null)
+        {
+            return GetDisplayNameMdLink();
+        }
+
+        return $"[{GetDisplayNameMdLink()}]({site}.tm-exchange.com/usershow/{UserId})";
     }
 
     public string GetPlayerId()
