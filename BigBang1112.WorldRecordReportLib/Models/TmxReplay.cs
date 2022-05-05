@@ -50,12 +50,12 @@ public class TmxReplay : IRecord<int>
             _ => null
         };
 
-        if(site is null)
+        if (site is null)
         {
             return GetDisplayNameMdLink();
         }
 
-        return $"[{GetDisplayNameMdLink()}]({site}.tm-exchange.com/usershow/{UserId})";
+        return $"[{GetDisplayNameMdLink()}](https://{site}.tm-exchange.com/usershow/{UserId})";
     }
 
     public string GetPlayerId()
