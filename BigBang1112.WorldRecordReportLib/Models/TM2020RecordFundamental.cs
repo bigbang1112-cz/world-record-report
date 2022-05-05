@@ -14,7 +14,7 @@ public record struct TM2020RecordFundamental : IRecord<Guid>
 
     public string GetDisplayNameMdLink()
     {
-        throw new NotImplementedException();
+        return (this as IRecord).DisplayName ?? AccountId.ToString();
     }
 
     public string GetPlayerId()
