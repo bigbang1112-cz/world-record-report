@@ -2,5 +2,5 @@
 
 public record ReportScopeChanges : ReportScope
 {
-    public ReportScopeChangesNewRecord? NewRecord { get; set; }
+    
 }
