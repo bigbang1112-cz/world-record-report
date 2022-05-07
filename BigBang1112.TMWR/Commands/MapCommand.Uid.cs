@@ -18,14 +18,7 @@ public partial class MapCommand
         protected override Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
         {
             builder.Title = map.MapUid;
-            builder.Description = $"{map.GetHumanizedDeformattedName()} by {map.Author.GetDeformattedNickname().EscapeDiscord()}";
-            
-            var infoUrl = map.GetInfoUrl();
-
-            if (infoUrl is not null)
-            {
-                builder.Description = $"[{builder.Description}]({infoUrl})";
-            }
+            builder.Description = $"{map.GetMdLinkHumanized()} by {map.GetAuthorNicknameMdLink()}";
 
             return Task.CompletedTask;
         }

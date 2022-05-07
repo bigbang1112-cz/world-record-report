@@ -110,7 +110,7 @@ public class RecordCommand : MapRelatedWithUidCommand
         builder.Footer.Text = $"({Rank}) {builder.Footer.Text}";
         builder.ThumbnailUrl = map.GetThumbnailUrl();
 
-        builder.Description = $"{map.GetMdLinkHumanized()} by {map.Author.GetMdLink()}";
+        builder.Description = $"{map.GetMdLinkHumanized()} by {map.GetAuthorNicknameMdLink()}";
 
         var rec = (Game)map.Game.Id switch
         {
