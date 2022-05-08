@@ -150,7 +150,7 @@ public class RefreshTmxService : RefreshService
         var recordSet = replays.Results.Adapt<TmxReplay[]>();
         var prevRecordSet = await _recordStorageService.GetTmxLeaderboardAsync(tmxSite, map.MapUid);
 
-        if (prevRecordSet is not null)
+        if (prevRecordSet is not null && !map.IsStuntsMode()) // TODO: stunts changes
         {
             // check for leaderboard changes
             // ...
@@ -231,7 +231,7 @@ public class RefreshTmxService : RefreshService
 
     private async ValueTask ReportChangesInRecordsAsync(MapModel map, IEnumerable<TmxReplay> records, IEnumerable<TmxReplay> prevRecords)
     {
-        var changes = LeaderboardComparer.Compare(records, prevRecords);
+        var changes = LeaderboardComparer.Compare(records.Where(x => x.Rank.HasValue), prevRecords.Where(x => x.Rank.HasValue));
 
         if (changes is null)
         {
