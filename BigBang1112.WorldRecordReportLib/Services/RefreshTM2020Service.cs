@@ -102,15 +102,19 @@ public class RefreshTM2020Service : RefreshService
 
         var ignoredLoginNames = await _wrUnitOfWork.IgnoredLogins.GetNamesByGameAsync(Game.TM2020, cancellationToken);
 
+        var mapModel = await _wrUnitOfWork.Maps.GetByUidAsync(map.MapUid, cancellationToken) ?? throw new Exception("Map is no longer in the database");
+
+        UpdateLastRefreshedOn(mapModel);
+
         // Check existance of any leaderboard data in api/v1/records/tm2020/World
-        if (_recordStorageService.OfficialLeaderboardExists(Game.TM2020, map.MapUid))
+        if (_recordStorageService.OfficialLeaderboardExists(Game.TM2020, mapModel.MapUid))
         {
-            await CompareLeaderboardAsync(map, records, loginModels, ignoredLoginNames, forceUpdate, cancellationToken);
+            await CompareLeaderboardAsync(mapModel, records, loginModels, ignoredLoginNames, forceUpdate, cancellationToken);
         }
         else
         {
             // Create a fresh leaderboard (for the first time) where world record is not going to be reported
-            await CreateLeaderboardAsync(map, records, loginModels, ignoredLoginNames, accountIds, cancellationToken);
+            await CreateLeaderboardAsync(mapModel, records, loginModels, ignoredLoginNames, accountIds, cancellationToken);
         }
 
 //#if RELEASE
@@ -140,14 +144,14 @@ public class RefreshTM2020Service : RefreshService
 
     // This method has a major issue: it creates double WR in the database when the leaderboard files are deleted
     // Solution: use the RefreshTM2Service way
-    private async Task CreateLeaderboardAsync(MapModel map,
+    private async Task CreateLeaderboardAsync(MapModel mapModel,
                                               Record[] records,
                                               Dictionary<Guid, LoginModel> loginModels,
                                               IEnumerable<string> ignoredLoginNames,
                                               IEnumerable<Guid> accountIds,
                                               CancellationToken cancellationToken)
     {
-        var currentRecords = await SaveLeaderboardAsync(map, records, accountIds, loginModels, ignoredLoginNames, prevRecords: null, cancellationToken);
+        var currentRecords = await SaveLeaderboardAsync(mapModel, records, accountIds, loginModels, ignoredLoginNames, prevRecords: null, cancellationToken);
         
         // Add the world record to the database without reporting it
 
@@ -159,9 +163,6 @@ public class RefreshTM2020Service : RefreshService
         }
 
         var login = loginModels[wr.PlayerId];
-        var mapModel = await _wrUnitOfWork.Maps.GetByUidAsync(map.MapUid, cancellationToken) ?? throw new Exception("Map is no longer available.");
-
-        UpdateLastRefreshedOn(mapModel);
 
         await AddWorldRecordAsync(wr, previousWr: null, login, mapModel, cancellationToken);
     }
@@ -263,8 +264,6 @@ public class RefreshTM2020Service : RefreshService
         // Current records help with managing the reports
 
         var mapModel = await _wrUnitOfWork.Maps.GetByUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
-        
-        UpdateLastRefreshedOn(mapModel);
 
         // add record changes
         if (diffForDownloading is not null)
@@ -440,7 +439,7 @@ public class RefreshTM2020Service : RefreshService
         return wrModel;
     }
 
-    private async Task<List<TM2020Record>> SaveLeaderboardAsync(MapModel map,
+    private async Task<List<TM2020Record>> SaveLeaderboardAsync(MapModel mapModel,
                                                                 Record[] records,
                                                                 IEnumerable<Guid> accountIds,
                                                                 Dictionary<Guid, LoginModel> loginModels,
@@ -448,10 +447,10 @@ public class RefreshTM2020Service : RefreshService
                                                                 ReadOnlyCollection<TM2020Record>? prevRecords,
                                                                 CancellationToken cancellationToken)
     {
-        _logger.LogInformation("{map}: Saving the leaderboard...", map.DeformattedName);
+        _logger.LogInformation("{map}: Saving the leaderboard...", mapModel.DeformattedName);
 
         // Map GUID (not UID) is required for the MapRecords request to receive the ghost urls
-        var mapId = await _wrUnitOfWork.Maps.GetMapIdByMapUidAsync(map.MapUid, cancellationToken) ?? throw new Exception();
+        var mapId = mapModel.MapId ?? throw new Exception();
 
         var recordDetails = await _nadeoApiService.GetMapRecordsAsync(accountIds, mapId.Yield(), cancellationToken);
 
@@ -465,20 +464,20 @@ public class RefreshTM2020Service : RefreshService
         var tm2020Records = RecordsToTM2020Records(records, ignoredLoginNames, loginModels, recordDict, prevRecordsDict).ToList();
 
 //#if RELEASE
-        await _recordStorageService.SaveTM2020LeaderboardAsync(tm2020Records, map.MapUid, cancellationToken: cancellationToken);
+        await _recordStorageService.SaveTM2020LeaderboardAsync(tm2020Records, mapModel.MapUid, cancellationToken: cancellationToken);
 //#endif
 
-        _logger.LogInformation("{map}: Leaderboard saved.", map.DeformattedName);
+        _logger.LogInformation("{map}: Leaderboard saved.", mapModel.DeformattedName);
 
         // Download ghosts from recordDetails to the Ghosts folder in this part of the code
         foreach (var rec in recordDetails)
         {
-            if (rec.Url is null || _ghostService.GhostExists(map.MapUid, rec.RecordScore.Time, rec.AccountId.ToString()))
+            if (rec.Url is null || _ghostService.GhostExists(mapModel.MapUid, rec.RecordScore.Time, rec.AccountId.ToString()))
             {
                 continue;
             }
 
-            _ = await _ghostService.DownloadGhostAndGetTimestampAsync(map.MapUid, rec.Url, rec.RecordScore.Time, rec.AccountId.ToString());
+            _ = await _ghostService.DownloadGhostAndGetTimestampAsync(mapModel.MapUid, rec.Url, rec.RecordScore.Time, rec.AccountId.ToString());
             await Task.Delay(500, cancellationToken);
         }
 
