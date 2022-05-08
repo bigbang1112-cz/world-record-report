@@ -251,7 +251,7 @@ public class ReportService
             {
                 Nadeo = new()
                 {
-                    Changes = new()
+                    Changes = new() { Param = new[] {"TMLagoon@nadeo", "TMValley@nadeo"}}
                 }
             },
         };
@@ -274,13 +274,19 @@ public class ReportService
             {
                 // Parameter that doesn't try to tell anything is taken as valid parent scope
                 // Child scopes aren't taken into consideration as they are not allowed with Param type of scope
-                if (string.IsNullOrWhiteSpace(scopeWithParam.Param))
+                if (scopeWithParam.Param is null)
                 {
                     return true;
                 }
 
-                // That the parameter just starts with the wanted scope is enough, as Param scope cannot have child scopes
-                return scope.StartsWith(scopeWithParam.Param);
+                foreach (var param in scopeWithParam.Param)
+                {
+                    // That the parameter just starts with the wanted scope is enough, as Param scope cannot have child scopes
+                    if (scope.StartsWith(param))
+                    {
+                        return true;
+                    }
+                }
             }
 
             var prop = scopeTypeLayer.GetProperty(scope);

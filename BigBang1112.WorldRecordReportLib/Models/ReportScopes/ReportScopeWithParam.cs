@@ -2,5 +2,5 @@
 
 public abstract record ReportScopeWithParam : ReportScope
 {
-    public string? Param { get; set; }
+    public string[]? Param { get; set; }
 }
