@@ -83,6 +83,8 @@ public class ReportService
             return;
         }
 
+        var latestChange = GetLatestChange(changes);
+
         var embedBuilder = new Discord.EmbedBuilder()
             .WithTitle(map.GetHumanizedDeformattedName())
             .WithUrl(map.GetInfoUrl())
@@ -92,7 +94,7 @@ public class ReportService
                 map.Environment.Color[0],
                 map.Environment.Color[1],
                 map.Environment.Color[2]))
-            .WithCurrentTimestamp();
+            .WithTimestamp(latestChange);
 
         var embedWebhook = embedBuilder.Build();
         var embedBot = embedBuilder.WithFooter("", UrlConsts.Favicon).Build();
@@ -107,6 +109,48 @@ public class ReportService
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
         await ReportToAllScopedWebhooksAsync(report, embedWebhook.Yield(), scope, cancellationToken);
+    }
+
+    private static DateTime GetLatestChange<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
+    {
+        var dateTime = DateTime.MinValue;
+
+        foreach (var record in changes.NewRecords)
+        {
+            switch (record)
+            {
+                case TmxReplay tmxReplay: if (tmxReplay.ReplayAt > dateTime) dateTime = tmxReplay.ReplayAt; break;
+                case TM2Record: return DateTime.UtcNow; // TODO: add driven at to TM2Record
+                case TM2020Record tm2020Record: if (tm2020Record.Timestamp > dateTime) dateTime = tm2020Record.Timestamp; break;
+            }
+        }
+
+        foreach (var (newRecord, _) in changes.ImprovedRecords)
+        {
+            switch (newRecord)
+            {
+                case TmxReplay tmxReplay: if (tmxReplay.ReplayAt > dateTime) dateTime = tmxReplay.ReplayAt; break;
+                case TM2Record: return DateTime.UtcNow; // TODO: add driven at to TM2Record
+                case TM2020Record tm2020Record: if (tm2020Record.Timestamp > dateTime) dateTime = tm2020Record.Timestamp; break;
+            }
+        }
+
+        foreach (var record in changes.RemovedRecords)
+        {
+            switch (record)
+            {
+                case TmxReplay tmxReplay: if (tmxReplay.ReplayAt > dateTime) dateTime = tmxReplay.ReplayAt; break;
+                case TM2Record: return DateTime.UtcNow; // TODO: add driven at to TM2Record
+                case TM2020Record tm2020Record: if (tm2020Record.Timestamp > dateTime) dateTime = tm2020Record.Timestamp; break;
+            }
+        }
+
+        if (dateTime == DateTime.MinValue)
+        {
+            return DateTime.UtcNow;
+        }
+
+        return dateTime;
     }
 
     private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(
@@ -193,18 +237,21 @@ public class ReportService
                     WR = new()
                 }
             },
-            TMX = new()
+            TMUF = new()
             {
-                Official = new()
+                TMX = new()
                 {
-                    Changes = new()
+                    Official = new()
+                    {
+                        Changes = new()
+                    }
                 }
             },
             TM2 = new()
             {
                 Nadeo = new()
                 {
-                    Changes = new() { Param = "TMLagoon@nadeo" }
+                    Changes = new()
                 }
             },
         };

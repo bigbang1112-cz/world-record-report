@@ -14,8 +14,8 @@ namespace BigBang1112.WorldRecordReportLib.Services;
 
 public class RefreshTmxService : RefreshService
 {
-    private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TMX)}:{nameof(ReportScopeTmx.Official)}:{nameof(ReportScopeTmxOfficial.WR)}";
-    private const string ScopeOfficialChanges = $"{nameof(ReportScopeSet.TMX)}:{nameof(ReportScopeTmx.Official)}:{nameof(ReportScopeTmxOfficial.Changes)}";
+    private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TMUF)}:{nameof(ReportScopeTMUF.TMX)}:{nameof(ReportScopeTmx.Official)}:{nameof(ReportScopeTmxOfficial.WR)}";
+    private const string ScopeOfficialChanges = $"{nameof(ReportScopeSet.TMUF)}:{nameof(ReportScopeTMUF.TMX)}:{nameof(ReportScopeTmx.Official)}:{nameof(ReportScopeTmxOfficial.Changes)}";
 
     private readonly ITmxService _tmxService;
     private readonly IWrUnitOfWork _wrUnitOfWork;
@@ -134,7 +134,7 @@ public class RefreshTmxService : RefreshService
             freshUpdate = true;
         }
 
-        map.LastActivityOn = tmxTrack.ActivityAt.DateTime; // TODO: UtcDateTime
+        map.LastActivityOn = tmxTrack.ActivityAt;
 
         await _wrUnitOfWork.SaveAsync();
 
@@ -218,7 +218,7 @@ public class RefreshTmxService : RefreshService
                 currentWr,
                 newTimeOrScore,
                 newWr.User,
-                newWr.ReplayAt.DateTime, //TODO: should be UtcDateTime
+                newWr.ReplayAt,
                 newWr.ReplayId,
                 freshUpdate,
                 subScope);
