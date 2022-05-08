@@ -1,4 +1,5 @@
 ﻿using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 using ManiaAPI.TMX;
 
 namespace BigBang1112.WorldRecordReportLib.Models;
@@ -23,6 +24,59 @@ public class DiscordWebhookFilter
     public DiscordWebhookFilter()
     {
 
+    }
+
+    public ReportScopeSet ToReportScopeSet()
+    {
+        var reportTM2 = default(ReportScopeTM2);
+        var reportTMUF = default(ReportScopeTMUF);
+
+        if (ReportTM2 is not null && ReportTM2.Any())
+        {
+            reportTM2 = new()
+            {
+                Nadeo = new()
+                {
+                    WR = new()
+                    {
+                        Param = ReportTM2.Select(x => x.TitleId).ToArray()
+                    }
+                }
+            };
+        }
+
+        if (ReportTMUF is not null && ReportTMUF.Any())
+        {
+            reportTMUF = new()
+            {
+                TMX = new()
+                {
+                    Official = new()
+                    {
+                        WR = new()
+                        {
+                            Param = ReportTMUF.Select(x => x.Site switch
+                            {
+                                NameConsts.TMXSiteUnited => x.LeaderboardType switch
+                                {
+                                    LeaderboardType.Nadeo => "NadeoTMUF",
+                                    LeaderboardType.Star => "StarTrack",
+                                    _ => throw new Exception(),
+                                },
+                                NameConsts.TMXSiteTMNF => "NadeoTMNF",
+                                _ => throw new Exception(),
+                            }).ToArray()
+                        }
+                    }
+                }
+            };
+        }
+
+        return new ReportScopeSet()
+        {
+            TM2 = reportTM2,
+            TMUF = reportTMUF,
+        };
     }
 
     public static DiscordWebhookFilter CreateTM2Filter(string[] titleIds)
