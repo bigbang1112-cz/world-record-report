@@ -172,10 +172,13 @@ public class ReportService
             .OrderBy(x => x.Item1.Time)
             .ToList();
 
+        var includeTimestamp = newRecords.Count > 1 || improvedRecords.Count > 1
+            || (newRecords.Count > 0 && improvedRecords.Count > 0);
+
         foreach (var record in newRecords)
         {
             var timestamp = GetTimestamp(record);
-            var timestampBracket = newRecords.Count > 1 && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(Discord.TimestampTagStyles.ShortTime)})" : "";
+            var timestampBracket = includeTimestamp && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(Discord.TimestampTagStyles.ShortTime)})" : "";
 
             dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
         }
@@ -189,7 +192,7 @@ public class ReportService
                 : $"` {delta} `, from ` {previousRecord.Rank:00} ` ` {previousRecord.Time.ToString(useHundredths: isTMUF)} `";
 
             var timestamp = GetTimestamp(currentRecord);
-            var timestampBracket = improvedRecords.Count > 1 && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(Discord.TimestampTagStyles.ShortTime)})" : "";
+            var timestampBracket = includeTimestamp && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(Discord.TimestampTagStyles.ShortTime)})" : "";
 
             dict.Add(currentRecord.Rank.GetValueOrDefault(), $"` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` ({bracket}) by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
         }
