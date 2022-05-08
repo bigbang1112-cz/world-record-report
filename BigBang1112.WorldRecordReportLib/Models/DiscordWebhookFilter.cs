@@ -57,14 +57,19 @@ public class DiscordWebhookFilter
                         {
                             Param = ReportTMUF.Select(x => x.Site switch
                             {
-                                NameConsts.TMXSiteUnited => x.LeaderboardType switch
+                                NameConsts.TMXSiteUnited => (int?)x.LeaderboardType switch
                                 {
-                                    LeaderboardType.Nadeo => "NadeoTMUF",
-                                    LeaderboardType.Star => "StarTrack",
-                                    _ => throw new Exception(),
+                                    2 => "NadeoTMUF",
+                                    4 => "StarTrack",
+                                    _ => x.UserId switch
+                                    {
+                                        1001 => "NadeoTMUF",
+                                        500 => "StarTrack",
+                                        _ => throw new Exception($"Unknown leaderboard type ({x.LeaderboardType?.ToString() ?? "null"}) or user ID ({x.UserId?.ToString() ?? "null"})")
+                                    },
                                 },
                                 NameConsts.TMXSiteTMNF => "NadeoTMNF",
-                                _ => throw new Exception(),
+                                _ => throw new Exception("Unknown site"),
                             }).ToArray()
                         }
                     }

@@ -256,6 +256,11 @@ public class ReportService
             },
         };
 
+        if (webhook.Filter is not null)
+        {
+            return false;
+        }
+
         if (webhook.Scope is null)
         {
             return true;
