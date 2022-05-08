@@ -142,7 +142,19 @@ public class RecordCommand : MapRelatedWithUidCommand
             _ => "Login"
         };
 
-        builder.AddField(idType, rec.Login, inline: isLoginUnder16Chars);
+        var login = rec.Login;
+            
+        if (map.Game.IsTMUF() && map.TmxAuthor is not null)
+        {
+            login = $"[{rec.Login}]({map.TmxAuthor.Site.Url}usershow/{rec.Login})";
+        }
+
+        if (map.Game.IsTM2020())
+        {
+            login = $"[{rec.Login}](https://trackmania.io/#/player/{rec.Login})";
+        }
+
+        builder.AddField(idType, login, inline: isLoginUnder16Chars);
 
         if (rec.DrivenOn.HasValue)
         {
