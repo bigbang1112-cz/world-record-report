@@ -158,37 +158,45 @@ public class ReportService
         LeaderboardChangesRich<TPlayerId> changes,
         int maxRank) where TPlayerId : notnull
     {
+        var isTMUF = map.Game.IsTMUF();
+
         var dict = new SortedDictionary<int, string>();
 
         var newRecords = changes.NewRecords
             .Where(x => x.Rank <= maxRank)
-            .OrderBy(x => x.Time);
+            .OrderBy(x => x.Time)
+            .ToList();
 
         var improvedRecords = changes.ImprovedRecords
             .Where(x => x.Item1.Rank <= maxRank)
-            .OrderBy(x => x.Item1.Time);
+            .OrderBy(x => x.Item1.Time)
+            .ToList();
 
         foreach (var record in newRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **{GetDisplayNameMdLink(map, record)}**");
+            var timestamp = GetTimestamp(record);
+            var timestampBracket = newRecords.Count > 1 && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(Discord.TimestampTagStyles.ShortTime)})" : "";
+
+            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
         }
 
-        foreach (var improvedRecord in improvedRecords)
+        foreach (var (currentRecord, previousRecord) in improvedRecords)
         {
-            var (currentRecord, previousRecord) = improvedRecord;
-
-            var delta = (currentRecord.Time - previousRecord.Time).TotalSeconds.ToString("0.000");
+            var delta = (currentRecord.Time - previousRecord.Time).TotalSeconds.ToString(isTMUF ? "0.00" : "0.000");
 
             var bracket = previousRecord.Rank is null
                 ? $"` {delta} `, from ` {previousRecord.Time} `"
-                : $"` {delta} `, from ` {previousRecord.Rank:00} ` ` {previousRecord.Time} `";
+                : $"` {delta} `, from ` {previousRecord.Rank:00} ` ` {previousRecord.Time.ToString(useHundredths: isTMUF)} `";
 
-            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"` {currentRecord.Rank:00} ` ` {currentRecord.Time} ` ({bracket}) by **{GetDisplayNameMdLink(map, currentRecord)}**");
+            var timestamp = GetTimestamp(currentRecord);
+            var timestampBracket = improvedRecords.Count > 1 && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(Discord.TimestampTagStyles.ShortTime)})" : "";
+
+            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` ({bracket}) by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
         }
 
         foreach (var record in changes.RemovedRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
+            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
         }
 
         foreach (var item in dict)
@@ -196,6 +204,14 @@ public class ReportService
             yield return item.Value;
         }
     }
+
+    private static DateTime? GetTimestamp<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull => record switch
+    {
+        TmxReplay tmxReplay => tmxReplay.ReplayAt,
+        //TM2Record tm2Record => tm2Record.DrivenAt,
+        TM2020Record tm2020Record => tm2020Record.Timestamp,
+        _ => null
+    };
 
     private static string GetDisplayNameMdLink<TPlayerId>(MapModel map, IRecord<TPlayerId> record) where TPlayerId : notnull
     {
