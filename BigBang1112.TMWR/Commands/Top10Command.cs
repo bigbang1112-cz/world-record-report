@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 using BigBang1112.Extensions;
 using BigBang1112.TMWR.Models;
 using BigBang1112.WorldRecordReportLib.Data;
@@ -29,12 +30,20 @@ public class Top10Command : MapRelatedWithUidCommand
         _wrUnitOfWork = wrUnitOfWork;
         _recordStorageService = recordStorageService;
     }
+    
+    [DiscordBotCommandOption("showtimestamps", ApplicationCommandOptionType.Boolean, "Show timestamps of when each record was driven.")]
+    public bool ShowTimestamps { get; set; }
 
     protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
     {
+        builder.Footer.Text = $"{builder.Footer.Text}{(ShowTimestamps ? $" (ShowTimestamps)" : "")}";
         builder.Title = map.GetHumanizedDeformattedName();
         builder.Url = map.GetInfoUrl();
-        builder.ThumbnailUrl = map.GetThumbnailUrl();
+
+        if (!ShowTimestamps)
+        {
+            builder.ThumbnailUrl = map.GetThumbnailUrl();
+        }
 
         if (!await CreateTop10EmbedContentAsync(map, builder))
         {
@@ -166,17 +175,17 @@ public class Top10Command : MapRelatedWithUidCommand
         return true;
     }
 
-    private static void CreateTop10EmbedContentFromTM2020(IEnumerable<TM2020Record> leaderboard, EmbedBuilder builder)
+    private void CreateTop10EmbedContentFromTM2020(IEnumerable<TM2020Record> leaderboard, EmbedBuilder builder)
     {
         var top10records = leaderboard.Where(x => !x.Ignored).Take(10)
-            .Select((x, i) => new MiniRecord(Rank: i + 1, x.Time.TotalMilliseconds, Nickname: $"[{x.DisplayName ?? x.PlayerId.ToString()}](https://trackmania.io/#/player/{x.PlayerId})"));
+            .Select((x, i) => new MiniRecord(Rank: i + 1, x.Time.TotalMilliseconds, Nickname: $"[{x.DisplayName ?? x.PlayerId.ToString()}](https://trackmania.io/#/player/{x.PlayerId})", x.Timestamp));
         
         var miniRecordStrings = ConvertMiniRecordsToStrings(top10records, isTMUF: false, isStunts: false);
 
         builder.Description = string.Join('\n', miniRecordStrings);
     }
 
-    private static void CreateTop10EmbedContentFromTmx(MapModel map, IEnumerable<TmxReplay> recordSetTmx, EmbedBuilder builder)
+    private void CreateTop10EmbedContentFromTmx(MapModel map, IEnumerable<TmxReplay> recordSetTmx, EmbedBuilder builder)
     {
         var top10records = GetTop10(recordSetTmx);
         var miniRecords = GetMiniRecordsFromTmxReplays(top10records, map, formattable: true);
@@ -213,7 +222,7 @@ public class Top10Command : MapRelatedWithUidCommand
                 ? displayName
                 : $"[{displayName.EscapeDiscord()}]({tmxUrl}usershow/{userId})";
 
-            yield return new MiniRecord(record.Rank.GetValueOrDefault(), map.IsStuntsMode() ? record.ReplayScore : record.ReplayTime.TotalMilliseconds, displayNameFormatted);
+            yield return new MiniRecord(record.Rank.GetValueOrDefault(), map.IsStuntsMode() ? record.ReplayScore : record.ReplayTime.TotalMilliseconds, displayNameFormatted, record.ReplayAt);
         }
     }
 
@@ -232,11 +241,11 @@ public class Top10Command : MapRelatedWithUidCommand
         }
     }
 
-    private static IEnumerable<string> ConvertMiniRecordsToStrings(IEnumerable<MiniRecord> records, bool isTMUF, bool isStunts)
+    private IEnumerable<string> ConvertMiniRecordsToStrings(IEnumerable<MiniRecord> records, bool isTMUF, bool isStunts)
     {
         foreach (var record in records)
         {
-            yield return $"` {record.Rank:00} ` **` {(isStunts ? record.TimeOrScore : new TimeInt32(record.TimeOrScore).ToString(useHundredths: isTMUF))} `** by **{record.Nickname}**";
+            yield return $"` {record.Rank:00} ` **` {(isStunts ? record.TimeOrScore : new TimeInt32(record.TimeOrScore).ToString(useHundredths: isTMUF))} `** by **{record.Nickname}**{(ShowTimestamps && record.Timestamp.HasValue ? $" ({record.Timestamp.Value.ToTimestampTag(TimestampTagStyles.ShortDate)})" : "")}";
         }
     }
 
@@ -247,6 +256,29 @@ public class Top10Command : MapRelatedWithUidCommand
 
     public override async Task<DiscordBotMessage?> SelectMenuAsync(SocketMessageComponent messageComponent, Deferer deferer)
     {
+        var customIdMap = CreateCustomId("map");
+        
+        if (messageComponent.Data.CustomId == customIdMap)
+        {
+            var footerText = messageComponent.Message.Embeds.FirstOrDefault()?.Footer?.Text;
+
+            if (footerText is null)
+            {
+                return null;
+            }
+
+            var match = Regex.Match(footerText, @"(?<MapUid>.*)(?:\s)(?:\((?<ShowTimestamps>ShowTimestamps)\))?");
+
+            if (match.Groups.TryGetValue("ShowTimestamps", out Group? showTimestampsGroup))
+            {
+                ShowTimestamps = showTimestampsGroup.Success;
+            }
+
+            // maybe validate MapUid
+
+            return await base.SelectMenuAsync(messageComponent, deferer);
+        }
+
         var customIdRec = CreateCustomId("rec");
 
         if (messageComponent.Data.CustomId != customIdRec)

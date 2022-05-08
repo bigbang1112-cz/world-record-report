@@ -1,3 +1,3 @@
 ﻿namespace BigBang1112.TMWR.Models;
 
-public record MiniRecord(int Rank, int TimeOrScore, string Nickname);
+public record MiniRecord(int Rank, int TimeOrScore, string Nickname, DateTime? Timestamp = null);
