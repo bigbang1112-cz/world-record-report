@@ -60,4 +60,11 @@ public record ReportScopeSet : ReportScope
             }
         }
     }
+
+    public static IEnumerable<string> GetReportScopesLike(string value)
+    {
+        return GetAllPossibleReportScopes()
+            .Where(x => x.ToLower().Contains(value))
+            .Take(25);
+    }
 }

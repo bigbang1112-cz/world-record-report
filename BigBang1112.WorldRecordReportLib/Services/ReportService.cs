@@ -202,9 +202,9 @@ public class ReportService
             dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
         }
 
-        foreach (var item in dict)
+        foreach (var (_, recStr) in dict)
         {
-            yield return item.Value;
+            yield return recStr;
         }
     }
 

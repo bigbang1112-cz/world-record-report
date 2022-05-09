@@ -1,5 +1,6 @@
 ﻿using BigBang1112.DiscordBot;
 using BigBang1112.DiscordBot.Data;
+using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 using Discord;
 
 namespace BigBang1112.TMWR.Commands;
@@ -11,8 +12,13 @@ public partial class ReportCommand
     {
         private readonly IDiscordBotUnitOfWork _discordBotUnitOfWork;
 
-        [DiscordBotCommandOption("set", ApplicationCommandOptionType.Boolean, "If True, things will be reported in this channel [ManageChannels].")]
-        public bool? Set { get; set; }
+        [DiscordBotCommandOption("scope", ApplicationCommandOptionType.String, "Default scope to use. You can change this with /report scopes", IsRequired = true)]
+        public bool? Scope { get; set; }
+
+        public Task<IEnumerable<string>> AutocompleteScopeAsync(string value)
+        {
+            return Task.FromResult(ReportScopeSet.GetReportScopesLike(value));
+        }
 
         [DiscordBotCommandOption("other", ApplicationCommandOptionType.Channel, "Specify other channel to apply/see the subscription to/of.")]
         public SocketChannel? OtherChannel { get; set; }
@@ -34,12 +40,12 @@ public partial class ReportCommand
                 textChannel = slashCommand.Channel as SocketTextChannel ?? throw new Exception();
             }
 
-            if (Set is null)
+            /*if (Set is null)
             {
                 return await GetReportScopeSetAsync(textChannel) is null
                     ? RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **not** reported.")
                     : RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **reported**.");
-            }
+            }*/
 
             if (slashCommand.User is not SocketGuildUser guildUser)
             {
@@ -51,11 +57,13 @@ public partial class ReportCommand
                 return RespondWithDescriptionEmbed($"You don't have permissions to set the report subscription in <#{textChannel.Id}>.");
             }
 
-            await SetReportScopeSetAsync(textChannel, null);
+            /*await SetReportScopeSetAsync(textChannel, null);
 
             return Set.Value
                 ? RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are now reported, **after adding scopes** with `/report wrs scopes add`.")
-                : RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **no longer reported**.");
+                : RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **no longer reported**.");*/
+
+            return RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **reported**.");
         }
 
         private async Task<string?> GetReportScopeSetAsync(SocketTextChannel textChannel)

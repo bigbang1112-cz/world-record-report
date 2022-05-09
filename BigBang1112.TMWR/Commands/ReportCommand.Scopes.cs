@@ -14,7 +14,7 @@ public partial class ReportCommand
 
         public Task<IEnumerable<string>> AutocompleteAddAsync(string value)
         {
-            return GetScopesLike(value);
+            return Task.FromResult(ReportScopeSet.GetReportScopesLike(value));
         }
 
         [DiscordBotCommandOption("remove", ApplicationCommandOptionType.String, "Remove a report scope [ManageChannels].")]
@@ -22,7 +22,7 @@ public partial class ReportCommand
 
         public Task<IEnumerable<string>> AutocompleteRemoveAsync(string value)
         {
-            return GetScopesLike(value);
+            return Task.FromResult(ReportScopeSet.GetReportScopesLike(value));
         }
 
         [DiscordBotCommandOption("explain", ApplicationCommandOptionType.String, "Explain a report scope.")]
@@ -30,7 +30,7 @@ public partial class ReportCommand
 
         public Task<IEnumerable<string>> AutocompleteExplainAsync(string value)
         {
-            return GetScopesLike(value);
+            return Task.FromResult(ReportScopeSet.GetReportScopesLike(value));
         }
 
         [DiscordBotCommandOption("other", ApplicationCommandOptionType.Channel, "Specify other channel to apply/see the scopes to/of.")]
@@ -39,15 +39,6 @@ public partial class ReportCommand
         public Scopes(DiscordBotService discordBotService) : base(discordBotService)
         {
 
-        }
-
-        private static Task<IEnumerable<string>> GetScopesLike(string value)
-        {
-            var scopes = ReportScopeSet.GetAllPossibleReportScopes()
-                            .Where(x => x.ToLower().Contains(value))
-                            .Take(25);
-
-            return Task.FromResult(scopes);
         }
     }
 }
