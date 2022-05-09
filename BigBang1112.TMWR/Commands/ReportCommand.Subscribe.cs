@@ -36,9 +36,9 @@ public partial class ReportCommand
 
             if (Set is null)
             {
-                return await GetReportAsync(textChannel)
-                    ? RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **reported**.")
-                    : RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **not** reported.");
+                return await GetReportScopeSetAsync(textChannel) is null
+                    ? RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **not** reported.")
+                    : RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **reported**.");
             }
 
             if (slashCommand.User is not SocketGuildUser guildUser)
@@ -51,28 +51,28 @@ public partial class ReportCommand
                 return RespondWithDescriptionEmbed($"You don't have permissions to set the report subscription in <#{textChannel.Id}>.");
             }
 
-            await SetReportAsync(textChannel, Set.Value);
+            await SetReportScopeSetAsync(textChannel, null);
 
             return Set.Value
                 ? RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are now reported, **after adding scopes** with `/report wrs scopes add`.")
                 : RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **no longer reported**.");
         }
 
-        private async Task<bool> GetReportAsync(SocketTextChannel textChannel)
+        private async Task<string?> GetReportScopeSetAsync(SocketTextChannel textChannel)
         {
             var discordBotGuid = GetDiscordBotGuid();
 
             if (discordBotGuid is null)
             {
-                return false;
+                return null;
             }
 
-            var reportSubscription = await _discordBotUnitOfWork.WorldRecordReportChannels.GetByBotAndTextChannelAsync(discordBotGuid.Value, textChannel);
+            var reportSubscription = await _discordBotUnitOfWork.ReportChannels.GetByBotAndTextChannelAsync(discordBotGuid.Value, textChannel);
 
-            return reportSubscription is not null && reportSubscription.Enabled;
+            return reportSubscription?.Scope;
         }
 
-        private async Task SetReportAsync(SocketTextChannel textChannel, bool set)
+        private async Task SetReportScopeSetAsync(SocketTextChannel textChannel, string scopeSet)
         {
             var discordBotGuid = GetDiscordBotGuid();
 
@@ -81,7 +81,7 @@ public partial class ReportCommand
                 throw new Exception("Missing discord bot guid");
             }
 
-            await _discordBotUnitOfWork.WorldRecordReportChannels.AddOrUpdateAsync(discordBotGuid.Value, textChannel, set);
+            await _discordBotUnitOfWork.ReportChannels.AddOrUpdateAsync(discordBotGuid.Value, textChannel, scopeSet);
 
             await _discordBotUnitOfWork.SaveAsync();
         }
