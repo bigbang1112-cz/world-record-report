@@ -12,25 +12,25 @@ public partial class ReportCommand
         [DiscordBotCommandOption("add", ApplicationCommandOptionType.String, "Add a report scope [ManageChannels].")]
         public string? Add { get; set; }
 
-        public Task<IEnumerable<string>> AutocompleteAddAsync(string value)
+        internal static IEnumerable<string> AutocompleteAdd(string value)
         {
-            return Task.FromResult(ReportScopeSet.GetReportScopesLike(value));
+            return ReportScopeSet.GetReportScopesLike(value);
         }
 
         [DiscordBotCommandOption("remove", ApplicationCommandOptionType.String, "Remove a report scope [ManageChannels].")]
         public string? Remove { get; set; }
 
-        public Task<IEnumerable<string>> AutocompleteRemoveAsync(string value)
+        internal static IEnumerable<string> AutocompleteRemove(string value)
         {
-            return Task.FromResult(ReportScopeSet.GetReportScopesLike(value));
+            return ReportScopeSet.GetReportScopesLike(value);
         }
 
         [DiscordBotCommandOption("explain", ApplicationCommandOptionType.String, "Explain a report scope.")]
         public string? Explain { get; set; }
 
-        public Task<IEnumerable<string>> AutocompleteExplainAsync(string value)
+        internal static IEnumerable<string> AutocompleteExplain(string value)
         {
-            return Task.FromResult(ReportScopeSet.GetReportScopesLike(value));
+            return ReportScopeSet.GetReportScopesLike(value);
         }
 
         [DiscordBotCommandOption("other", ApplicationCommandOptionType.Channel, "Specify other channel to apply/see the scopes to/of.")]

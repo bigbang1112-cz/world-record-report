@@ -15,9 +15,9 @@ public partial class ReportCommand
         [DiscordBotCommandOption("scope", ApplicationCommandOptionType.String, "Scope to unsubscribe. You can also use /report scopes remove")]
         public bool? Scope { get; set; }
 
-        public Task<IEnumerable<string>> AutocompleteScopeAsync(string value)
+        internal static IEnumerable<string> AutocompleteScope(string value)
         {
-            return Task.FromResult(ReportScopeSet.GetReportScopesLike(value));
+            return ReportScopeSet.GetReportScopesLike(value);
         }
 
         [DiscordBotCommandOption("other", ApplicationCommandOptionType.Channel, "Specify other channel to apply/see the subscription to/of.")]

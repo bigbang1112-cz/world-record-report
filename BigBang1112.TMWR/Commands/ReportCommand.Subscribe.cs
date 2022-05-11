@@ -1,4 +1,5 @@
-﻿using BigBang1112.DiscordBot;
+﻿using System.Text.Json;
+using BigBang1112.DiscordBot;
 using BigBang1112.DiscordBot.Data;
 using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 using Discord;
@@ -12,12 +13,15 @@ public partial class ReportCommand
     {
         private readonly IDiscordBotUnitOfWork _discordBotUnitOfWork;
 
-        [DiscordBotCommandOption("scope", ApplicationCommandOptionType.String, "Default scope to use. You can change this with /report scopes", IsRequired = true)]
-        public bool? Scope { get; set; }
+        [DiscordBotCommandOption("scope",
+            ApplicationCommandOptionType.String,
+            "Default scope to use. You can change this anytime with /report scopes.",
+            IsRequired = true)]
+        public string Scope { get; set; } = "";
 
-        public Task<IEnumerable<string>> AutocompleteScopeAsync(string value)
+        internal static IEnumerable<string> AutocompleteScopeAsync(string value)
         {
-            return Task.FromResult(ReportScopeSet.GetReportScopesLike(value));
+            return ReportScopeSet.GetReportScopesLike(value);
         }
 
         [DiscordBotCommandOption("other", ApplicationCommandOptionType.Channel, "Specify other channel to apply/see the subscription to/of.")]
@@ -49,7 +53,7 @@ public partial class ReportCommand
 
             if (slashCommand.User is not SocketGuildUser guildUser)
             {
-                throw new Exception("This user is not a guild user");
+                return RespondWithDescriptionEmbed("You cannot report to your DMs.");
             }
 
             if (!guildUser.GuildPermissions.ManageChannels)
@@ -57,16 +61,39 @@ public partial class ReportCommand
                 return RespondWithDescriptionEmbed($"You don't have permissions to set the report subscription in <#{textChannel.Id}>.");
             }
 
+            string? fullScopeName;
+
+            var reportScopeSet = await GetReportScopeSetAsync(textChannel);
+
+            if (reportScopeSet is null)
+            {
+                // Try create a fresh scope set
+
+                if (!ReportScopeSet.TryParse(Scope, out reportScopeSet, out fullScopeName))
+                {
+                    return RespondWithDescriptionEmbed($"Invalid scope.");
+                }
+            }
+            else if (!reportScopeSet.TryAdd(Scope, out fullScopeName)) // Try update the scope set
+            {
+                return fullScopeName is null
+                    ? RespondWithDescriptionEmbed($"Invalid scope.")
+                    : RespondWithDescriptionEmbed($"Scope is already added.");
+            }
+
+            var nice = reportScopeSet.TM2;
+            var nice2 = fullScopeName;
+
             /*await SetReportScopeSetAsync(textChannel, null);
 
             return Set.Value
                 ? RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are now reported, **after adding scopes** with `/report wrs scopes add`.")
                 : RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **no longer reported**.");*/
 
-            return RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **reported**.");
+            return RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, reports from scope XXX are **reported**.");
         }
 
-        private async Task<string?> GetReportScopeSetAsync(SocketTextChannel textChannel)
+        private async Task<ReportScopeSet?> GetReportScopeSetAsync(SocketTextChannel textChannel)
         {
             var discordBotGuid = GetDiscordBotGuid();
 
@@ -77,7 +104,12 @@ public partial class ReportCommand
 
             var reportSubscription = await _discordBotUnitOfWork.ReportChannels.GetByBotAndTextChannelAsync(discordBotGuid.Value, textChannel);
 
-            return reportSubscription?.Scope;
+            if (reportSubscription?.Scope is null)
+            {
+                return null;
+            }
+            
+            return ReportScopeSet.FromJson(reportSubscription.Scope);
         }
 
         private async Task SetReportScopeSetAsync(SocketTextChannel textChannel, string scopeSet)
