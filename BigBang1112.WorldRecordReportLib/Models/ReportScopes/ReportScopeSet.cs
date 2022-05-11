@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using BigBang1112.WorldRecordReportLib.Attributes.ReportScope;
@@ -61,10 +62,40 @@ public record ReportScopeSet : ReportScope
         }
     }
 
-    public static IEnumerable<string> GetReportScopesLike(string value)
+    public static IEnumerable<string> GetReportScopesLike(string value, int limit = 25)
     {
         return GetAllPossibleReportScopes()
             .Where(x => x.ToLower().Contains(value))
-            .Take(25);
+            .Take(limit);
+    }
+
+    public static ReportScopeSet? FromJson(string json)
+    {
+        return JsonSerializer.Deserialize<ReportScopeSet>(json, JsonSerializerOptions);
+    }
+
+    public string ToJson()
+    {
+        return JsonSerializer.Serialize(this, JsonSerializerOptions);
+    }
+
+    public bool TryAdd(string scope, [NotNullWhen(true)] out string? addedScope)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static bool TryParse(
+        [NotNullWhen(true)] string? scope,
+        [NotNullWhen(true)] out ReportScopeSet? reportScopeSet,
+        [NotNullWhen(true)] out string? addedScope)
+    {
+        if (scope is null)
+        {
+            reportScopeSet = null;
+            addedScope = null;
+            return false;
+        }
+
+        throw new NotImplementedException();
     }
 }
