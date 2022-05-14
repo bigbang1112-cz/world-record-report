@@ -574,8 +574,9 @@ public class RefreshTM2020Service : RefreshService
             // The display name is applied on either the login that was already in the database
             if (loginModels.TryGetValue(accountId, out LoginModel? login))
             {
-                login.Nickname = displayName;
-                login.LastNicknameChangeOn = DateTime.UtcNow;
+                await CheckForNicknameChangeAsync(displayName, login, cancellationToken);
+
+                login.LastNicknameChangeOn = DateTime.UtcNow; // should be rather called "last check for nickname"
 
                 continue;
             }
@@ -595,5 +596,31 @@ public class RefreshTM2020Service : RefreshService
         }
 
         _logger.LogInformation("Display names received: {names}", string.Join(", ", displayNames.Values));
+    }
+
+    private async Task CheckForNicknameChangeAsync(string displayName, LoginModel login, CancellationToken cancellationToken)
+    {
+        // If nickname is nothingness or the same as before
+        if (string.IsNullOrWhiteSpace(login.Nickname) || string.Equals(login.Nickname, displayName))
+        {
+            return;
+        }
+
+        var latestNicknameChange = await _wrUnitOfWork.NicknameChanges.GetLatestByLoginAsync(login, cancellationToken);
+
+        // If the change was done at least after an hour of previous change
+        if (latestNicknameChange is null || DateTime.UtcNow - latestNicknameChange.PreviousLastSeenOn > TimeSpan.FromHours(1))
+        {
+            var nicknameChangeModel = new NicknameChangeModel
+            {
+                Login = login,
+                Previous = login.Nickname,
+                PreviousLastSeenOn = DateTime.UtcNow
+            };
+
+            await _wrUnitOfWork.NicknameChanges.AddAsync(nicknameChangeModel, cancellationToken);
+        }
+
+        login.Nickname = displayName;
     }
 }
