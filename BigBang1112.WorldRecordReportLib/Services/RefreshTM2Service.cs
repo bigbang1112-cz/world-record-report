@@ -100,6 +100,11 @@ public class RefreshTM2Service : RefreshService
 
         _logger.LogInformation("Finished in {executionTime}s ({sizeStr})", executionTime, sizeStr);
 
+        foreach (var map in wrHistories.Values.Select(x => x.Key))
+        {
+            UpdateLastRefreshedOn(map);
+        }
+
         var changes = new Dictionary<string, RecordChangesTM2>();
 
         var loginModels = await PopulateLoginModelsAsync(leaderboards, cancellationToken);

@@ -370,20 +370,6 @@ public class RefreshTM2020Service : RefreshService
         }
     }
 
-    private static void UpdateLastRefreshedOn(MapModel mapModel)
-    {
-        var lastRefreshedOn = DateTime.UtcNow;
-
-        if (mapModel.LastRefreshedOn is null)
-        {
-            mapModel.LastRefreshedOn = new ScoreContextValue<DateTimeOffset>(lastRefreshedOn);
-        }
-        else
-        {
-            mapModel.LastRefreshedOn = mapModel.LastRefreshedOn with { Default = lastRefreshedOn };
-        }
-    }
-
     private void LogDifferences(LeaderboardChanges<Guid> diff)
     {
         _logger.LogInformation("Differences found between the current and previous leaderboard.");

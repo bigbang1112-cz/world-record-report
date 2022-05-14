@@ -126,4 +126,13 @@ public abstract class RefreshService
 
         return changes;
     }
+
+    protected static void UpdateLastRefreshedOn(MapModel mapModel)
+    {
+        var lastRefreshedOn = DateTime.UtcNow;
+
+        mapModel.LastRefreshedOn = mapModel.LastRefreshedOn is null
+            ? new ScoreContextValue<DateTimeOffset>(lastRefreshedOn)
+            : (mapModel.LastRefreshedOn with { Default = lastRefreshedOn });
+    }
 }

@@ -1,17 +1,15 @@
 ﻿using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
-using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
-using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Services;
 using Discord;
 using TmEssentials;
-
-using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
 using Discord.WebSocket;
 using BigBang1112.DiscordBot.Models;
 using BigBang1112.WorldRecordReportLib.TMWR.Models;
+
+using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
 
 namespace BigBang1112.WorldRecordReportLib.TMWR.Commands;
 
@@ -123,54 +121,45 @@ public class Top10Command : MapRelatedWithUidCommand
 
     private async Task<bool> CreateTop10EmbedContentAsync(MapModel map, EmbedBuilder builder)
     {
+        var recordCount = 0;
+
         if (map.Game.IsTM2020())
         {
             var leaderboard = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid);
-            
+
             if (leaderboard is null)
             {
                 return false;
             }
 
             CreateTop10EmbedContentFromTM2020(leaderboard, builder);
-
-            if (map.LastRefreshedOn is not null)
+        }
+        else if (map.Game.IsTM2())
+        {
+            if (!await CreateTop10EmbedContentFromTM2Async(map, builder))
             {
-                builder.AddField("Last refreshed on", map.LastRefreshedOn.Default.ToTimestampTag(), inline: true);
+                return false;
             }
-
-            var lastUpdatedOn = _recordStorageService.GetTM2020LeaderboardLastUpdatedOn(map.MapUid);
-
-            if (lastUpdatedOn.HasValue)
+        }
+        else if (map.Game.IsTMUF())
+        {
+            if (!await CreateTop10EmbedContentFromTmxAsync(map, builder))
             {
-                builder.AddField("Last updated on", lastUpdatedOn.Value.ToTimestampTag(), inline: true);
+                return false;
             }
-
-            return true;
         }
 
-        var recordSet = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
-
-        if (recordSet is not null)
+        if (map.LastRefreshedOn is not null)
         {
-            await CreateTop10EmbedContentFromTM2Async(map, recordSet, builder);
-
-            return true;
+            builder.AddField("Last refreshed on", map.LastRefreshedOn.Default.ToTimestampTag(), inline: true);
         }
 
-        if (map.TmxAuthor is null)
+        var lastUpdatedOn = _recordStorageService.GetOfficialLeaderboardLastUpdatedOn((Game)map.Game.Id, map.MapUid);
+
+        if (lastUpdatedOn.HasValue)
         {
-            return false;
+            builder.AddField("Last updated on", lastUpdatedOn.Value.ToTimestampTag(), inline: true);
         }
-
-        var recordSetTmx = await _recordStorageService.GetTmxLeaderboardAsync((TmxSite)map.TmxAuthor.Site.Id, map.MapUid);
-
-        if (recordSetTmx is null)
-        {
-            return false;
-        }
-
-        CreateTop10EmbedContentFromTmx(map, recordSetTmx, builder);
 
         return true;
     }
@@ -185,13 +174,27 @@ public class Top10Command : MapRelatedWithUidCommand
         builder.Description = string.Join('\n', miniRecordStrings);
     }
 
-    private void CreateTop10EmbedContentFromTmx(MapModel map, IEnumerable<TmxReplay> recordSetTmx, EmbedBuilder builder)
+    private async Task<bool> CreateTop10EmbedContentFromTmxAsync(MapModel map, EmbedBuilder builder)
     {
+        if (map.TmxAuthor is null)
+        {
+            return false;
+        }
+
+        var recordSetTmx = await _recordStorageService.GetTmxLeaderboardAsync((TmxSite)map.TmxAuthor.Site.Id, map.MapUid);
+
+        if (recordSetTmx is null)
+        {
+            return false;
+        }
+
         var top10records = GetTop10(recordSetTmx);
         var miniRecords = GetMiniRecordsFromTmxReplays(top10records, map, formattable: true);
         var miniRecordStrings = ConvertMiniRecordsToStrings(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
 
         builder.Description = string.Join('\n', miniRecordStrings);
+
+        return true;
     }
 
     private static IEnumerable<TmxReplay> GetTop10(IEnumerable<TmxReplay> recordSetTmx)
@@ -199,14 +202,22 @@ public class Top10Command : MapRelatedWithUidCommand
         return recordSetTmx.Where(x => x.Rank is not null).Take(10);
     }
 
-    private async Task CreateTop10EmbedContentFromTM2Async(MapModel map, LeaderboardTM2 recordSet, EmbedBuilder builder)
+    private async Task<bool> CreateTop10EmbedContentFromTM2Async(MapModel map, EmbedBuilder builder)
     {
+        var recordSet = await _recordStorageService.GetTM2LeaderboardAsync(map.MapUid);
+        
+        if (recordSet is null)
+        {
+            return false;
+        }
+
         var loginDictionary = await FetchLoginModelsAsync(recordSet);
         var miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, loginDictionary);
         var miniRecordStrings = ConvertMiniRecordsToStrings(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
 
         builder.Description = string.Join('\n', miniRecordStrings);
-        builder.AddField("Record count", recordSet.GetRecordCount().ToString("N0"));
+
+        return true;
     }
 
     private static IEnumerable<MiniRecord> GetMiniRecordsFromTmxReplays(IEnumerable<TmxReplay> records, MapModel map, bool formattable)
