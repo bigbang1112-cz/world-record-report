@@ -199,7 +199,7 @@ public class RefreshTmxService : RefreshService
             var newTimeOrScore = isStunts ? newWr.ReplayScore : newWr.ReplayTime.TotalMilliseconds;
 
             // If this is the old world record time
-            if (currentWr is not null && (isStunts ? newTimeOrScore <= currentWr.Time : newTimeOrScore >= currentWr.Time))
+            if (previousWr is not null && (isStunts ? newTimeOrScore <= previousWr.Time : newTimeOrScore >= previousWr.Time))
             {
                 _logger.LogInformation("Reached the end of new world records.");
                 break;
@@ -215,7 +215,7 @@ public class RefreshTmxService : RefreshService
             var wrModel = await ProcessNewWorldRecordAsync(
                 tmxSite,
                 map,
-                currentWr,
+                previousWr,
                 newTimeOrScore,
                 newWr.User,
                 newWr.ReplayAt,
