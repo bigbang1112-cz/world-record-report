@@ -89,10 +89,7 @@ public class TmwrDiscordBotService : DiscordBotService
         return message with { AlwaysPostAsNewMessage = true, Ephemeral = true };
     }
 
-    private async Task<DiscordBotMessage?> ExecuteWrKindOfButtonAsync(
-        SocketMessageComponent messageComponent,
-        Deferer deferer,
-        string wrGuidStr,
+    private async Task<DiscordBotMessage?> ExecuteWrKindOfButtonAsync(string wrGuidStr,
         Func<WrCommand, WorldRecordModel, Task<DiscordBotMessage?>> func)
     {
         using var scope = CreateCommand(out WrCommand? wrCommand);
@@ -119,13 +116,13 @@ public class TmwrDiscordBotService : DiscordBotService
 
     private async Task<DiscordBotMessage?> ExecutePrevWrButtonAsync(SocketMessageComponent messageComponent, Deferer deferer, string wrGuidStr)
     {
-        return await ExecuteWrKindOfButtonAsync(messageComponent, deferer, wrGuidStr,
+        return await ExecuteWrKindOfButtonAsync(wrGuidStr,
             async (wrCommand, wr) => await wrCommand.ExecutePrevAsync(messageComponent, deferer, wr));
     }
 
     private async Task<DiscordBotMessage?> ExecuteCompareWrsButtonAsync(SocketMessageComponent messageComponent, Deferer deferer, string wrGuidStr)
     {
-        return await ExecuteWrKindOfButtonAsync(messageComponent, deferer, wrGuidStr,
+        return await ExecuteWrKindOfButtonAsync(wrGuidStr,
             async (wrCommand, wr) => await wrCommand.ExecuteComparePrevAsync(messageComponent, deferer, wr));
     }
 }
