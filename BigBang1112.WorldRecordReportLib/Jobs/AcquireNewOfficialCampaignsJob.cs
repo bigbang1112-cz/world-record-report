@@ -154,6 +154,7 @@ public class AcquireNewOfficialCampaignsJob : IJob
                 Campaign = campaignModel,
                 AddedOn = DateTime.UtcNow,
                 UpdatedOn = DateTime.UtcNow,
+                MapId = map.MapId
             }, cancellationToken);
 
             _logger.LogInformation("{name} map model retrieved/created. Checking the map file...", mapModel.DeformattedName);

@@ -32,6 +32,11 @@ public class MockMapRepo : MockRepo<MapModel>, IMapRepo
         return await Task.FromResult(Entities.Where(x => x.Campaign == campaign).ToList());
     }
 
+    public Task<IEnumerable<MapModel>> GetByCampaignsThatAreOverAsync(Game game, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<IEnumerable<MapModel>> GetByMultipleParamsAsync(string? mapName = null, string? env = null, string? title = null, string? authorLogin = null, string? authorNickname = null, int limit = 25, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();

@@ -124,4 +124,11 @@ public class MapRepo : Repo<MapModel>, IMapRepo
             .Cacheable()
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<MapModel>> GetByCampaignsThatAreOverAsync(Game game, CancellationToken cancellationToken = default)
+    {
+        return await _context.Maps
+            .Where(x => x.Game.Id == (int)game && x.Campaign!.IsOver)
+            .ToListAsync(cancellationToken);
+    }
 }

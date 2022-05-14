@@ -60,6 +60,19 @@ public class RefreshTM2020Service : RefreshService
         await RefreshAsync(map, forceUpdate, cancellationToken);
     }
 
+    public async Task RefreshOfficialOldAsync(bool forceUpdate = false, CancellationToken cancellationToken = default)
+    {
+        var map = _refreshSchedule.NextTM2020OfficialOldMap();
+
+        if (map is null)
+        {
+            _logger.LogInformation("Skipping the TM2020 official (old) refresh. No maps found.");
+            return;
+        }
+
+        await RefreshAsync(map, forceUpdate, cancellationToken);
+    }
+
     public async Task RefreshAsync(MapModel map, bool forceUpdate = false, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Refreshing TM2020 map: {map}", map.DeformattedName);
@@ -218,7 +231,8 @@ public class RefreshTM2020Service : RefreshService
             throw new Exception("previousRecords is null even though the leaderboard file exists");
         }
 
-        await DownloadMissingGhostsAsync(map, previousRecordsWithCheated, cancellationToken);
+        // Take 12 ghosts to download to value storage vs needed data
+        await DownloadMissingGhostsAsync(map, previousRecordsWithCheated.Take(12), cancellationToken);
 
         // Leaderboard differences algorithm
         var diffForDownloading = LeaderboardComparer.Compare(currentRecordsWithCheatedFundamental, previousRecordsWithCheated);
@@ -460,7 +474,7 @@ public class RefreshTM2020Service : RefreshService
         _logger.LogInformation("{map}: Saving the leaderboard...", mapModel.DeformattedName);
 
         // Map GUID (not UID) is required for the MapRecords request to receive the ghost urls
-        var mapId = mapModel.MapId ?? throw new Exception();
+        var mapId = mapModel.MapId ?? throw new Exception("Map ID not found.");
 
         var recordDetails = await _nadeoApiService.GetMapRecordsAsync(accountIds, mapId.Yield(), cancellationToken);
 
