@@ -1,7 +1,12 @@
 ﻿using System.Globalization;
+using BigBang1112.DiscordBot;
+using BigBang1112.DiscordBot.Data;
+using BigBang1112.DiscordBot.Models.Db;
 using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
+using BigBang1112.WorldRecordReportLib.TMWR;
+using Microsoft.Extensions.Logging;
 using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
@@ -10,13 +15,23 @@ public class ReportService
 {
     private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly IDiscordWebhookService _discordWebhookService;
-
+    private readonly IDiscordBotUnitOfWork _discordBotUnitOfWork;
+    private readonly TmwrDiscordBotService _tmwrDiscordBotService;
+    private readonly ILogger<ReportService> _logger;
+    
     public const string LogoIconUrl = "https://bigbang1112.cz/assets/images/logo_small.png";
 
-    public ReportService(IWrUnitOfWork wrUnitOfWork, IDiscordWebhookService discordWebhookService)
+    public ReportService(IWrUnitOfWork wrUnitOfWork,
+                         IDiscordBotUnitOfWork discordBotUnitOfWork,
+                         IDiscordWebhookService discordWebhookService,
+                         TmwrDiscordBotService tmwrDiscordBotService,
+                         ILogger<ReportService> logger)
     {
         _wrUnitOfWork = wrUnitOfWork;
         _discordWebhookService = discordWebhookService;
+        _discordBotUnitOfWork = discordBotUnitOfWork;
+        _tmwrDiscordBotService = tmwrDiscordBotService;
+        _logger = logger;
     }
 
     public async Task ReportWorldRecordAsync(WorldRecordModel wr, string scope, CancellationToken cancellationToken = default)
@@ -46,7 +61,16 @@ public class ReportService
             botEmbeds.Add(lbManialinkEmbed);
         }
 
-        await ReportToAllScopedWebhooksAsync(report, webhookEmbeds, scope, cancellationToken);
+        var components = new Discord.ComponentBuilder()
+            .WithButton("Details", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Primary)
+            .WithButton("Previous", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}-prev"), Discord.ButtonStyle.Secondary)
+            .WithButton("Compare with previous", DiscordBotService.CreateCustomId($"comparewrs-{wr.Guid.ToString().Replace('-', '_')}-prev"), Discord.ButtonStyle.Secondary)
+            .WithButton("Checkpoints", DiscordBotService.CreateCustomId($"checkpoints-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Secondary, disabled: true)
+            .WithButton("Inputs", DiscordBotService.CreateCustomId($"inputs-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Secondary, disabled: true)
+            .Build();
+
+        await ReportToAllScopedDiscordBotsAsync(report, botEmbeds, components, scope, cancellationToken);
+        await ReportToAllScopedDiscordWebhooksAsync(report, webhookEmbeds, scope, cancellationToken);
     }
 
     public async Task ReportRemovedWorldRecordsAsync(WorldRecordModel wr,
@@ -54,7 +78,7 @@ public class ReportService
                                                      string scope,
                                                      CancellationToken cancellationToken = default)
     {
-        var embed = GetDefaultEmbed_RemovedWorldRecord(wr, removedWrs);
+        CreateDiscordEmbeds_RemovedWorldRecord(wr, removedWrs, out var webhookEmbed, out var botEmbed);
 
         var report = new ReportModel
         {
@@ -67,7 +91,9 @@ public class ReportService
 
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
-        await ReportToAllScopedWebhooksAsync(report, embed.Yield(), scope, cancellationToken);
+        await ReportToAllScopedDiscordBotsAsync(report, botEmbed.Yield(), components: null, scope, cancellationToken);
+        await ReportToAllScopedDiscordWebhooksAsync(report, webhookEmbed.Yield(), scope, cancellationToken);
+
     }
 
     public async Task ReportDifferencesAsync<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes,
@@ -108,7 +134,8 @@ public class ReportService
 
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
-        await ReportToAllScopedWebhooksAsync(report, embedWebhook.Yield(), scope, cancellationToken);
+        await ReportToAllScopedDiscordWebhooksAsync(report, embedWebhook.Yield(), scope, cancellationToken);
+        await ReportToAllScopedDiscordBotsAsync(report, embedBot.Yield(), null, scope, cancellationToken);
     }
 
     private static DateTime GetLatestChange<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
@@ -174,11 +201,13 @@ public class ReportService
 
         var includeTimestamp = newRecords.Count > 1 || improvedRecords.Count > 1
             || (newRecords.Count > 0 && improvedRecords.Count > 0);
+        
+        var useLongTimestamp = UseLongTimestamp(changes);
 
         foreach (var record in newRecords)
         {
             var timestamp = GetTimestamp(record);
-            var timestampBracket = includeTimestamp && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(Discord.TimestampTagStyles.ShortTime)})" : "";
+            var timestampBracket = includeTimestamp && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
             dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
         }
@@ -192,7 +221,7 @@ public class ReportService
                 : $"` {delta} `, from ` {previousRecord.Rank:00} ` ` {previousRecord.Time.ToString(useHundredths: isTMUF)} `";
 
             var timestamp = GetTimestamp(currentRecord);
-            var timestampBracket = includeTimestamp && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(Discord.TimestampTagStyles.ShortTime)})" : "";
+            var timestampBracket = includeTimestamp && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
             dict.Add(currentRecord.Rank.GetValueOrDefault(), $"` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` ({bracket}) by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
         }
@@ -206,6 +235,36 @@ public class ReportService
         {
             yield return recStr;
         }
+    }
+
+    private static bool UseLongTimestamp<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
+    {
+        var smallestTimestamp = DateTime.MaxValue;
+        var biggestTimestamp = DateTime.MinValue;
+
+        foreach (var record in changes.NewRecords)
+        {
+            var timestamp = GetTimestamp(record);
+
+            if (timestamp.HasValue)
+            {
+                if (timestamp > biggestTimestamp) biggestTimestamp = timestamp.Value;
+                if (timestamp < smallestTimestamp) smallestTimestamp = timestamp.Value;
+            }
+        }
+
+        foreach (var (currentRecord, previousRecord) in changes.ImprovedRecords)
+        {
+            var timestamp = GetTimestamp(currentRecord);
+
+            if (timestamp.HasValue)
+            {
+                if (timestamp > biggestTimestamp) biggestTimestamp = timestamp.Value;
+                if (timestamp < smallestTimestamp) smallestTimestamp = timestamp.Value;
+            }
+        }
+
+        return biggestTimestamp.Day != smallestTimestamp.Day;
     }
 
     private static DateTime? GetTimestamp<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull => record switch
@@ -223,8 +282,60 @@ public class ReportService
             : record.GetDisplayNameMdLink();
     }
 
-    private async Task ReportToAllScopedWebhooksAsync(ReportModel report, IEnumerable<Discord.Embed> embeds, string scope, CancellationToken cancellationToken)
-    {        
+    private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report, IEnumerable<Discord.Embed> embeds, Discord.MessageComponent? components, string scope, CancellationToken cancellationToken)
+    {
+        var scopePath = scope.Split(':');
+
+        foreach (var reportChannel in await _discordBotUnitOfWork.ReportChannels.GetAllAsync(cancellationToken))
+        {
+            var scopeSet = new ReportScopeSet()
+            {
+                TM2020 = new(),
+                TMUF = new(),
+                TM2 = new(),
+            };
+
+            reportChannel.Scope = scopeSet.ToJson();
+
+            if (!string.Equals(reportChannel.JoinedGuild.Bot.Guid.ToString(), "e7593b6b-d8f1-4caa-b950-01a8437662d0")
+              || string.IsNullOrWhiteSpace(reportChannel.Scope))
+            {
+                continue;
+            }
+
+            var reportScopeSet = ReportScopeSet.FromJson(reportChannel.Scope);
+
+            if (reportScopeSet is null || !ShouldReport(reportScopeSet, scopePath))
+            {
+                continue;
+            }
+
+            try
+            {
+                await _tmwrDiscordBotService.SendMessageAsync(_discordBotUnitOfWork, reportChannel, snowflake => new ReportChannelMessageModel
+                {
+                    MessageId = snowflake,
+                    ReportGuid = report.Guid,
+                    SentOn = DateTime.UtcNow,
+                    ModifiedOn = DateTime.UtcNow,
+                    Channel = reportChannel
+                }, embeds: embeds, components: components, cancellationToken: cancellationToken);
+            }
+            catch (Discord.Net.HttpException ex)
+            {
+                _logger.LogWarning(ex, "Failed to send the report with TMWR bot to #{channelName} on {guildName} guild due to Discord API.", reportChannel.Channel.Name, reportChannel.JoinedGuild.Guild.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send the report with TMWR bot to #{channelName} on {guildName} guild.", reportChannel.Channel.Name, reportChannel.JoinedGuild.Guild.Name);
+            }
+        }
+
+        await _discordBotUnitOfWork.SaveAsync(cancellationToken);
+    }
+
+    private async Task ReportToAllScopedDiscordWebhooksAsync(ReportModel report, IEnumerable<Discord.Embed> embeds, string scope, CancellationToken cancellationToken)
+    {
         var scopePath = scope.Split(':');
 
         foreach (var webhook in await _wrUnitOfWork.DiscordWebhooks.GetAllAsync(cancellationToken))
@@ -270,7 +381,7 @@ public class ReportService
             {
                 Nadeo = new()
                 {
-                    Changes = new() { Param = new[] {"TMLagoon@nadeo", "TMValley@nadeo"}}
+                    Changes = new() { Param = new[] { "TMLagoon@nadeo", "TMValley@nadeo" } }
                 }
             },
         };
@@ -285,12 +396,17 @@ public class ReportService
             return true;
         }
 
-        var scopeObjLayer = (ReportScope)webhook.Scope;
-        var scopeTypeLayer = webhook.Scope.GetType();
+        return ShouldReport(webhook.Scope, scopePath);
+    }
+
+    private static bool ShouldReport(ReportScopeSet scopeSet, string[] reportScopePath)
+    {
+        var scopeObjLayer = (ReportScope)scopeSet;
+        var scopeTypeLayer = scopeSet.GetType();
 
         // Loops through the scope triggered by the report itself (not the user scope preference)
         // 'scope' is taken as each child in scope sequence
-        foreach (var scope in scopePath)
+        foreach (var scope in reportScopePath)
         {
             // This check is about making sure that the current sub-scope is static or varies
             // It cannot be at the end because varying scopes have less strict rules
@@ -377,7 +493,7 @@ public class ReportService
             .AddField("By", $"**{nickname}**", true);
     }
 
-    public static Discord.Embed GetDefaultEmbed_RemovedWorldRecord(WorldRecordModel? currentWr, IEnumerable<WorldRecordModel> removedWrs)
+    public static Discord.EmbedBuilder GetDefaultEmbedBuilder_RemovedWorldRecord(WorldRecordModel? currentWr, IEnumerable<WorldRecordModel> removedWrs)
     {
         if (!removedWrs.Any())
         {
@@ -410,7 +526,7 @@ public class ReportService
                 .AddField("Now by", prevNickname, true);
         }
 
-        return builder.Build();
+        return builder;
     }
 
     public async Task UpdateWorldRecordReportAsync(ReportModel report, CancellationToken cancellationToken = default)
@@ -426,6 +542,14 @@ public class ReportService
         {
             await _discordWebhookService.ModifyMessageAsync(msg, embeds: webhookEmbed.Yield(), cancellationToken: cancellationToken);
         }
+
+        var discordBotMessages = await _discordBotUnitOfWork.ReportChannelMessages
+            .GetAllByReportGuidAsync(report.Guid, cancellationToken);
+
+        foreach (var message in discordBotMessages)
+        {
+            await _tmwrDiscordBotService.ModifyMessageAsync(message, embeds: webhookEmbed.Yield());
+        }
     }
 
     private static void CreateDiscordEmbeds_NewWorldRecord(WorldRecordModel wr, out Discord.Embed webhookEmbed, out Discord.Embed botEmbed)
@@ -434,6 +558,24 @@ public class ReportService
 
         webhookEmbed = embedBuilder.Build();
         botEmbed = embedBuilder.WithFooter(wr.Guid.ToString(), UrlConsts.Favicon).Build();
+    }
+
+    private static void CreateDiscordEmbeds_RemovedWorldRecord(WorldRecordModel? currentWr, IEnumerable<WorldRecordModel> removedWrs, out Discord.Embed webhookEmbed, out Discord.Embed botEmbed)
+    {
+        var embedBuilder = GetDefaultEmbedBuilder_RemovedWorldRecord(currentWr, removedWrs);
+
+        webhookEmbed = embedBuilder.Build();
+
+        if (currentWr is not null)
+        {
+            embedBuilder.WithFooter(currentWr.Guid.ToString(), UrlConsts.Favicon);
+        }
+        else
+        {
+            embedBuilder.WithFooter("");
+        }
+
+        botEmbed = embedBuilder.Build();
     }
 
     private static string FilterOutNickname(string nickname, string loginIfFilteredOut)
@@ -457,13 +599,31 @@ public class ReportService
         return nickname;
     }
 
-    public async Task RemoveWorldRecordReportAsync(WorldRecordModel wr)
+    public async Task RemoveWorldRecordReportAsync(WorldRecordModel wr, CancellationToken cancellationToken = default)
     {
-        var report = await _wrUnitOfWork.Reports.GetByWorldRecordAsync(wr);
+        var report = await _wrUnitOfWork.Reports.GetByWorldRecordAsync(wr, cancellationToken);
 
         if (report is null)
         {
             return;
         }
+
+        var discordWebhookMessages = await _wrUnitOfWork.DiscordWebhookMessages
+            .GetAllByReportAsync(report, cancellationToken);
+        
+        foreach (var message in discordWebhookMessages)
+        {
+            await _discordWebhookService.DeleteMessageAsync(message, cancellationToken);
+        }
+
+        var discordBotMessages = await _discordBotUnitOfWork.ReportChannelMessages
+            .GetAllByReportGuidAsync(report.Guid, cancellationToken);
+
+        foreach (var message in discordBotMessages)
+        {
+            await _tmwrDiscordBotService.DeleteMessageAsync(message);
+        }
+
+        await _discordBotUnitOfWork.SaveAsync(cancellationToken);
     }
 }

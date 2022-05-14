@@ -16,13 +16,14 @@ public class RefreshTM2Service : RefreshService
 {
     private static readonly MasterServerTm2 server = new();
     
-    private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2.Nadeo)}:{nameof(ReportScopeTM2Nadeo.WR)}";
+    private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TM2)}:{nameof(ReportScopeTM2.Nadeo)}:{nameof(ReportScopeTM2Nadeo.WR)}";
     private const string ScopeOfficialTop10 = $"{nameof(ReportScopeSet.TM2)}:{nameof(ReportScopeTM2.Nadeo)}:{nameof(ReportScopeTM2Nadeo.Changes)}";
 
     private readonly ILogger<RefreshTM2Service> _logger;
     private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly RefreshScheduleService _refreshScheduleService;
     private readonly RecordStorageService _recordStorageService;
+    private readonly SnapshotStorageService _snapshotStorageService;
     private readonly IGhostService _ghostService;
     private readonly HttpClient _http;
     private readonly ReportService _reportService;
@@ -32,6 +33,7 @@ public class RefreshTM2Service : RefreshService
         IWrUnitOfWork wrUnitOfWork,
         RefreshScheduleService refreshScheduleService,
         RecordStorageService recordStorageService,
+        SnapshotStorageService snapshotStorageService,
         IGhostService ghostService,
         HttpClient http,
         ReportService reportService) : base(logger)
@@ -40,6 +42,7 @@ public class RefreshTM2Service : RefreshService
         _wrUnitOfWork = wrUnitOfWork;
         _refreshScheduleService = refreshScheduleService;
         _recordStorageService = recordStorageService;
+        _snapshotStorageService = snapshotStorageService;
         _ghostService = ghostService;
         _http = http;
         _reportService = reportService;
@@ -81,9 +84,14 @@ public class RefreshTM2Service : RefreshService
         {
             leaderboards = await leaderboardsTask;
         }
+        catch (TaskCanceledException ex)
+        {
+            _logger.LogWarning("Requesting TM2 solo leaderboards timed out: {msg}", ex.Message);
+            return;
+        }
         catch (HttpRequestException ex)
         {
-            _logger.LogWarning("HTTP request exception when requesting TM2 solo leaderboards in RefreshTM2Service: {msg} (status code: {code})", ex.Message, ex.StatusCode);
+            _logger.LogError("HTTP request exception when requesting TM2 solo leaderboards in RefreshTM2Service: {msg} (status code: {code})", ex.Message, ex.StatusCode);
             return;
         }
 
@@ -358,10 +366,17 @@ public class RefreshTM2Service : RefreshService
 
         if (diff is not null || diffTimes is not null)
         {
+            var timestamp = _recordStorageService.GetOfficialLeaderboardLastUpdatedOn(Game.TM2, mapUid, zone);
+
             await _recordStorageService.SaveTM2LeaderboardAsync(currentLeaderboard, mapUid, zone, cancellationToken: cancellationToken);
         
             if (diff is not null)
             {
+                if (timestamp.HasValue)
+                {
+                    await _snapshotStorageService.SaveTM2LeaderboardAsync(previousLeaderboard.Records, timestamp.Value, mapUid, zone, cancellationToken: cancellationToken);
+                }
+                
                 var goneLoginModels = await _wrUnitOfWork.Logins.GetByNamesAsync(Game.TM2, diff.PushedOffRecords.Concat(diff.RemovedRecords).Select(x => x.PlayerId), cancellationToken);
 
                 foreach (var (playerId, loginModel) in goneLoginModels)

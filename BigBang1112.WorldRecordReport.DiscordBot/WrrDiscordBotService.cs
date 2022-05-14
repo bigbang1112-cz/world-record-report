@@ -5,7 +5,7 @@ using Discord.WebSocket;
 
 namespace BigBang1112.WorldRecordReport.DiscordBot;
 
-[DiscordBot("e0d910ee-c360-4a55-9b6c-b4d50e8c3581", name: "WRR",
+[DiscordBot("e0d910ee-c360-4a55-9b6c-b4d50e8c3581", name: "WRR", version: "1.0.0.0",
     Punchline = "World Record Report Discord Bot",
     Description = "Handler of events happening within the World Record Report project.",
     GitRepoUrl = "https://github.com/bigbang1112-cz/world-record-report")]

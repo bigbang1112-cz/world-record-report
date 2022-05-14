@@ -55,28 +55,42 @@ public class RecordStorageService
         }
     }
 
-    public void SaveTM2020Leaderboard(IEnumerable<TM2020Record> records, string mapUid, string zone = "World", string scoreContext = "")
+    public void SaveTM2020Leaderboard(IEnumerable<TM2020Record> records,
+                                      string mapUid,
+                                      string zone = "World",
+                                      string scoreContext = "")
     {
         var path = GetStandardOfficialLeaderboardPath(Game.TM2020, mapUid, zone, scoreContext);
 
         _fileHostService.SaveToApi(records, ApiVersion, path);
     }
 
-    public async Task SaveTM2020LeaderboardAsync(IEnumerable<TM2020Record> records, string mapUid, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
+    public async Task SaveTM2020LeaderboardAsync(IEnumerable<TM2020Record> records,
+                                                 string mapUid,
+                                                 string zone = "World",
+                                                 string scoreContext = "",
+                                                 CancellationToken cancellationToken = default)
     {
         var path = GetStandardOfficialLeaderboardPath(Game.TM2020, mapUid, zone, scoreContext);
 
         await _fileHostService.SaveToApiAsync(records, ApiVersion, path, cancellationToken);
     }
 
-    public async Task SaveTmxLeaderboardAsync(IEnumerable<TmxReplay> records, TmxSite tmxSite, string mapUid, CancellationToken cancellationToken = default)
+    public async Task SaveTmxLeaderboardAsync(IEnumerable<TmxReplay> records,
+                                              TmxSite tmxSite,
+                                              string mapUid,
+                                              CancellationToken cancellationToken = default)
     {
         var path = GetTmxLeaderboardPath(tmxSite, mapUid);
         
         await _fileHostService.SaveToApiAsync(records, ApiVersion, path, cancellationToken);
     }
 
-    public async Task SaveTM2LeaderboardAsync(LeaderboardTM2 leaderboard, string mapUid, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
+    public async Task SaveTM2LeaderboardAsync(LeaderboardTM2 leaderboard,
+                                              string mapUid,
+                                              string zone = "World",
+                                              string scoreContext = "",
+                                              CancellationToken cancellationToken = default)
     {
         var path = GetStandardOfficialLeaderboardPath(Game.TM2, mapUid, zone, scoreContext);
         
@@ -97,28 +111,40 @@ public class RecordStorageService
         return new ReadOnlyCollection<TM2020Record>(records);
     }
 
-    public async Task<ReadOnlyCollection<TM2020Record>?> GetTM2020LeaderboardAsync(string mapUid, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
+    public async Task<ReadOnlyCollection<TM2020Record>?> GetTM2020LeaderboardAsync(string mapUid,
+                                                                                   string zone = "World",
+                                                                                   string scoreContext = "",
+                                                                                   CancellationToken cancellationToken = default)
     {
         var path = GetStandardOfficialLeaderboardPath(Game.TM2020, mapUid, zone, scoreContext);
         
         return await GetFromApiAsCollectionAsync<TM2020Record>(path, cancellationToken);
     }
 
-    public async Task<LeaderboardTM2?> GetTM2LeaderboardAsync(string mapUid, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
+    public async Task<LeaderboardTM2?> GetTM2LeaderboardAsync(string mapUid,
+                                                              string zone = "World",
+                                                              string scoreContext = "",
+                                                              CancellationToken cancellationToken = default)
     {
         var path = GetStandardOfficialLeaderboardPath(Game.TM2, mapUid, zone, scoreContext);
 
         return await _fileHostService.GetFromApiAsync<LeaderboardTM2>(ApiVersion, path, cancellationToken);
     }
 
-    public async Task<ReadOnlyCollection<TmxReplay>?> GetTmxLeaderboardAsync(TmxSite tmxSite, string mapUid, CancellationToken cancellationToken = default)
+    public async Task<ReadOnlyCollection<TmxReplay>?> GetTmxLeaderboardAsync(TmxSite tmxSite,
+                                                                             string mapUid,
+                                                                             CancellationToken cancellationToken = default)
     {
         var path = GetTmxLeaderboardPath(tmxSite, mapUid);
 
         return await GetFromApiAsCollectionAsync<TmxReplay>(path, cancellationToken);
     }
 
-    public async Task<IEnumerable<IRecord>?> GetOfficialLeaderboardAsync(Game game, string mapUid, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<IRecord>?> GetOfficialLeaderboardAsync(Game game,
+                                                                         string mapUid,
+                                                                         string zone = "World",
+                                                                         string scoreContext = "",
+                                                                         CancellationToken cancellationToken = default)
     {
         return game switch
         {
@@ -128,9 +154,19 @@ public class RecordStorageService
         };
     }
 
-    public async Task<IEnumerable<IRecord>?> GetOfficialLeaderboardAsync(MapModel map, string zone = "World", string scoreContext = "", CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<IRecord>?> GetOfficialLeaderboardAsync(MapModel map,
+                                                                         string zone = "World",
+                                                                         string scoreContext = "",
+                                                                         CancellationToken cancellationToken = default)
     {
         return await GetOfficialLeaderboardAsync((Game)map.Game.Id, map.MapUid, zone, scoreContext, cancellationToken);
+    }
+
+    public DateTimeOffset? GetOfficialLeaderboardLastUpdatedOn(Game game, string mapUid, string zone = "World", string scoreContext = "")
+    {
+        var path = GetStandardOfficialLeaderboardPath(game, mapUid, zone, scoreContext);
+
+        return _fileHostService.GetLastModifiedTimeFromApi(ApiVersion, path);
     }
 
     public DateTimeOffset? GetTM2020LeaderboardLastUpdatedOn(string mapUid, string zone = "World", string scoreContext = "")

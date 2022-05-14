@@ -1,5 +1,5 @@
 ﻿using BigBang1112;
-using BigBang1112.TMWR;
+using BigBang1112.WorldRecordReportLib.TMWR;
 using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Extensions;
 using BigBang1112.WorldRecordReportLib.Jobs;
@@ -78,6 +78,7 @@ builder.Services.AddSingleton<ITrackmaniaIoApiService, TrackmaniaIoApiService>()
 
 builder.Services.AddSingleton<RefreshScheduleService>();
 builder.Services.AddSingleton<RecordStorageService>();
+builder.Services.AddSingleton<SnapshotStorageService>();
 
 builder.Services.AddSingleton<TmwrDiscordBotService>();
 builder.Services.AddHostedService(x => x.GetRequiredService<TmwrDiscordBotService>());

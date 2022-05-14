@@ -43,7 +43,7 @@ public class DiscordWebhookService : IDiscordWebhookService
 
         var msg = message.Invoke(msgId);
 
-        await _wrUnitOfWork.DiscordWebhookMessages.AddAsync(msg);
+        await _wrUnitOfWork.DiscordWebhookMessages.AddAsync(msg, cancellationToken);
 
         return msg;
     }
@@ -59,6 +59,8 @@ public class DiscordWebhookService : IDiscordWebhookService
         {
             return;
         }
+
+        msg.ModifiedOn = DateTime.UtcNow;
 
         await webhookClient.ModifyMessageAsync(msg.MessageId, x =>
         {

@@ -18,6 +18,7 @@ public class RefreshTM2020Service : RefreshService
 
     private readonly RefreshScheduleService _refreshSchedule;
     private readonly RecordStorageService _recordStorageService;
+    private readonly SnapshotStorageService _snapshotStorageService;
     private readonly ReportService _reportService;
     private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly INadeoApiService _nadeoApiService;
@@ -27,6 +28,7 @@ public class RefreshTM2020Service : RefreshService
 
     public RefreshTM2020Service(RefreshScheduleService refreshSchedule,
                                 RecordStorageService recordStorageService,
+                                SnapshotStorageService snapshotStorageService,
                                 ReportService reportService,
                                 IWrUnitOfWork wrUnitOfWork,
                                 INadeoApiService nadeoApiService,
@@ -36,6 +38,7 @@ public class RefreshTM2020Service : RefreshService
     {
         _refreshSchedule = refreshSchedule;
         _recordStorageService = recordStorageService;
+        _snapshotStorageService = snapshotStorageService;
         _reportService = reportService;
         _wrUnitOfWork = wrUnitOfWork;
         _nadeoApiService = nadeoApiService;
@@ -243,7 +246,14 @@ public class RefreshTM2020Service : RefreshService
             var newAndImprovedRecordAccounts = diffForDownloading.NewRecords
                 .Concat(diffForDownloading.ImprovedRecords)
                 .Select(x => x.PlayerId);
+            
+            var timestamp = _recordStorageService.GetOfficialLeaderboardLastUpdatedOn(Game.TM2020, map.MapUid);
 
+            if (timestamp.HasValue)
+            {
+                await _snapshotStorageService.SaveTM2020LeaderboardAsync(previousRecordsWithCheated, timestamp.Value, map.MapUid, cancellationToken: cancellationToken);
+            }
+            
             currentRecordsWithCheated = await SaveLeaderboardAsync(map, records, newAndImprovedRecordAccounts, loginModels, ignoredLoginNames, previousRecordsWithCheated, cancellationToken);
         }
 
@@ -313,7 +323,7 @@ public class RefreshTM2020Service : RefreshService
                 _logger.LogInformation("Removed WR: {time} by {player}", previousWr.TimeInt32, previousWr.GetPlayerNickname());
 
                 // Remove the discord webhook message
-                await _reportService.RemoveWorldRecordReportAsync(previousWr);
+                await _reportService.RemoveWorldRecordReportAsync(previousWr, cancellationToken);
 
                 removedWrs.Add(previousWr);
 

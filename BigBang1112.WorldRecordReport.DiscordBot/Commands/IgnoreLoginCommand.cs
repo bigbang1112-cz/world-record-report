@@ -13,16 +13,14 @@ namespace BigBang1112.WorldRecordReport.DiscordBot.Commands;
 [DiscordBotCommand("ignorelogin", "Ignores a login from reports, usually due to cheating.")]
 public class IgnoreLoginCommand : DiscordBotCommand
 {
-    private readonly WrrDiscordBotService _discordBotService;
     private readonly IWrUnitOfWork _wrUnitOfWork;
-    private readonly RecordStorageService _recordStorageService;
     private readonly RefreshTM2020Service _refreshTM2020Service;
 
-    public IgnoreLoginCommand(WrrDiscordBotService discordBotService, IWrUnitOfWork wrUnitOfWork, RecordStorageService recordStorageService, RefreshTM2020Service refreshTM2020Service) : base(discordBotService)
+    public IgnoreLoginCommand(WrrDiscordBotService discordBotService,
+                              IWrUnitOfWork wrUnitOfWork,
+                              RefreshTM2020Service refreshTM2020Service) : base(discordBotService)
     {
-        _discordBotService = discordBotService;
         _wrUnitOfWork = wrUnitOfWork;
-        _recordStorageService = recordStorageService;
         _refreshTM2020Service = refreshTM2020Service;
     }
 
