@@ -1,0 +1,185 @@
+﻿@page "/old"
+
+@inject IWrUnitOfWork _wrUnitOfWork
+@inject WrAuthService _wrAuthService
+@inject AccountService _accountService
+@inject IDiscordWebhookService _discordWebhookService
+@inject ILogger<Index> _logger
+
+<div class="main-center">
+	<div>
+		<AuthorizeView>
+			<Authorized>
+				<div class="section">
+					<div class="inner">
+						<span>Account UUID: <b>@account?.Guid</b></span>
+					</div>
+				</div>
+				<div class="section">
+					<div class="inner">
+						@if (webhooks is null)
+						{
+							<span>Loading webhooks...</span>
+						}
+						else
+						{
+							@if (webhooks.Any())
+							{
+								<table class="webhook-table">
+									<colgroup>
+										<col style="width:10%"/>
+										<col style="width:70%"/>
+										<col style="width:10%"/>
+										<col style="width:10%"/>
+									</colgroup>  
+									<tbody>
+										@foreach (var webhook in webhooks)
+										{
+											<tr>
+												<td>
+													<Checkbox Checked="!webhook.Disabled" CheckedChanged="enabled => UpdateEnableAsync(webhook.Guid, enabled)"></Checkbox>
+												</td>
+												<td style="padding-left: 1rem; padding-right: 1rem;">
+													<span>@webhook.DisplayName</span>
+												</td>
+												<td>
+													<a class="button button-a-small button-block" href="account/webhooks/edit/@webhook.Guid"><i class="fa-solid fa-pen-to-square"></i></a>
+												</td>
+												<td>
+													<button class="button button-small" @onclick="() => PingWebhookAsync(webhook.Guid)"><i class="fas fa-bell"></i></button>
+												</td>
+											</tr>
+										}
+									</tbody>
+								</table>
+							}
+
+							@if (webhooks.Count() < 5)
+							{
+								<a href="account/webhooks/create" class="button button-block" style="width: 100%; padding-top: 0.4rem; padding-bottom: 0.4rem">Create a new webhook</a>
+							}
+						}
+					</div>
+				</div>
+			</Authorized>
+		</AuthorizeView>
+		<div class="section">
+			<div class="inner">
+				<a href="https://discord.com/api/oauth2/authorize?client_id=901286952421195857&permissions=0&scope=bot%20applications.commands" class="button" style="padding: 0.5rem 3rem">Invite TMWR</a>
+				<AuthorizeView>
+					<Authorized>
+						<a href="login" class="button button-inline-block" style="padding: 0.5rem 3rem">Login with another</a>
+						<a href="logout" class="button button-inline-block" style="padding: 0.5rem 3rem">Logout</a>
+					</Authorized>
+					<NotAuthorized>
+						<a href="login" class="button" style="padding: 0.5rem 3rem">Login</a>
+					</NotAuthorized>
+				</AuthorizeView>
+			</div>
+		</div>
+		<AuthorizeView>
+			<Authorized>
+				<Footer></Footer>
+			</Authorized>
+		</AuthorizeView>
+	</div>
+</div>
+
+@code {
+	private AccountModel? account;
+	private IEnumerable<DiscordWebhookModel>? webhooks;
+
+	protected override async Task OnInitializedAsync()
+	{
+		(account, webhooks) = await _wrAuthService.GetDiscordWebhooksAsync();
+	}
+
+	private async Task PingWebhookAsync(Guid guid)
+	{
+		// Put this into WrAuthService
+
+		_logger.LogInformation("Webhook {guid}: Ping requested.", guid);
+
+		var webhook = await GetAndAuthenticateWebhookAsync(guid);
+
+		if (webhook is null)
+		{
+			// Webhook should be removed from the visual list
+			return;
+		}
+
+		var embed = new Discord.EmbedBuilder()
+            .WithTitle("Successfully pinged!")
+            .WithFooter("Powered by wr.bigbang1112.cz", DiscordWebhookService.LogoIconUrl)
+            .Build();
+
+        var msg = await _discordWebhookService.SendMessageAsync(webhook, snowflake => new DiscordWebhookMessageModel
+        {
+            MessageId = snowflake,
+            SentOn = DateTime.UtcNow,
+            ModifiedOn = DateTime.UtcNow,
+            Webhook = webhook
+        }, embeds: Enumerable.Repeat(embed, 1));
+
+		if (msg is null)
+		{
+			_logger.LogInformation("Webhook {guid}: Webhook cannot be reached.", guid);
+		}
+	}
+
+	private async Task UpdateEnableAsync(Guid guid, bool enabled)
+	{
+		// Put this into WrAuthService
+
+		var state = enabled ? "enable" : "disable";
+
+		_logger.LogInformation("Webhook {guid}: '{state}' requested.", guid, state);
+
+		var webhook = await GetAndAuthenticateWebhookAsync(guid);
+
+		if (webhook is null)
+		{
+			// Webhook should be removed from the list
+			return;
+		}
+
+		webhook.Disabled = !enabled;
+
+		_logger.LogInformation("Webhook {guid}: State changed to {state} successfully.", guid, state);
+
+		await _wrAuthService.SaveAsync();
+
+		//var enable = (bool)checkedValue;
+
+		//using var response = await http.PostAsync(@navigator.BaseUri + $"api/v1/report/webhook/discord/{guid}/" + (enable ? "enable" : "disable"), null);
+	}
+
+	private async Task<DiscordWebhookModel?> GetAndAuthenticateWebhookAsync(Guid guid)
+	{
+		// Check if it still exists
+		var webhook = await _wrUnitOfWork.DiscordWebhooks.GetByGuidAsync(guid);
+
+		if (webhook is null)
+		{
+			return null;
+		}
+
+		_logger.LogInformation("Webhook {guid}: Exists.", guid);
+
+		account = await _accountService.GetAccountAsync();
+
+		if (account is null || account.Guid != webhook.Account.Guid)
+		{
+			var accountGuid = account?.Guid.ToString() ?? "[no guid]";
+			var webhookOwnerAccountGuid = webhook.Account.Guid;
+
+			_logger.LogWarning("Webhook {guid}: Account doesn't match the webhook owner ({accountGuid} != {webhookOwnerAccountGuid}).", guid, accountGuid, webhookOwnerAccountGuid);
+
+			return null;
+		}
+
+		_logger.LogInformation("Webhook {guid}: Account matches the owner.", guid);
+
+		return webhook;
+	}
+}

@@ -7,9 +7,9 @@
 @inject IDiscordWebhookService _discordWebhookService
 @inject TmwrDiscordBotService _tmwr
 
-<h3>Admin</h3>
+<button class="button">Override Discord commands</button>
 
-<input type="text" class="textbox" style="width:50rem" @bind="command" />
+<input type="text" class="textbox" @bind="command" />
 
 <button @onclick="SendAsync">Send</button>
 

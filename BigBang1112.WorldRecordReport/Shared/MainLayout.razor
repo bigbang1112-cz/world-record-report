@@ -1,7 +1,46 @@
 ﻿@inherits LayoutComponentBase
+@inject IAuthorizationService AuthorizationService
 
-<div class="page">
-    <main>
+<div class="outer-space page">
+    <header class="section">
+        <div class="area area-project-title">
+            <p class="project-title">World Record Report</p>
+            <p>The best care for the best Trackmania records</p>
+        </div>
+    </header>
+    <section class="section">
+        <div>Login</div>
+    </section>
+    <nav class="section">
+        <a class="button" href="/">Home</a>
+        <a class="button @(User?.Identity?.IsAuthenticated == true ? "" : "disabled")" href="webhooks">Webhooks</a>
+        <a class="button button-tmwr" href="tmwr">&nbsp;</a>
+        <AuthorizeView Roles="SuperAdmin, Admin">
+            <a class="button button-orange" href="admin">Admin</a>
+        </AuthorizeView>
+        <a class="button align-bottom" href="swagger">API</a>
+    </nav>
+    <main class="section">
         @Body
     </main>
+    <footer class="section">
+        <span>© 2022 Petr &nbsp;'&nbsp;</span>
+        <img class="footer-developer" src="_content/BigBang1112.Essentials.Razor/img/bigbang1112.png" />
+        <span>&nbsp;'&nbsp; Pivoňka</span>
+    </footer>
 </div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    private ClaimsPrincipal? User { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationState is not null)
+        {
+            User = (await AuthenticationState).User;
+        }
+    }
+}
