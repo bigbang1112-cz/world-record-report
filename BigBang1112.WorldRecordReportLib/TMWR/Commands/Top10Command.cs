@@ -121,32 +121,30 @@ public class Top10Command : MapRelatedWithUidCommand
 
     private async Task<bool> CreateTop10EmbedContentAsync(MapModel map, EmbedBuilder builder)
     {
-        var recordCount = 0;
-
-        if (map.Game.IsTM2020())
+        switch ((Game)map.Game.Id)
         {
-            var leaderboard = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid);
+            case Game.TM2:
+                if (!await CreateTop10EmbedContentFromTM2Async(map, builder))
+                {
+                    return false;
+                }
+                break;
+            case Game.TMUF:
+                if (!await CreateTop10EmbedContentFromTmxAsync(map, builder))
+                {
+                    return false;
+                }
+                break;
+            case Game.TM2020:
+                var leaderboard = await _recordStorageService.GetTM2020LeaderboardAsync(map.MapUid);
 
-            if (leaderboard is null)
-            {
-                return false;
-            }
+                if (leaderboard is null)
+                {
+                    return false;
+                }
 
-            CreateTop10EmbedContentFromTM2020(leaderboard, builder);
-        }
-        else if (map.Game.IsTM2())
-        {
-            if (!await CreateTop10EmbedContentFromTM2Async(map, builder))
-            {
-                return false;
-            }
-        }
-        else if (map.Game.IsTMUF())
-        {
-            if (!await CreateTop10EmbedContentFromTmxAsync(map, builder))
-            {
-                return false;
-            }
+                CreateTop10EmbedContentFromTM2020(leaderboard, builder);
+                break;
         }
 
         if (map.LastRefreshedOn is not null)
