@@ -96,6 +96,29 @@ public record ReportScopeSet : ReportScope
             return false;
         }
 
+        var scopePath = scope.Split(':');
+        var currentProperty = default(PropertyInfo);
+
+        for (var i = 0; i < scopePath.Length; i++)
+        {
+            var s = scopePath[i];
+
+            if (i == 0)
+            {
+                currentProperty = typeof(ReportScopeSet).GetProperty(s);
+            }
+            else if (currentProperty is not null)
+            {
+                currentProperty = currentProperty.PropertyType.GetProperty(s);
+            }
+            else
+            {
+                throw new Exception();
+            }
+        }
+
+        reportScopeSet = new();
+
         throw new NotImplementedException();
     }
 }
