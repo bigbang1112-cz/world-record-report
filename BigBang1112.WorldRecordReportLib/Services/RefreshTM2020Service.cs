@@ -100,7 +100,7 @@ public class RefreshTM2020Service : RefreshService
 
             // Or if its been 1 hour since last nickname refresh
             // Better name could be something like LastNicknameCheckOn
-            return login.LastNicknameChangeOn.HasValue && DateTime.UtcNow - login.LastNicknameChangeOn.Value >= TimeSpan.FromHours(12);
+            return login.LastNicknameChangeOn.HasValue && DateTime.UtcNow - login.LastNicknameChangeOn.Value >= TimeSpan.FromHours(6);
         }).ToList(); // ToList ensures these conditions are evaluated just once, but as only Any() would be called without it, it could change in the future
 
         var anyAccountIdsToRequest = accountIdsToRequest.Count > 0;
