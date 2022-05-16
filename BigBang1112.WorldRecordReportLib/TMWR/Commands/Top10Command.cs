@@ -94,6 +94,11 @@ public class Top10Command : MapRelatedWithUidCommand
             miniRecords = GetMiniRecordsFromTmxReplays(top10records, map, formattable: false);
         }
 
+        if (!miniRecords.Any())
+        {
+            return null;
+        }
+
         var isStunts = map.IsStuntsMode();
 
         var selectMenuBuilder = new SelectMenuBuilder
