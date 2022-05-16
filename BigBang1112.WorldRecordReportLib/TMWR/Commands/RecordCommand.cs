@@ -49,61 +49,61 @@ public class RecordCommand : MapRelatedWithUidCommand
     {
         var builder = new ComponentBuilder();
 
-        if (map.Game.IsTM2() && recordSet is not null)
-        {
-            var record = recordSet.Records.ElementAtOrDefault((int)Rank - 1);
-
-            if (record is null)
-            {
-                builder = builder.WithButton("Download ghost",
-                    customId: "download-disabled",
-                    style: ButtonStyle.Secondary,
-                    disabled: true);
-            }
-            else
-            {
-                var downloadUrl = $"https://{_config["BaseAddress"]}/api/v1/ghost/download/{map.MapUid}/{record.Time}/{record.Login}";
-
-                builder = builder.WithButton("Download ghost",
-                    style: ButtonStyle.Link,
-                    url: downloadUrl);
-            }
-        }
-        else if (map.Game.IsTM2020() && tm2020Leaderboard is not null)
-        {
-            var record = tm2020Leaderboard.Where(x => !x.Ignored).ElementAtOrDefault((int)Rank - 1);
-
-            if (record is null)
-            {
-                builder = builder.WithButton("Download ghost",
-                    customId: "download-disabled",
-                    style: ButtonStyle.Secondary,
-                    disabled: true);
-            }
-            else
-            {
-                var downloadUrl = $"https://{_config["BaseAddress"]}/api/v1/ghost/download/{map.MapUid}/{record.Time.TotalMilliseconds}/{record.PlayerId}";
-
-                builder = builder.WithButton("Download ghost",
-                    style: ButtonStyle.Link,
-                    url: downloadUrl);
-            }
-        }
-        else if (map.Game.IsTMUF() && recordSetTmx is not null)
-        {
-            var record = recordSetTmx.Where(x => x.Rank is not null).ElementAtOrDefault((int)Rank - 1);
-
-            builder = builder.WithButton("Download replay",
-                customId: record is null ? "download-disabled" : null,
-                style: record is null ? ButtonStyle.Secondary : ButtonStyle.Link,
-                url: record is not null && map.TmxAuthor is not null ? $"{map.TmxAuthor.Site.Url}recordgbx/{record.ReplayId}" : null,
-                disabled: record is null);
-        }
+        CreateDownloadButton(map, builder);
 
         builder = builder.WithButton("Checkpoints", CreateCustomId($"{MapUid}-{Rank}-checkpoints"), ButtonStyle.Secondary, disabled: true)
             .WithButton("Inputs", CreateCustomId($"{MapUid}-{Rank}-inputs"), ButtonStyle.Secondary, disabled: true);
 
         return Task.FromResult(builder)!;
+    }
+
+    private void CreateDownloadButton(MapModel map, ComponentBuilder builder)
+    {
+        var buttonName = (Game)map.Game.Id switch
+        {
+            Game.TM2 or Game.TM2020 => "Download ghost",
+            _ => "Download replay"
+        };
+
+        IRecord? rec = (Game)map.Game.Id switch
+        {
+            Game.TM2 => recordSet?.Records.ElementAtOrDefault((int)Rank - 1),
+            Game.TM2020 => tm2020Leaderboard?.Where(x => !x.Ignored).ElementAtOrDefault((int)Rank - 1),
+            Game.TMUF => recordSetTmx?.Where(x => x.Rank is not null).ElementAtOrDefault((int)Rank - 1),
+            _ => null
+        };
+
+        if (rec is null)
+        {
+            builder.WithButton(buttonName,
+                customId: "download-disabled",
+                style: ButtonStyle.Secondary,
+                disabled: true);
+            return;
+        }
+
+        if (map.Game.IsTM2() || map.Game.IsTM2020())
+        {
+            if (string.IsNullOrWhiteSpace(_config["BaseAddress"]))
+            {
+                throw new Exception("BaseAddress is not present in configuration");
+            }
+
+            var downloadUrl = $"https://{_config["BaseAddress"]}/api/v1/ghost/download/{map.MapUid}/{rec.Time.TotalMilliseconds}/{rec.GetPlayerId()}";
+
+            builder.WithButton("Download ghost", style: ButtonStyle.Link, url: downloadUrl);
+
+            return;
+        }
+        
+        if (map.Game.IsTMUF())
+        {
+            builder = builder.WithButton("Download replay",
+                customId: map.TmxAuthor is null ? "download-disabled" : null,
+                style: map.TmxAuthor is null ? ButtonStyle.Secondary : ButtonStyle.Link,
+                url: map.TmxAuthor is null ? null : $"{map.TmxAuthor.Site.Url}recordgbx/{((TmxReplay)rec).ReplayId}",
+                disabled: map.TmxAuthor is null);
+        }
     }
 
     protected override async Task BuildEmbedResponseAsync(MapModel map, EmbedBuilder builder)
