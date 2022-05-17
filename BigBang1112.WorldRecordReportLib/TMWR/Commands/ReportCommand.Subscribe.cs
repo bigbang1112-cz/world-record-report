@@ -1,6 +1,7 @@
 ﻿using BigBang1112.DiscordBot;
 using BigBang1112.DiscordBot.Data;
 using BigBang1112.DiscordBot.Models;
+using BigBang1112.DiscordBot.Models.Db;
 using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 using Discord;
 using Discord.WebSocket;
@@ -13,10 +14,11 @@ public partial class ReportCommand
     public class Subscribe : TmwrCommand
     {
         private readonly IDiscordBotUnitOfWork _discordBotUnitOfWork;
+        private readonly DiscordBotDataService _discordBotDataService;
 
         [DiscordBotCommandOption("scope",
             ApplicationCommandOptionType.String,
-            "Default scope to use. You can change this anytime with /report scopes.",
+            "Default scope to use. You can change this anytime with (un)subscribe or /report scopes.",
             IsRequired = true)]
         public string Scope { get; set; } = "";
 
@@ -28,9 +30,12 @@ public partial class ReportCommand
         [DiscordBotCommandOption("other", ApplicationCommandOptionType.Channel, "Specify other channel to apply/see the subscription to/of.")]
         public SocketChannel? OtherChannel { get; set; }
 
-        public Subscribe(TmwrDiscordBotService tmwrDiscordBotService, IDiscordBotUnitOfWork discordBotUnitOfWork) : base(tmwrDiscordBotService)
+        public Subscribe(TmwrDiscordBotService tmwrDiscordBotService,
+                         IDiscordBotUnitOfWork discordBotUnitOfWork,
+                         DiscordBotDataService discordBotDataService) : base(tmwrDiscordBotService)
         {
             _discordBotUnitOfWork = discordBotUnitOfWork;
+            _discordBotDataService = discordBotDataService;
         }
 
         public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand)
@@ -39,59 +44,85 @@ public partial class ReportCommand
             {
                 if (OtherChannel is not null)
                 {
-                    return RespondWithDescriptionEmbed("The specified channel is not a text channel.");
+                    return Respond(description: "The specified channel is not a text channel.");
                 }
 
                 textChannel = slashCommand.Channel as SocketTextChannel ?? throw new Exception();
             }
 
-            /*if (Set is null)
-            {
-                return await GetReportScopeSetAsync(textChannel) is null
-                    ? RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **not** reported.")
-                    : RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **reported**.");
-            }*/
-
             if (slashCommand.User is not SocketGuildUser guildUser)
             {
-                return RespondWithDescriptionEmbed("You cannot report to your DMs.");
+                return Respond(description: "You cannot report to your DMs.");
             }
 
             if (!guildUser.GuildPermissions.ManageChannels)
             {
-                return RespondWithDescriptionEmbed($"You don't have permissions to set the report subscription in <#{textChannel.Id}>.");
+                return Respond(description: $"You don't have permissions to set the report subscription in {textChannel.Mention}.");
             }
 
-            string? fullScopeName;
+            // do not allow adding more subscriptions if reaching 5 report channels already on a guild
+            var count = await _discordBotUnitOfWork.ReportChannels.CountByJoinedGuildAsync(textChannel.Guild.Id);
 
-            var reportScopeSet = await GetReportScopeSetAsync(textChannel);
+            if (count >= LimitConsts.MaxReportChannelsPerGuild)
+            {
+                return Respond(description: $"You cannot add more than {LimitConsts.MaxReportChannelsPerGuild} report channels to a guild.");
+            }
+
+            var reportChannel = await GetReportChannelAsync(textChannel);
+
+            var reportScopeSet = reportChannel?.Scope is null ? null
+                : ReportScopeSet.FromJson(reportChannel.Scope);
+
+            string? fullScopeName;
 
             if (reportScopeSet is null)
             {
                 // Try create a fresh scope set
 
-                if (!ReportScopeSet.TryParse(Scope, out reportScopeSet, out fullScopeName))
+                if (!ReportScopeSet.TryParse(Scope, out reportScopeSet, out fullScopeName, out string? specificValueIssue))
                 {
-                    return RespondWithDescriptionEmbed($"Invalid scope.");
+                    return specificValueIssue is null
+                        ? Respond("Invalid scope")
+                        : Respond("Invalid scope", $"Sub-scope '**{specificValueIssue}**' is not valid.");
                 }
             }
             else if (!reportScopeSet.TryAdd(Scope, out fullScopeName)) // Try update the scope set
             {
                 return fullScopeName is null
-                    ? RespondWithDescriptionEmbed($"Invalid scope.")
-                    : RespondWithDescriptionEmbed($"Scope is already added.");
+                    ? Respond("Invalid scope.")
+                    : Respond("Scope is already added.");
             }
 
-            var nice = reportScopeSet.TM2;
-            var nice2 = fullScopeName;
+            if (reportChannel is null)
+            {
+                await _discordBotUnitOfWork.ReportChannels.AddAsync(new ReportChannelModel
+                {
+                    Channel = await _discordBotUnitOfWork.DiscordBotChannels.GetOrAddAsync(textChannel),
+                    JoinedGuild = await _discordBotUnitOfWork.DiscordBotJoinedGuilds.GetOrAddAsync(GetDiscordBotGuid() ?? throw new Exception(), textChannel.Guild),
+                    Scope = reportScopeSet.ToJson()
+                });
+            }
+            else
+            {
+                reportChannel.Scope = reportScopeSet.ToJson();
+            }
 
-            /*await SetReportScopeSetAsync(textChannel, null);
+            await _discordBotUnitOfWork.SaveAsync();
 
-            return Set.Value
-                ? RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are now reported, **after adding scopes** with `/report wrs scopes add`.")
-                : RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, things are **no longer reported**.");*/
+            return Respond(title: "Subscribed to reports!",
+                description: $"Subscribed to '**{fullScopeName}**' reports in {textChannel.Mention}.\nYou can verify your scopes with the '**/report scopes**' command.", ephemeral: false);
+        }
 
-            return RespondWithDescriptionEmbed($"In <#{textChannel.Id}>, reports from scope XXX are **reported**.");
+        private async Task<ReportChannelModel?> GetReportChannelAsync(SocketTextChannel textChannel)
+        {
+            var discordBotGuid = GetDiscordBotGuid();
+
+            if (discordBotGuid is null)
+            {
+                return null;
+            }
+
+            return await _discordBotUnitOfWork.ReportChannels.GetByBotAndTextChannelAsync(discordBotGuid.Value, textChannel);
         }
 
         private async Task<ReportScopeSet?> GetReportScopeSetAsync(SocketTextChannel textChannel)
@@ -111,29 +142,6 @@ public partial class ReportCommand
             }
             
             return ReportScopeSet.FromJson(reportSubscription.Scope);
-        }
-
-        private async Task SetReportScopeSetAsync(SocketTextChannel textChannel, string scopeSet)
-        {
-            var discordBotGuid = GetDiscordBotGuid();
-
-            if (discordBotGuid is null)
-            {
-                throw new Exception("Missing discord bot guid");
-            }
-
-            await _discordBotUnitOfWork.ReportChannels.AddOrUpdateAsync(discordBotGuid.Value, textChannel, scopeSet);
-
-            await _discordBotUnitOfWork.SaveAsync();
-        }
-
-        private static DiscordBotMessage RespondWithDescriptionEmbed(string description)
-        {
-            var embed = new EmbedBuilder()
-                .WithDescription(description)
-                .Build();
-
-            return new DiscordBotMessage(embed, ephemeral: true);
         }
     }
 }

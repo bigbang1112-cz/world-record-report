@@ -6,8 +6,10 @@ using BigBang1112.WorldRecordReportLib.Attributes.ReportScope;
 
 namespace BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 
-public record ReportScopeSet : ReportScope
+public sealed record ReportScopeSet : ReportScope
 {
+    private const BindingFlags BindingAttr = BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase;
+
     internal static JsonSerializerOptions JsonSerializerOptions { get; } = new JsonSerializerOptions
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
@@ -65,7 +67,7 @@ public record ReportScopeSet : ReportScope
     public static IEnumerable<string> GetReportScopesLike(string value, int limit = 25)
     {
         return GetAllPossibleReportScopes()
-            .Where(x => x.ToLower().Contains(value))
+            .Where(x => x.Contains(value, StringComparison.OrdinalIgnoreCase))
             .Take(limit);
     }
 
@@ -74,30 +76,143 @@ public record ReportScopeSet : ReportScope
         return JsonSerializer.Deserialize<ReportScopeSet>(json, JsonSerializerOptions);
     }
 
-    public string ToJson()
+    public string ToJson(bool enableFormatting = false)
     {
-        return JsonSerializer.Serialize(this, JsonSerializerOptions);
+        var options = enableFormatting ?
+            new JsonSerializerOptions(JsonSerializerOptions) { WriteIndented = enableFormatting }
+            : JsonSerializerOptions;
+
+        return JsonSerializer.Serialize(this, options);
     }
 
-    public bool TryAdd(string scope, [NotNullWhen(true)] out string? addedScope)
+    public IEnumerable<string> GetReportScopes(int limit = 25)
     {
         throw new NotImplementedException();
+    }
+
+    public bool TryAdd(string? scope, [NotNullWhen(true)] out string? addedScope)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool TryRemove(string scope, [NotNullWhen(true)] out string? removedScope)
+    {
+        _ = scope ?? throw new ArgumentNullException(nameof(scope));
+
+        var scopePath = scope.Split(':');
+
+        var exactScopeList = new List<string>();
+
+        var currentProperty = default(PropertyInfo);
+        var currentValue = (ReportScope)this;
+        var currentValueOwner = currentValue;
+
+        for (var i = 0; i < scopePath.Length; i++)
+        {
+            var s = scopePath[i];
+
+            currentValueOwner = currentValue;
+
+            if (i == 0)
+            {
+                currentProperty = typeof(ReportScopeSet).GetProperty(s, BindingAttr);
+            }
+            else if (currentProperty is not null)
+            {
+                currentProperty = currentProperty.PropertyType.GetProperty(s, BindingAttr);
+            }
+            else
+            {
+                throw new Exception($"Index {i} has null property.");
+            }
+
+            if (currentProperty is null)
+            {
+                var type = currentValueOwner.GetType();
+
+                if (!type.IsSubclassOf(typeof(ReportScopeWithParam)))
+                {
+                    removedScope = null;
+                    return false;
+                }
+
+                var paramProp = type.GetProperty(nameof(ReportScopeWithParam.Param)) ?? throw new Exception("Param couldn't be found");
+
+                if (paramProp.GetValue(currentValueOwner) is not string[] param)
+                {
+                    removedScope = null;
+                    return false;
+                }
+
+                var actualParamName = default(string);
+
+                foreach (var singleParam in param)
+                {
+                    if (string.Equals(singleParam, s, StringComparison.OrdinalIgnoreCase))
+                    {
+                        actualParamName = singleParam;
+                        break;
+                    }
+                }
+                
+                if (actualParamName is null)
+                {
+                    removedScope = null;
+                    return false;
+                }
+
+                var newParam = param
+                    .Where(x => !string.Equals(x, actualParamName))
+                    .ToArray();
+
+                paramProp.SetValue(currentValueOwner, newParam.Length == 0 ? null : newParam);
+
+                exactScopeList.Add(actualParamName);
+                
+                removedScope = string.Join(':', exactScopeList);
+                return true;
+            }
+
+            currentValue = currentProperty.GetValue(currentValueOwner) as ReportScope;
+
+            if (currentValue is null)
+            {
+                removedScope = null;
+                return false;
+            }
+
+            exactScopeList.Add(currentProperty.Name);
+        }
+
+        currentProperty?.SetValue(currentValueOwner, null);
+
+        removedScope = string.Join(':', exactScopeList);
+        return true;
     }
 
     public static bool TryParse(
         [NotNullWhen(true)] string? scope,
         [NotNullWhen(true)] out ReportScopeSet? reportScopeSet,
-        [NotNullWhen(true)] out string? addedScope)
+        [NotNullWhen(true)] out string? addedScope,
+        out string? specificValueIssue)
     {
         if (scope is null)
         {
             reportScopeSet = null;
             addedScope = null;
+            specificValueIssue = null;
             return false;
         }
 
+        var addedScopeList = new List<string>();
+
+        var scopeSet = new ReportScopeSet();
+
         var scopePath = scope.Split(':');
+        
+        var subScopeOwner = (ReportScope)scopeSet;
         var currentProperty = default(PropertyInfo);
+        var currentSubScope = default(ReportScope);
 
         for (var i = 0; i < scopePath.Length; i++)
         {
@@ -105,20 +220,59 @@ public record ReportScopeSet : ReportScope
 
             if (i == 0)
             {
-                currentProperty = typeof(ReportScopeSet).GetProperty(s);
+                currentProperty = typeof(ReportScopeSet).GetProperty(s, BindingAttr);
             }
             else if (currentProperty is not null)
             {
-                currentProperty = currentProperty.PropertyType.GetProperty(s);
+                currentProperty = currentProperty.PropertyType.GetProperty(s, BindingAttr);
             }
             else
             {
-                throw new Exception();
+                throw new Exception($"Index {i} has null property.");
             }
+
+            if (currentProperty is null)
+            {
+                if (currentSubScope is null)
+                {
+                    // When the scope is not correct at the very first layer
+                    reportScopeSet = null;
+                    addedScope = null;
+                    specificValueIssue = null;
+                    return false;
+                }
+
+                var type = currentSubScope.GetType();
+
+                if (!type.IsSubclassOf(typeof(ReportScopeWithParam)))
+                {
+                    // Scope is partically correct, but not completely
+                    reportScopeSet = null;
+                    addedScope = null;
+                    specificValueIssue = s;
+                    return false;
+                }
+
+                var paramProp = type.GetProperty(nameof(ReportScopeWithParam.Param)) ?? throw new Exception("Param couldn't be found");
+                
+                addedScopeList.Add(s);
+
+                paramProp.SetValue(currentSubScope, new string[] { s });
+
+                continue; // or break?
+            }
+            
+            currentSubScope = Activator.CreateInstance(currentProperty.PropertyType) as ReportScope;
+            currentProperty.SetValue(subScopeOwner, currentSubScope);
+            subScopeOwner = currentSubScope;
+            
+            addedScopeList.Add(currentProperty.Name);
         }
 
-        reportScopeSet = new();
-
-        throw new NotImplementedException();
+        addedScope = string.Join(':', addedScopeList);
+        reportScopeSet = scopeSet;
+        specificValueIssue = null;
+        
+        return true;
     }
 }
