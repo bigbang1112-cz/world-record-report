@@ -288,15 +288,6 @@ public class ReportService
 
         foreach (var reportChannel in await _discordBotUnitOfWork.ReportChannels.GetAllAsync(cancellationToken))
         {
-            var scopeSet = new ReportScopeSet()
-            {
-                TM2020 = new(),
-                TMUF = new(),
-                TM2 = new(),
-            };
-
-            reportChannel.Scope = scopeSet.ToJson();
-
             if (!string.Equals(reportChannel.JoinedGuild.Bot.Guid.ToString(), "e7593b6b-d8f1-4caa-b950-01a8437662d0")
               || string.IsNullOrWhiteSpace(reportChannel.Scope))
             {
@@ -422,7 +413,7 @@ public class ReportService
                 foreach (var param in scopeWithParam.Param)
                 {
                     // That the parameter just starts with the wanted scope is enough, as Param scope cannot have child scopes
-                    if (scope.StartsWith(param))
+                    if (scope.StartsWith(param, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
@@ -436,13 +427,26 @@ public class ReportService
                 return false;
             }
 
+            // Temp for further check
+            var scopeObjLayerBefore = scopeObjLayer;
+
             scopeObjLayer = prop.GetValue(scopeObjLayer) as ReportScope;
 
             // If report scope is simply not present
             if (scopeObjLayer is null)
             {
-                // Report if it's at least the root scope
-                return scopeObjLayer is not ReportScopeSet;
+                // All empty values of ReportScopeSet do not allow reporting at all - it's a special case
+                if (scopeTypeLayer == typeof(ReportScopeSet))
+                {
+                    return false;
+                }
+
+                // Possibly check for all properties of scopeTypeLayer for scopeObjLayerBefore
+                // If they are all null, then the report is allowed
+                return scopeTypeLayer.GetProperties()
+                    .Where(x => x.PropertyType.IsSubclassOf(typeof(ReportScope)))
+                    .Select(x => x.GetValue(scopeObjLayerBefore) as ReportScope)
+                    .All(x => x is null);
             }
 
             scopeTypeLayer = prop.PropertyType;
