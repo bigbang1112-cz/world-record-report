@@ -9,16 +9,16 @@
         </div>
     </header>
     <section class="section">
-        <div>Login</div>
+        <a class="button" href="login" style="width: 20rem; font-size: 3rem"><b>Login</b></a>
     </section>
     <nav class="section">
-        <a class="button" href="/">Home</a>
-        <a class="button @(User?.Identity?.IsAuthenticated == true ? "" : "disabled")" href="webhooks">Webhooks</a>
-        <a class="button button-tmwr" href="tmwr">&nbsp;</a>
+        <Button Href="/" Id="NavHome">Home</Button>
+        <Button Href="webhooks" Id="NavWebhooks" Class="@(User?.Identity?.IsAuthenticated == true ? "" : "disabled")">Webhooks</Button>
+        <Button Href="tmwr" Id="NavTMWR" Class="button-tmwr">&nbsp;</Button>
         <AuthorizeView Roles="SuperAdmin, Admin">
-            <a class="button button-orange" href="admin">Admin</a>
+            <Button Href="admin" Id="NavAdmin" Class="button-orange">Admin</Button>
         </AuthorizeView>
-        <a class="button align-bottom" href="swagger">API</a>
+        <Button Href="swagger" Id="NavAPI" Class="align-bottom">API</Button>
     </nav>
     <main class="section">
         @Body

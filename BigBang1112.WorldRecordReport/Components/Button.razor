@@ -1,0 +1,37 @@
+﻿@inject IJSRuntime JS
+
+<ErrorBoundary>
+    <a id="wrrbutton-@Id" class="button @Class" href="@Href" style="@Style" onclick="replaceWithLoading();">
+        <span class="button-content">
+            @ChildContent
+        </span>
+        <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+    </a>
+</ErrorBoundary>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public string? Href { get; set; }
+
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter]
+    public string? Style { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            return;
+        }
+
+        await JS.InvokeVoidAsync("replaceWithPrevious", $"wrrbutton-{Id}");
+    }
+}
