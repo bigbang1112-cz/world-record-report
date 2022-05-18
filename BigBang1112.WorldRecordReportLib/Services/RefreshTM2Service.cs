@@ -181,7 +181,7 @@ public class RefreshTM2Service : RefreshService
 
         foreach (var (login, model) in loginModels)
         {
-            if (loginNicknameDictionary.TryGetValue(login, out string? nickname))
+            if (!loginNicknameDictionary.TryGetValue(login, out string? nickname))
             {
                 continue;
             }
@@ -194,7 +194,7 @@ public class RefreshTM2Service : RefreshService
 
             if (string.Equals(model.Nickname, nickname))
             {
-                continue;                
+                continue;
             }
             
             var latestNicknameChange = await _wrUnitOfWork.NicknameChanges.GetLatestByLoginAsync(model, cancellationToken);
