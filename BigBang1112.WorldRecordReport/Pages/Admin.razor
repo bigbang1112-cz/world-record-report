@@ -7,7 +7,7 @@
 @inject IDiscordWebhookService _discordWebhookService
 @inject TmwrDiscordBotService _tmwr
 
-<button class="button">Override Discord commands</button>
+<button class="button" @onclick="OverrideDiscordCommandsAsync">Override Discord commands</button>
 
 <input type="text" class="textbox" @bind="command" />
 
@@ -16,6 +16,11 @@
 @code {
     private string? command;
     private bool sending;
+
+    private async Task OverrideDiscordCommandsAsync()
+    {
+        await _tmwr.OverwriteGuildApplicationCommandsAsync();
+    }
 
     private async Task SendAsync()
     {
@@ -46,7 +51,7 @@
                 await ReportAsync(partsEnumerator);
                 break;
             case "commandoverride":
-                await _tmwr.OverwriteApplicationCommandsAsync();
+                await _tmwr.OverwriteGuildApplicationCommandsAsync();
                 break;
         }
     }
