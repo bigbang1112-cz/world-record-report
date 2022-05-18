@@ -20,6 +20,7 @@ public sealed record ReportScopeSet : ReportScope
     public ReportScopeTM2020? TM2020 { get; init; }
     public ReportScopeTMUF? TMUF { get; init; }
     public ReportScopeTM2? TM2 { get; init; }
+    public ReportScopeNews? News { get; init; }
 
     public static IEnumerable<string> GetAllPossibleReportScopes()
     {
@@ -90,9 +91,35 @@ public sealed record ReportScopeSet : ReportScope
         throw new NotImplementedException();
     }
 
-    public bool TryAdd(string? scope, [NotNullWhen(true)] out string? addedScope)
+    public bool TryAdd(string scope, [NotNullWhen(true)] out string? addedScope)
     {
         throw new NotImplementedException();
+
+        _ = scope ?? throw new ArgumentNullException(nameof(scope));
+
+        var scopePath = scope.Split(':');
+        
+        var currentProperty = default(PropertyInfo);
+
+        for (var i = 0; i < scopePath.Length; i++)
+        {
+            var s = scopePath[i];
+
+            if (i == 0)
+            {
+                currentProperty = typeof(ReportScopeSet).GetProperty(s, BindingAttr);
+            }
+            else if (currentProperty is not null)
+            {
+                currentProperty = currentProperty.PropertyType.GetProperty(s, BindingAttr);
+            }
+            else
+            {
+                throw new Exception($"Index {i} has null property.");
+            }
+        }
+
+        
     }
 
     public bool TryRemove(string scope, [NotNullWhen(true)] out string? removedScope)
