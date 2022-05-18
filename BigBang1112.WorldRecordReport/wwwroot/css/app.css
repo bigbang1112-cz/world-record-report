@@ -22,6 +22,7 @@ body {
 header {
     grid-column: 1 / span 2;
     display: flex;
+    justify-content: center;
 }
 
 section {
