@@ -83,7 +83,7 @@ public partial class ReportCommand
                 {
                     return specificValueIssue is null
                         ? Respond("Invalid scope")
-                        : Respond("Invalid scope", $"Sub-scope '**{specificValueIssue}**' is not valid.");
+                        : Respond("Invalid scope", $"Sub-scope `{specificValueIssue}` is not valid.");
                 }
             }
             else if (!reportScopeSet.TryAdd(Scope, out fullScopeName)) // Try update the scope set
@@ -110,7 +110,7 @@ public partial class ReportCommand
             await _discordBotUnitOfWork.SaveAsync();
 
             return Respond(title: "Subscribed to reports!",
-                description: $"Subscribed to '**{fullScopeName}**' reports in {textChannel.Mention}.\nYou can verify your scopes with the '**/report scopes**' command.", ephemeral: false);
+                description: $"Subscribed to `{fullScopeName}` reports in {textChannel.Mention}.\nYou can verify your scopes with the '**/report scopes**' command.", ephemeral: false);
         }
 
         private async Task<ReportChannelModel?> GetReportChannelAsync(SocketTextChannel textChannel)

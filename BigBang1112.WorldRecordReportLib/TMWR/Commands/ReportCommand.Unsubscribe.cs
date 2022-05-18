@@ -79,7 +79,7 @@ public partial class ReportCommand
 
             if (!reportScopeSet.TryRemove(Scope, out string? fullScopeName))
             {
-                return Respond(description: $"Cannot unsubscribe from the report scope '**{Scope}**' in {textChannel.Mention}.");
+                return Respond(description: $"Cannot unsubscribe from the report scope `{Scope}` in {textChannel.Mention}.");
             }
 
             var hasAnyScopeAllowed = false;
@@ -98,7 +98,7 @@ public partial class ReportCommand
             await _discordBotUnitOfWork.SaveAsync();
 
             return hasAnyScopeAllowed
-                ? Respond("Unsubscribed from reports.", $"Unsubscribed from report scope '**{fullScopeName}**' in {textChannel.Mention}.\nYou can verify your scopes with the '**/report scopes**' command.", ephemeral: false)
+                ? Respond("Unsubscribed from reports.", $"Unsubscribed from report scope `{fullScopeName}` in {textChannel.Mention}.\nYou can verify your scopes with the '**/report scopes**' command.", ephemeral: false)
                 : Respond(description: $"Unsubscribed from all reports in {textChannel.Mention}.", ephemeral: false);
         }
 
