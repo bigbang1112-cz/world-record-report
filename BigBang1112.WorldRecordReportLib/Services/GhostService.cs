@@ -73,6 +73,23 @@ public class GhostService : IGhostService
         return response.Content.Headers.LastModified.GetValueOrDefault(DateTimeOffset.UtcNow);
     }
 
+    public async Task<DateTimeOffset?> DownloadGhostTimestampAsync(string replayUrl)
+    {
+        _logger.LogInformation("Downloading timestamp of {replayUrl}...", replayUrl);
+
+        using var response = await _http.HeadAsync(replayUrl);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogInformation("Ghost not downloaded (status code: {code}). Using null instead.", response.StatusCode);
+
+            // access denied or not found
+            return null;
+        }
+
+        return response.Content.Headers.LastModified;
+    }
+
     public string GetGhostFullPath(string mapUid, int timeInMilliseconds, string login)
     {
         return _fileHostService.GetClosedFilePath("Ghosts", GetGhostFileName(mapUid, timeInMilliseconds, login));

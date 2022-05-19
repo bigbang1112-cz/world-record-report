@@ -65,8 +65,8 @@ public class ReportService
             .WithButton("Details", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Primary)
             .WithButton("Previous", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}-prev"), Discord.ButtonStyle.Secondary)
             .WithButton("Compare with previous", DiscordBotService.CreateCustomId($"comparewrs-{wr.Guid.ToString().Replace('-', '_')}-prev"), Discord.ButtonStyle.Secondary)
-            .WithButton("Checkpoints", DiscordBotService.CreateCustomId($"checkpoints-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Secondary, disabled: true)
-            .WithButton("Inputs", DiscordBotService.CreateCustomId($"inputs-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Secondary, disabled: true)
+            .WithButton("History", DiscordBotService.CreateCustomId($"historywr-{wr.Map.MapUid.Replace('-', '_')}"), Discord.ButtonStyle.Secondary)
+            .WithButton("Map info", DiscordBotService.CreateCustomId($"mapinfo-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Secondary)
             .Build();
 
         await ReportToAllScopedDiscordBotsAsync(report, botEmbeds, components, scope, cancellationToken);
@@ -270,7 +270,7 @@ public class ReportService
     private static DateTime? GetTimestamp<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull => record switch
     {
         TmxReplay tmxReplay => tmxReplay.ReplayAt,
-        //TM2Record tm2Record => tm2Record.DrivenAt,
+        TM2Record tm2Record => tm2Record.Timestamp?.UtcDateTime,
         TM2020Record tm2020Record => tm2020Record.Timestamp,
         _ => null
     };

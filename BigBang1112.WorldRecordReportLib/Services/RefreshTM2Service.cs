@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 
 using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
 using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
+using System.Runtime.CompilerServices;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
@@ -327,11 +328,15 @@ public class RefreshTM2Service : RefreshService
         var map = wrHistory.Key;
 
         var top10Recs = leaderboardFromApi.Records
-            .Select(x => new TM2Record(x.Rank, x.Login, x.Time, x.Nickname, x.ReplayUrl))
-            .ToList();
+            .Select(x => new TM2Record(x.Rank, x.Login, x.Time, x.Nickname, x.ReplayUrl));
 
         // Scary to run in parallel
-        await DownloadMissingGhostsAsync(mapUid, top10Recs, cancellationToken);
+
+
+        var timestamps = await DownloadMissingGhostsAsync(mapUid, top10Recs, cancellationToken)
+            .ToDictionaryAsync(x => x.Item1, x => x.Item2, cancellationToken);
+
+        top10Recs = top10Recs.Select(x => timestamps.TryGetValue(x, out var timestamp) ? x with { Timestamp = timestamp } : x);
 
         var times = leaderboardFromApi.Times
             .Select(x => new UniqueRecord(x.time != -1 ? new TimeInt32(x.time) : null, x.count));
@@ -342,6 +347,11 @@ public class RefreshTM2Service : RefreshService
 
         if (!leaderboardExists)
         {
+            currentLeaderboard = currentLeaderboard with
+            {
+                Records = await PopulateCurrentLeaderboardWithTimestamps(currentLeaderboard, timestamps).ToListAsync(cancellationToken)
+            };
+
             await _recordStorageService.SaveTM2LeaderboardAsync(currentLeaderboard, mapUid, zone, cancellationToken: cancellationToken);
         }
 
@@ -362,6 +372,11 @@ public class RefreshTM2Service : RefreshService
             // Not usable in paralel
             return await CheckJustWorldRecordAsync(map, currentLeaderboard.Records, loginModels, isFromManialink: false, cancellationToken);
         }
+
+        currentLeaderboard = currentLeaderboard with
+        {
+            Records = await PopulateCurrentLeaderboardWithTimestamps(currentLeaderboard, timestamps, previousLeaderboard).ToListAsync(cancellationToken)
+        };
 
         var diff = LeaderboardComparer.Compare(currentLeaderboard.Records, previousLeaderboard.Records);
         var diffTimes = LeaderboardComparer.CompareTimes(currentLeaderboard.Times, previousLeaderboard.Times);
@@ -419,6 +434,34 @@ public class RefreshTM2Service : RefreshService
         }
 
         return new RecordChangesTM2(wrChange, newCount, recordChanges, leaderboardChanges);
+    }
+
+    private async IAsyncEnumerable<TM2Record> PopulateCurrentLeaderboardWithTimestamps(
+        LeaderboardTM2 currentLeaderboard,
+        Dictionary<TM2Record, DateTimeOffset> timestamps,
+        LeaderboardTM2? previousLeaderboard = null)
+    {
+        foreach (var rec in currentLeaderboard.Records)
+        {
+            var precRec = previousLeaderboard?.Records.FirstOrDefault(x =>
+                x.Time == rec.Time
+             && string.Equals(x.Login, rec.Login)
+             && string.Equals(x.ReplayUrl, rec.ReplayUrl));
+
+            if (precRec?.Timestamp.HasValue == true)
+            {
+                yield return rec with { Timestamp = precRec.Timestamp.Value };
+            }
+            else if (rec.Timestamp is not null || rec.ReplayUrl is null || timestamps.ContainsKey(rec))
+            {
+                yield return rec;
+            }
+            else
+            {
+                yield return rec with { Timestamp = await _ghostService.DownloadGhostTimestampAsync(rec.ReplayUrl) };
+                await Task.Delay(500);
+            }
+        }
     }
 
     public async Task<RecordChangesTM2> CheckJustWorldRecordAsync(MapModel map,
@@ -545,7 +588,7 @@ public class RefreshTM2Service : RefreshService
         };
     }
 
-    private async Task DownloadMissingGhostsAsync(string mapUid, IEnumerable<TM2Record> records, CancellationToken cancellationToken = default)
+    private async IAsyncEnumerable<(TM2Record, DateTimeOffset)> DownloadMissingGhostsAsync(string mapUid, IEnumerable<TM2Record> records, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         foreach (var rec in records)
         {
@@ -554,8 +597,10 @@ public class RefreshTM2Service : RefreshService
                 continue;
             }
 
-            _ = await _ghostService.DownloadGhostAndGetTimestampAsync(mapUid, rec.ReplayUrl, rec.Time, rec.Login);
-            
+            var timestamp = await _ghostService.DownloadGhostAndGetTimestampAsync(mapUid, rec.ReplayUrl, rec.Time, rec.Login);
+
+            yield return (rec, timestamp);
+
             await Task.Delay(500, cancellationToken);
         }
     }

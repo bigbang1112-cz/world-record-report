@@ -251,7 +251,7 @@ public class Top10Command : MapRelatedWithUidCommand
                 displayName = loginModel.GetDeformattedNickname().EscapeDiscord();
             }
 
-            yield return new MiniRecord(record.Rank, record.Time.TotalMilliseconds, displayName);
+            yield return new MiniRecord(record.Rank, record.Time.TotalMilliseconds, displayName, record.Timestamp?.UtcDateTime);
         }
     }
 

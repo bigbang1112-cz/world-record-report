@@ -18,4 +18,5 @@ public interface IGhostService
     Stream? GetGhostStream(string mapUid, int timeInMilliseconds, string login);
     DateTimeOffset? GetGhostLastModified(string mapUid, int timeInMilliseconds, string login);
     bool GhostExists(string mapUid, int timeInMilliseconds, string login);
+    Task<DateTimeOffset?> DownloadGhostTimestampAsync(string replayUrl);
 }

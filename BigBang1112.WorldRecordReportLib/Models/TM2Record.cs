@@ -6,7 +6,8 @@ public record TM2Record(int Rank,
                         string Login,
                         TimeInt32 Time,
                         string? DisplayName = null,
-                        string? ReplayUrl = null) : IRecord<string>
+                        string? ReplayUrl = null,
+                        DateTimeOffset? Timestamp = null) : IRecord<string>
 {
     string IRecord<string>.PlayerId
     {

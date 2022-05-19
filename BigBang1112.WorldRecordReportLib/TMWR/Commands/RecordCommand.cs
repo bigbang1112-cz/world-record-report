@@ -183,7 +183,7 @@ public class RecordCommand : MapRelatedWithUidCommand
 
         nickname = loginModel?.GetDeformattedNickname() ?? record.Login;
 
-        return new(record.Rank, record.Time.TotalMilliseconds, nickname, record.Login, DrivenOn: null);
+        return new(record.Rank, record.Time.TotalMilliseconds, nickname, record.Login, record.Timestamp);
     }
 
     private async Task<DetailedRecord?> FindDetailedRecordFromTMUFAsync(MapModel map)
