@@ -109,6 +109,7 @@ public abstract class MapRelatedCommand : TmwrCommand
     {
         var builder = new EmbedBuilder();
         builder.WithBotFooter(map.MapUid);
+        builder.Color = new Color(map.Environment.Color[0], map.Environment.Color[1], map.Environment.Color[2]);
 
         await BuildEmbedResponseAsync(map, builder);
 
