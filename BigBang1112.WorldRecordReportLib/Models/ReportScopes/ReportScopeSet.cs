@@ -93,13 +93,16 @@ public sealed record ReportScopeSet : ReportScope
 
     public bool TryAdd(string scope, [NotNullWhen(true)] out string? addedScope)
     {
-        throw new NotImplementedException();
-
         _ = scope ?? throw new ArgumentNullException(nameof(scope));
 
         var scopePath = scope.Split(':');
-        
+        var exactScopeList = new List<string>();
+
         var currentProperty = default(PropertyInfo);
+        var currentValue = (ReportScope)this;
+        var startingObject = default(ReportScope);
+        var startingObjectOwner = default(ReportScope);
+        var startingObjectProp = default(PropertyInfo);
 
         for (var i = 0; i < scopePath.Length; i++)
         {
@@ -117,9 +120,84 @@ public sealed record ReportScopeSet : ReportScope
             {
                 throw new Exception($"Index {i} has null property.");
             }
+
+            if (currentProperty is null)
+            {
+                if (currentValue is null)
+                {
+                    addedScope = null;
+                    return false;
+                }
+
+                var type = currentValue.GetType();
+
+                if (!type.IsSubclassOf(typeof(ReportScopeWithParam)))
+                {
+                    addedScope = null;
+                    return false;
+                }
+                
+                // verify casing with attribute name
+                exactScopeList.Add(s);
+                addedScope = string.Join(':', exactScopeList);
+
+                var paramProp = type.GetProperty(nameof(ReportScopeWithParam.Param)) ?? throw new Exception("Param couldn't be found");
+                
+                if (paramProp.GetValue(currentValue) is string[] param)
+                {
+                    if (param.Contains(s, StringComparer.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+                    
+                    // verify casing with attribute name
+                    paramProp.SetValue(currentValue, param.Append(s).ToArray());
+                }
+                else
+                {
+                    // verify casing with attribute name
+                    paramProp.SetValue(currentValue, new string[] { s });
+                }
+                
+                startingObjectProp?.SetValue(startingObjectOwner, startingObject);
+
+                return true;
+            }
+
+            if (startingObject is null)
+            {
+                var temp = currentValue;
+                currentValue = currentProperty.GetValue(currentValue) as ReportScope;
+
+                if (currentValue is null)
+                {
+                    startingObject = Activator.CreateInstance(currentProperty.PropertyType) as ReportScope;
+                    startingObjectOwner = temp;
+                    startingObjectProp = currentProperty;
+
+                    currentValue = startingObject;
+                }
+            }
+            else
+            {
+                var val = Activator.CreateInstance(currentProperty.PropertyType);
+                currentProperty.SetValue(currentValue, val);
+                currentValue = val as ReportScope;
+            }
+
+            exactScopeList.Add(currentProperty.Name);
         }
 
-        
+        addedScope = string.Join(':', exactScopeList);
+
+        if (startingObject is null || startingObjectOwner is null || startingObjectProp is null)
+        {
+            return false;
+        }
+
+        startingObjectProp.SetValue(startingObjectOwner, startingObject); 
+
+        return true;
     }
 
     public bool TryRemove(string scope, [NotNullWhen(true)] out string? removedScope)
