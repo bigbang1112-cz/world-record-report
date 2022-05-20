@@ -124,24 +124,5 @@ public partial class ReportCommand
 
             return await _discordBotUnitOfWork.ReportChannels.GetByBotAndTextChannelAsync(discordBotGuid.Value, textChannel);
         }
-
-        private async Task<ReportScopeSet?> GetReportScopeSetAsync(SocketTextChannel textChannel)
-        {
-            var discordBotGuid = GetDiscordBotGuid();
-
-            if (discordBotGuid is null)
-            {
-                return null;
-            }
-
-            var reportSubscription = await _discordBotUnitOfWork.ReportChannels.GetByBotAndTextChannelAsync(discordBotGuid.Value, textChannel);
-
-            if (reportSubscription?.Scope is null)
-            {
-                return null;
-            }
-            
-            return ReportScopeSet.FromJson(reportSubscription.Scope);
-        }
     }
 }

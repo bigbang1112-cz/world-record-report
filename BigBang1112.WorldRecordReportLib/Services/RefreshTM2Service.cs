@@ -443,14 +443,14 @@ public class RefreshTM2Service : RefreshService
     {
         foreach (var rec in currentLeaderboard.Records)
         {
-            var precRec = previousLeaderboard?.Records.FirstOrDefault(x =>
+            var prevRec = previousLeaderboard?.Records.FirstOrDefault(x =>
                 x.Time == rec.Time
              && string.Equals(x.Login, rec.Login)
              && string.Equals(x.ReplayUrl, rec.ReplayUrl));
 
-            if (precRec?.Timestamp.HasValue == true)
+            if (prevRec?.Timestamp.HasValue == true)
             {
-                yield return rec with { Timestamp = precRec.Timestamp.Value };
+                yield return rec with { Timestamp = prevRec.Timestamp.Value };
             }
             else if (rec.Timestamp is not null || rec.ReplayUrl is null || timestamps.ContainsKey(rec))
             {

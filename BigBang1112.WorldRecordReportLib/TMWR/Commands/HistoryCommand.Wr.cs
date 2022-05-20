@@ -1,7 +1,4 @@
-﻿using BigBang1112.Data;
-using BigBang1112.WorldRecordReportLib.Data;
-using BigBang1112.WorldRecordReportLib.Models.Db;
-using Discord;
+﻿using Discord;
 
 namespace BigBang1112.WorldRecordReportLib.TMWR.Commands;
 
