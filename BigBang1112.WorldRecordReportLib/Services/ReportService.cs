@@ -65,8 +65,8 @@ public class ReportService
             .WithButton("Details", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Primary)
             .WithButton("Previous", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}-prev"), Discord.ButtonStyle.Secondary)
             .WithButton("Compare with previous", DiscordBotService.CreateCustomId($"comparewrs-{wr.Guid.ToString().Replace('-', '_')}-prev"), Discord.ButtonStyle.Secondary)
-            .WithButton("History", DiscordBotService.CreateCustomId($"historywr-{wr.Map.MapUid.Replace('-', '_')}"), Discord.ButtonStyle.Secondary)
-            .WithButton("Map info", DiscordBotService.CreateCustomId($"mapinfo-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Secondary)
+            .WithButton("History", DiscordBotService.CreateCustomId($"historywr-{wr.Map.MapUid}"), Discord.ButtonStyle.Secondary)
+            .WithButton("Map info", DiscordBotService.CreateCustomId($"mapinfo-{wr.Map.MapUid}"), Discord.ButtonStyle.Secondary)
             .Build();
 
         await ReportToAllScopedDiscordBotsAsync(report, botEmbeds, components, scope, cancellationToken);

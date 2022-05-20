@@ -69,6 +69,8 @@ public class TmwrDiscordBotService : DiscordBotService
         {
             "wr" => await ExecuteWrDetailsButtonAsync(messageComponent, deferer, wrGuidStr: split[2].Replace('_', '-')),
             "comparewrs" => await ExecuteCompareWrsButtonAsync(messageComponent, deferer, wrGuidStr: split[2].Replace('_', '-')),
+            "historywr" => await ExecuteHistoryWrAsync(messageComponent, deferer, split[2].Replace('_', '-')),
+            "mapinfo" => await ExecuteMapInfoAsync(messageComponent, deferer, split[2].Replace('_', '-')),
             _ => null,
         };
     }
@@ -124,5 +126,41 @@ public class TmwrDiscordBotService : DiscordBotService
     {
         return await ExecuteWrKindOfButtonAsync(wrGuidStr,
             async (wrCommand, wr) => await wrCommand.ExecuteComparePrevAsync(messageComponent, deferer, wr));
+    }
+
+    private async Task<DiscordBotMessage?> ExecuteHistoryWrAsync(SocketMessageComponent messageComponent, Deferer deferer, string mapUid)
+    {
+        using var scope = CreateCommand(out HistoryCommand.Wr? command);
+
+        if (command is null)
+        {
+            throw new Exception();
+        }
+
+        var wrUnitOfWork = scope!.ServiceProvider.GetRequiredService<IWrUnitOfWork>();
+
+        command.MapUid = mapUid;
+
+        var msg = await command.ExecuteAsync(messageComponent, deferer);
+        
+        return msg with { AlwaysPostAsNewMessage = true, Ephemeral = true };
+    }
+
+    private async Task<DiscordBotMessage?> ExecuteMapInfoAsync(SocketMessageComponent messageComponent, Deferer deferer, string mapUid)
+    {
+        using var scope = CreateCommand(out MapCommand.Info? command);
+
+        if (command is null)
+        {
+            throw new Exception();
+        }
+
+        var wrUnitOfWork = scope!.ServiceProvider.GetRequiredService<IWrUnitOfWork>();
+
+        command.MapUid = mapUid;
+
+        var msg = await command.ExecuteAsync(messageComponent, deferer);
+
+        return msg with { AlwaysPostAsNewMessage = true, Ephemeral = true };
     }
 }
