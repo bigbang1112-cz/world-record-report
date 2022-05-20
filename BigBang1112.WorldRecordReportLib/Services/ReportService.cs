@@ -119,8 +119,12 @@ public class ReportService
             .WithColor(new Discord.Color(
                 map.Environment.Color[0],
                 map.Environment.Color[1],
-                map.Environment.Color[2]))
-            .WithTimestamp(latestChange);
+                map.Environment.Color[2]));
+
+        if (latestChange.HasValue)
+        {
+            embedBuilder.Timestamp = latestChange;
+        }
 
         var embedWebhook = embedBuilder.Build();
         var embedBot = embedBuilder.WithFooter("", UrlConsts.Favicon).Build();
@@ -138,7 +142,7 @@ public class ReportService
         await ReportToAllScopedDiscordBotsAsync(report, embedBot.Yield(), null, scope, cancellationToken);
     }
 
-    private static DateTime GetLatestChange<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
+    private static DateTime? GetLatestChange<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
     {
         var dateTime = DateTime.MinValue;
 
@@ -147,7 +151,7 @@ public class ReportService
             switch (record)
             {
                 case TmxReplay tmxReplay: if (tmxReplay.ReplayAt > dateTime) dateTime = tmxReplay.ReplayAt; break;
-                case TM2Record: return DateTime.UtcNow; // TODO: add driven at to TM2Record
+                case TM2Record tm2Record: if (tm2Record.Timestamp.HasValue && tm2Record.Timestamp.Value.UtcDateTime > dateTime) dateTime = tm2Record.Timestamp.Value.UtcDateTime; break;
                 case TM2020Record tm2020Record: if (tm2020Record.Timestamp > dateTime) dateTime = tm2020Record.Timestamp; break;
             }
         }
@@ -157,7 +161,7 @@ public class ReportService
             switch (newRecord)
             {
                 case TmxReplay tmxReplay: if (tmxReplay.ReplayAt > dateTime) dateTime = tmxReplay.ReplayAt; break;
-                case TM2Record: return DateTime.UtcNow; // TODO: add driven at to TM2Record
+                case TM2Record tm2Record: if (tm2Record.Timestamp.HasValue && tm2Record.Timestamp.Value.UtcDateTime > dateTime) dateTime = tm2Record.Timestamp.Value.UtcDateTime; break;
                 case TM2020Record tm2020Record: if (tm2020Record.Timestamp > dateTime) dateTime = tm2020Record.Timestamp; break;
             }
         }
@@ -167,17 +171,12 @@ public class ReportService
             switch (record)
             {
                 case TmxReplay tmxReplay: if (tmxReplay.ReplayAt > dateTime) dateTime = tmxReplay.ReplayAt; break;
-                case TM2Record: return DateTime.UtcNow; // TODO: add driven at to TM2Record
+                case TM2Record tm2Record: if (tm2Record.Timestamp.HasValue && tm2Record.Timestamp.Value.UtcDateTime > dateTime) dateTime = tm2Record.Timestamp.Value.UtcDateTime; break;
                 case TM2020Record tm2020Record: if (tm2020Record.Timestamp > dateTime) dateTime = tm2020Record.Timestamp; break;
             }
         }
 
-        if (dateTime == DateTime.MinValue)
-        {
-            return DateTime.UtcNow;
-        }
-
-        return dateTime;
+        return dateTime == DateTime.MinValue ? null : dateTime;
     }
 
     private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(
