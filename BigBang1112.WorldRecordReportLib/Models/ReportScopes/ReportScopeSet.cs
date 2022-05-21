@@ -17,9 +17,16 @@ public sealed record ReportScopeSet : ReportScope
 
     internal static IEnumerable<string>? cachedAllPossibleReportScopes;
 
+    [ReportScopeExplanation("Reports every tracked event in TM2020")]
     public ReportScopeTM2020? TM2020 { get; init; }
+
+    [ReportScopeExplanation("Reports every tracked event in TMUF")]
     public ReportScopeTMUF? TMUF { get; init; }
+
+    [ReportScopeExplanation("Reports every tracked event in TM2")]
     public ReportScopeTM2? TM2 { get; init; }
+    
+    [ReportScopeExplanation("Reports everything new about the bot")]
     public ReportScopeNews? News { get; init; }
 
     public static IEnumerable<string> GetAllPossibleReportScopes()
