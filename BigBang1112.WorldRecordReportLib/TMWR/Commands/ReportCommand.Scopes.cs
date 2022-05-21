@@ -15,22 +15,6 @@ public partial class ReportCommand
     {
         private readonly IDiscordBotUnitOfWork _discordBotUnitOfWork;
 
-        [DiscordBotCommandOption("add", ApplicationCommandOptionType.String, "Add a report scope [ManageChannels].")]
-        public string? Add { get; set; }
-
-        internal static IEnumerable<string> AutocompleteAdd(string value)
-        {
-            return ReportScopeSet.GetReportScopesLike(value);
-        }
-
-        [DiscordBotCommandOption("remove", ApplicationCommandOptionType.String, "Remove a report scope [ManageChannels].")]
-        public string? Remove { get; set; }
-
-        internal static IEnumerable<string> AutocompleteRemove(string value)
-        {
-            return ReportScopeSet.GetReportScopesLike(value);
-        }
-
         [DiscordBotCommandOption("explain", ApplicationCommandOptionType.String, "Explain a report scope.")]
         public string? Explain { get; set; }
 
@@ -50,6 +34,11 @@ public partial class ReportCommand
 
         public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand)
         {
+            if (Explain is not null)
+            {
+                return ExecuteExplain(Explain);
+            }
+
             if (OtherChannel is not SocketTextChannel textChannel)
             {
                 if (OtherChannel is not null)
@@ -84,6 +73,13 @@ public partial class ReportCommand
 
             return Respond(title: $"Report scopes in #{textChannel.Name}",
                 description: $"```json\n{scopesFormatted}\n```");
+        }
+
+        private static DiscordBotMessage ExecuteExplain(string scope)
+        {
+            var explanation = ReportScopeSet.Explain(scope, out string? exactScope) ?? "No explanation found.";
+
+            return new DiscordBotMessage(new EmbedBuilder { Title = exactScope, Description = explanation }.Build(), ephemeral: true);
         }
 
         private async Task<ReportChannelModel?> GetReportChannelAsync(SocketTextChannel textChannel)

@@ -387,4 +387,94 @@ public sealed record ReportScopeSet : ReportScope
         
         return true;
     }
+
+    public static string? Explain(string scope, out string? exactScope)
+    {
+        var scopePath = scope.Split(':');
+
+        var scopeList = new List<string>();
+
+        var currentProperty = default(PropertyInfo);
+        var currentType = typeof(ReportScopeSet);
+
+        for (var i = 0; i < scopePath.Length; i++)
+        {
+            var s = scopePath[i];
+
+            var previousProperty = currentProperty;
+
+            if (i == 0)
+            {
+                currentProperty = typeof(ReportScopeSet).GetProperty(s, BindingAttr);
+            }
+            else if (currentProperty is not null)
+            {
+                currentType = currentProperty.PropertyType;
+                currentProperty = currentProperty.PropertyType.GetProperty(s, BindingAttr);
+            }
+            else
+            {
+                throw new Exception($"Index {i} has null property.");
+            }
+
+            if (currentProperty is null)
+            {
+                if (!currentType.IsSubclassOf(typeof(ReportScopeWithParam)) || previousProperty is null)
+                {
+                    exactScope = null;
+                    return null;
+                }
+
+                var paramScopeAtt = previousProperty.GetCustomAttribute<ReportScopeExplanationAttribute>();
+                
+                if (paramScopeAtt is null)
+                {
+                    scopeList.Add(s);
+                    exactScope = string.Join(':', scopeList);
+                    
+                    return null;
+                }
+
+                var possibleParams = previousProperty.PropertyType.GetCustomAttributes<ReportScopeParamAttribute>();
+
+                var displayValue = s;
+
+                foreach (var param in possibleParams)
+                {
+                    if (string.Equals(param.Value, s, StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayValue = param.DisplayValue;
+                        s = param.Value;
+                        break;
+                    }
+                }
+                
+                scopeList.Add(s);
+                exactScope = string.Join(':', scopeList);
+
+                return $"{paramScopeAtt.Description} (**{displayValue}**)";
+            }
+
+            scopeList.Add(currentProperty.Name);
+        }
+
+        if (currentProperty is null)
+        {
+            exactScope = null;
+            return null;
+        }
+
+        var att = currentProperty.GetCustomAttribute<ReportScopeExplanationAttribute>();
+
+        exactScope = string.Join(':', scopeList);
+
+        var additionalStr = "";
+
+        if (currentProperty.PropertyType.IsSubclassOf(typeof(ReportScopeWithParam)))
+        {
+            additionalStr = " (**all**)";
+        }
+
+        return att?.Description + additionalStr;
+    }
 }
