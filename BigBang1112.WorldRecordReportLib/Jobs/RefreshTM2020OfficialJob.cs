@@ -14,6 +14,6 @@ public class RefreshTM2020OfficialJob : IJob
 
     public async Task Execute(IJobExecutionContext context)
     {
-        await _refreshService.RefreshOfficialAsync(forceUpdate: false);
+        await _refreshService.RefreshCurrentCampaignAsync(forceUpdate: false);
     }
 }

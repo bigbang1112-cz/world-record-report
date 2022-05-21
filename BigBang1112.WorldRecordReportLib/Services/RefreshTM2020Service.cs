@@ -13,8 +13,12 @@ namespace BigBang1112.WorldRecordReportLib.Services;
 
 public class RefreshTM2020Service : RefreshService
 {
-    private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.Official)}:{nameof(ReportScopeTM2020Official.WR)}";
-    private const string ScopeOfficialChanges = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.Official)}:{nameof(ReportScopeTM2020Official.Changes)}";
+    private const string ScopeCurrentCampaignWR = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.CurrentCampaign)}:{nameof(ReportScopeTM2020CurrentCampaign.WR)}";
+    private const string ScopeCurrentCampaignChanges = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.CurrentCampaign)}:{nameof(ReportScopeTM2020CurrentCampaign.Changes)}";
+    private const string ScopePreviousCampaignsWR = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.PreviousCampaigns)}:{nameof(ReportScopeTM2020PreviousCampaigns.WR)}";
+    private const string ScopePreviousCampaignsChanges = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.PreviousCampaigns)}:{nameof(ReportScopeTM2020PreviousCampaigns.Changes)}";
+    private const string ScopeTrainingMapsWR = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.TrainingMaps)}:{nameof(ReportScopeTM2020TrainingMaps.WR)}";
+    private const string ScopeTrainingMapsChanges = $"{nameof(ReportScopeSet.TM2020)}:{nameof(ReportScopeTM2020.TrainingMaps)}:{nameof(ReportScopeTM2020TrainingMaps.Changes)}";
 
     private readonly RefreshScheduleService _refreshSchedule;
     private readonly RecordStorageService _recordStorageService;
@@ -47,9 +51,9 @@ public class RefreshTM2020Service : RefreshService
         _logger = logger;
     }
 
-    public async Task RefreshOfficialAsync(bool forceUpdate = false, CancellationToken cancellationToken = default)
+    public async Task RefreshCurrentCampaignAsync(bool forceUpdate = false, CancellationToken cancellationToken = default)
     {
-        var map = _refreshSchedule.NextTM2020OfficialMap();
+        var map = _refreshSchedule.NextTM2020CurrentCampaignMap();
 
         if (map is null)
         {
@@ -57,12 +61,12 @@ public class RefreshTM2020Service : RefreshService
             return;
         }
 
-        await RefreshAsync(map, forceUpdate, cancellationToken);
+        await RefreshAsync(map, forceUpdate, ScopeCurrentCampaignWR, ScopeCurrentCampaignChanges, cancellationToken);
     }
 
-    public async Task RefreshOfficialOldAsync(bool forceUpdate = false, CancellationToken cancellationToken = default)
+    public async Task RefreshPreviousCampaignsAsync(bool forceUpdate = false, CancellationToken cancellationToken = default)
     {
-        var map = _refreshSchedule.NextTM2020OfficialOldMap();
+        var map = _refreshSchedule.NextTM2020PreviousCampaignMap();
 
         if (map is null)
         {
@@ -70,10 +74,14 @@ public class RefreshTM2020Service : RefreshService
             return;
         }
 
-        await RefreshAsync(map, forceUpdate, cancellationToken);
+        await RefreshAsync(map, forceUpdate, ScopePreviousCampaignsWR, ScopePreviousCampaignsChanges, cancellationToken);
     }
 
-    public async Task RefreshAsync(MapModel map, bool forceUpdate = false, CancellationToken cancellationToken = default)
+    public async Task RefreshAsync(MapModel map,
+                                   bool forceUpdate = false,
+                                   string wrScope = ScopeCurrentCampaignWR,
+                                   string changesScope = ScopeCurrentCampaignChanges,
+                                   CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Refreshing TM2020 map: {map}", map.DeformattedName);
 
@@ -125,7 +133,7 @@ public class RefreshTM2020Service : RefreshService
         // Check existance of any leaderboard data in api/v1/records/tm2020/World
         if (_recordStorageService.OfficialLeaderboardExists(Game.TM2020, mapModel.MapUid))
         {
-            await CompareLeaderboardAsync(mapModel, records, loginModels, ignoredLoginNames, forceUpdate, cancellationToken);
+            await CompareLeaderboardAsync(mapModel, records, loginModels, ignoredLoginNames, forceUpdate, wrScope, changesScope, cancellationToken);
         }
         else
         {
@@ -209,6 +217,8 @@ public class RefreshTM2020Service : RefreshService
                                                Dictionary<Guid, LoginModel> loginModels,
                                                IEnumerable<string> ignoredLoginNames,
                                                bool forceUpdate,
+                                               string wrScope,
+                                               string changesScope,
                                                CancellationToken cancellationToken)
     {
         // Converts the ManiaAPI record objects to the TM2020RecordFundamental struct array
@@ -351,7 +361,7 @@ public class RefreshTM2020Service : RefreshService
 
                 if (mapModel.Campaign is null || DateTime.UtcNow - mapModel.Campaign.PublishedOn >= TimeSpan.FromDays(7))
                 {
-                    await ReportWorldRecordAsync(wrModel, removedWrs, cancellationToken);
+                    await ReportWorldRecordAsync(wrModel, removedWrs, wrScope, cancellationToken);
                 }
             }
             else // WR that has been already reported is ignored
@@ -366,6 +376,7 @@ public class RefreshTM2020Service : RefreshService
                                          currentRecordsWithoutCheated.ToDictionary(x => x.PlayerId),
                                          previousRecordsWithoutCheated.ToDictionary(x => x.PlayerId),
                                          mapModel,
+                                         changesScope,
                                          cancellationToken);
         }
     }
@@ -404,6 +415,7 @@ public class RefreshTM2020Service : RefreshService
                                               Dictionary<TPlayerId, IRecord<TPlayerId>> currentRecords,
                                               Dictionary<TPlayerId, IRecord<TPlayerId>> previousRecords,
                                               MapModel map,
+                                              string scope,
                                               CancellationToken cancellationToken) where TPlayerId : notnull
     {
         var changes = CreateLeaderboardChangesRich(diff, currentRecords, previousRecords);
@@ -413,20 +425,20 @@ public class RefreshTM2020Service : RefreshService
             return;
         }
 
-        await _reportService.ReportDifferencesAsync(changes, map, ScopeOfficialChanges, cancellationToken: cancellationToken);
+        await _reportService.ReportDifferencesAsync(changes, map, scope, cancellationToken: cancellationToken);
     }
 
-    private async Task ReportWorldRecordAsync(WorldRecordModel wr, IEnumerable<WorldRecordModel> removedWrs, CancellationToken cancellationToken)
+    private async Task ReportWorldRecordAsync(WorldRecordModel wr, IEnumerable<WorldRecordModel> removedWrs, string scope, CancellationToken cancellationToken)
     {
         _logger.LogInformation("New WR: {time} by {player}", wr.TimeInt32, wr.GetPlayerNicknameDeformatted());
 
         if (removedWrs.Any())
         {
-            await _reportService.ReportRemovedWorldRecordsAsync(wr, removedWrs, ScopeOfficialWR, cancellationToken);
+            await _reportService.ReportRemovedWorldRecordsAsync(wr, removedWrs, scope, cancellationToken);
         }
         else
         {
-            await _reportService.ReportWorldRecordAsync(wr, ScopeOfficialWR, cancellationToken);
+            await _reportService.ReportWorldRecordAsync(wr, scope, cancellationToken);
         }
     }
 

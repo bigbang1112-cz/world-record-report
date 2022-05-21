@@ -28,7 +28,7 @@ public class RefreshScheduleService
         TM2OfficialMapGroupCycle = new((mapGroups as IList<MapGroupModel>) ?? mapGroups.ToList());
     }
 
-    public MapModel? NextTM2020OfficialMap()
+    public MapModel? NextTM2020CurrentCampaignMap()
     {
         if (TM2020OfficialMapCycle is null || TM2020OfficialMapCycle.Count == 0)
         {
@@ -40,7 +40,7 @@ public class RefreshScheduleService
         return TM2020OfficialMapCycle[CurrentTM2020OfficialMap.Value];
     }
 
-    public MapModel? NextTM2020OfficialOldMap()
+    public MapModel? NextTM2020PreviousCampaignMap()
     {
         if (TM2020OfficialOldMapCycle is null || TM2020OfficialOldMapCycle.Count == 0)
         {

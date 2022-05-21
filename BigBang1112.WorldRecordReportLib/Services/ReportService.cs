@@ -352,7 +352,7 @@ public class ReportService
         {
             TM2020 = new()
             {
-                Official = new()
+                CurrentCampaign = new()
                 {
                     WR = new()
                 }

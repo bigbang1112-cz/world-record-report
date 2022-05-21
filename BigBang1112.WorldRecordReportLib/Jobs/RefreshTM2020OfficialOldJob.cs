@@ -27,6 +27,6 @@ public class RefreshTM2020OfficialOldJob : IJob
                 await _wrUnitOfWork.Maps.GetByCampaignsThatAreOverAsync(Game.TM2020));
         }
 
-        await _refreshService.RefreshOfficialOldAsync(forceUpdate: false);
+        await _refreshService.RefreshPreviousCampaignsAsync(forceUpdate: false);
     }
 }
