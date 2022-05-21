@@ -56,7 +56,7 @@ public partial class HistoryCommand
                 desc = desc[0..4000] + "...";
                 desc += "\n\n*History is too long to fit into embed description.*";
             }
-
+            
             if (map.TitlePack is not null)
             {
                 var historyStartDate = await _wrUnitOfWork.WorldRecords.GetStartingDateOfHistoryTrackingByTitlePackAsync(map.TitlePack);
@@ -112,8 +112,10 @@ public partial class HistoryCommand
                 {
                     yield return $"~~{baseStr}~~";
                 }
-
-                yield return baseStr;
+                else
+                {
+                    yield return baseStr;
+                }
 
                 i++;
             }
