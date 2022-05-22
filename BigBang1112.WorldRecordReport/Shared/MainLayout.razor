@@ -1,6 +1,8 @@
 ﻿@inherits LayoutComponentBase
 @inject IAuthorizationService AuthorizationService
 
+@inject AccountService AccountService
+
 <div class="outer-space page">
     <header class="section">
         <div class="area area-project-title">
@@ -9,7 +11,15 @@
         </div>
     </header>
     <section class="section">
-        <a class="button" href="login" style="width: 20rem; font-size: 3rem"><b>Login</b></a>
+        <AuthorizeView>
+            <Authorized>
+                Account UUID: <b style="margin-left: 0.5rem;">@Account?.Guid</b>
+                <a class="button" href="logout" style="width: 20rem; font-size: 3rem; margin-left: 2rem;"><b>Logout</b></a>
+            </Authorized>
+            <NotAuthorized>
+                <a class="button" href="login" style="width: 20rem; font-size: 3rem"><b>Login</b></a>
+            </NotAuthorized>
+        </AuthorizeView>
     </section>
     <nav class="section">
         <Button Href="/" Id="NavHome">Home</Button>
@@ -35,12 +45,17 @@
     private Task<AuthenticationState>? AuthenticationState { get; set; }
 
     private ClaimsPrincipal? User { get; set; }
+    private AccountModel? Account { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        if (AuthenticationState is not null)
+        if (AuthenticationState is null)
         {
-            User = (await AuthenticationState).User;
+            return;
         }
+
+        User = (await AuthenticationState).User;
+
+        Account = await AccountService.GetAccountAsync();
     }
 }
