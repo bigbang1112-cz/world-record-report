@@ -1,0 +1,192 @@
+﻿@page "/webhooks"
+@page "/webhooks/{id}"
+
+@attribute [Authorize]
+
+@inject WrAuthService WrAuthService
+@inject AccountService AccountService
+@inject NavigationManager NavManager
+@inject IWrUnitOfWork WrUnitOfWork
+@inject IDiscordWebhookService DiscordWebhookService
+@inject ILogger<Webhooks> Logger
+
+<div style="margin: 1rem">
+    <h2 style="margin-bottom:1rem">Webhooks</h2>
+
+    <div style="display:flex">
+        <div style="width: 40%">
+            <ul>
+                @if (webhooks is not null)
+                {
+                    foreach (var webhook in webhooks)
+                    {
+                        <li style="display:flex">
+                            <Checkbox Checked="!webhook.Disabled" Style="width:3rem" CheckedChanged="enabled => UpdateEnableAsync(webhook.Guid, enabled)"></Checkbox>
+                            <a href="webhooks/@webhook.Guid" class="button button-flex" style="justify-content: left">
+                                <img class="icon" src="_content/BigBang1112.Essentials.Razor/img/discord_small.png" style="width: 1rem;margin-left: 1rem" />
+                                <span style="margin-left: 1rem">@webhook.DisplayName</span>
+                            </a>
+                            <button class="button" style="width:3rem">
+                                <i class="fas fa-bell"></i>
+                            </button>
+                            <button class="button" style="width:3rem">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </li>
+                    }
+                    
+                    <li style="margin-top:0.5rem">
+                        <button class="button" disabled="@(webhooks.Count >= 5)" @onclick="CreateWebhookAsync">Create new webhook</button>
+                    </li>
+                }
+            </ul>
+        </div>
+        <div style="width: 60%; padding-left: 1rem">
+            @if (Webhook is not null)
+            {
+                <table style="width: 100%;">
+					<colgroup>
+						<col style="width:15rem"/>
+						<col />
+					</colgroup>
+					<tbody>
+						<tr>
+							<td>Webhook UUID:</td>
+							<td><small style="font-size: 1rem">@Webhook.Guid</small></td>
+						</tr>
+						<tr>
+							<td>Display name:</td>
+							<td><input type="text" class="textbox" @bind="Webhook.DisplayName" style="@(string.IsNullOrWhiteSpace(Webhook.DisplayName) ? "background-color: indianred" : "")" /></td>
+						</tr>
+						<tr>
+							<td>Webhook URL:</td>
+							<td><input type="password" class="textbox" @bind="Webhook.Url" style="@(string.IsNullOrWhiteSpace(Webhook.Url) ? "background-color: indianred" : "")" /></td>
+						</tr>
+					</tbody>
+				</table>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private AccountModel? account;
+    private IList<DiscordWebhookModel>? webhooks;
+
+    [Parameter]
+    public string? Id { get; set; }
+
+    public Guid? WebhookGuid => Guid.TryParse(Id, out var guid) ? guid : null;
+
+    public DiscordWebhookModel? Webhook => Id is not null ? webhooks?.FirstOrDefault(x => x.Guid == WebhookGuid) : null;
+
+    public string? DisplayNameOnCreate { get; set; } = "Webhook";
+    public string? WebhookUrlOnCreate { get; set; }
+
+    public bool NotifyWhenAddedOnCreate { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var (account, webhooksEnumerable) = await WrAuthService.GetDiscordWebhooksAsync();
+
+        webhooks = webhooksEnumerable as IList<DiscordWebhookModel> ?? webhooksEnumerable?.ToList();
+    }
+
+    private async Task CreateWebhookAsync()
+    {
+        var (account, associatedAccount) = await WrAuthService.GetOrCreateAssociatedAccountAsync();
+
+        if (associatedAccount is null)
+        {
+            return;
+        }
+
+        var webhookLimitReached = await WrAuthService.HasReachedWebhookLimitAsync(associatedAccount);
+
+        if (webhookLimitReached)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(DisplayNameOnCreate) || string.IsNullOrWhiteSpace(WebhookUrlOnCreate))
+        {
+            return;
+        }
+
+        var webhook = new DiscordWebhookModel
+        {
+            Guid = Guid.NewGuid(),
+            Account = associatedAccount,
+            DisplayName = DisplayNameOnCreate,
+            Url = WebhookUrlOnCreate,
+            //Scope =
+        };
+
+        using var client = DiscordWebhookService.CreateWebhookClient(webhook.Url, out bool isDeleted);
+
+        if (client is null)
+        {
+            return;
+        }
+
+        await WrUnitOfWork.SaveAsync();
+
+        NavManager.NavigateTo($"/webhooks/{webhook.Guid}");
+    }
+
+	private async Task UpdateEnableAsync(Guid guid, bool enabled)
+	{
+		// Put this into WrAuthService
+
+		var state = enabled ? "enable" : "disable";
+
+		Logger.LogInformation("Webhook {guid}: '{state}' requested.", guid, state);
+
+		var webhook = await GetAndAuthenticateWebhookAsync(guid);
+
+		if (webhook is null)
+		{
+			// Webhook should be removed from the list
+			return;
+		}
+
+		webhook.Disabled = !enabled;
+
+		Logger.LogInformation("Webhook {guid}: State changed to {state} successfully.", guid, state);
+
+		await WrAuthService.SaveAsync();
+
+		//var enable = (bool)checkedValue;
+
+		//using var response = await http.PostAsync(@navigator.BaseUri + $"api/v1/report/webhook/discord/{guid}/" + (enable ? "enable" : "disable"), null);
+	}
+
+	private async Task<DiscordWebhookModel?> GetAndAuthenticateWebhookAsync(Guid guid)
+	{
+		// Check if it still exists
+		var webhook = await WrUnitOfWork.DiscordWebhooks.GetByGuidAsync(guid);
+
+		if (webhook is null)
+		{
+			return null;
+		}
+
+		Logger.LogInformation("Webhook {guid}: Exists.", guid);
+
+		account = await AccountService.GetAccountAsync();
+        
+		if (account is null || account.Guid != webhook.Account.Guid)
+		{
+			var accountGuid = account?.Guid.ToString() ?? "[no guid]";
+			var webhookOwnerAccountGuid = webhook.Account.Guid;
+
+			Logger.LogWarning("Webhook {guid}: Account doesn't match the webhook owner ({accountGuid} != {webhookOwnerAccountGuid}).", guid, accountGuid, webhookOwnerAccountGuid);
+
+			return null;
+		}
+
+		Logger.LogInformation("Webhook {guid}: Account matches the owner.", guid);
+
+		return webhook;
+	}
+}
