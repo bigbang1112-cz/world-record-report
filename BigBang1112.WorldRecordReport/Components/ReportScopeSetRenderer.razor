@@ -1,0 +1,28 @@
+﻿@using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
+@using System.Reflection;
+
+<div style="background-color: rgba(41,42,45); border-radius: 0.3rem;overflow: scroll;overflow: auto;max-height: 25rem">
+    @if (Scopes is not null)
+    {
+        <ul class="list" style="margin-left:-1rem;padding-top:1rem;padding-bottom:1rem">
+            @foreach (var scope in Scopes)
+            {
+                <li><ReportScopeRenderer Scope="scope"></ReportScopeRenderer></li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+
+    public IEnumerable<PropertyInfo>? Scopes { get; set; }
+
+    [Parameter]
+    public ReportScopeSet? Object { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Scopes = typeof(ReportScopeSet).GetProperties()
+            .Where(x => x.PropertyType.IsSubclassOf(typeof(ReportScope)));
+    }
+}

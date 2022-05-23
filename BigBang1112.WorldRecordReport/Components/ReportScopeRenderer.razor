@@ -1,0 +1,29 @@
+﻿@using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
+@using System.Reflection;
+
+<Checkbox Style="width:3rem;display:inline" Label="@Scope?.Name" DisabledText="@(Scope?.DeclaringType == typeof(ReportScopeSet) ? null : "\u00A0")"></Checkbox>
+
+@if (Scopes?.Any() == true)
+{
+    <ul class="list">
+        @foreach (var scope in Scopes)
+        {
+            <li><ReportScopeRenderer Scope="scope"></ReportScopeRenderer></li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter]
+    public PropertyInfo? Scope { get; set; }
+
+    [Parameter]
+    public ReportScope? ScopeOwnerObject { get; set; }
+
+    public IEnumerable<PropertyInfo>? Scopes => Scope?.PropertyType.GetProperties().Where(x => x.PropertyType.IsSubclassOf(typeof(ReportScope)));
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+}

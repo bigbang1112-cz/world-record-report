@@ -1,5 +1,7 @@
 ﻿@page "/webhooks"
-@page "/webhooks/{id}"
+@page "/webhooks/{id:guid}"
+
+@using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 
 @attribute [Authorize]
 
@@ -9,40 +11,71 @@
 @inject IWrUnitOfWork WrUnitOfWork
 @inject IDiscordWebhookService DiscordWebhookService
 @inject ILogger<Webhooks> Logger
+@inject IJSRuntime JS
 
 <div style="margin: 1rem">
     <h2 style="margin-bottom:1rem">Webhooks</h2>
 
     <div style="display:flex">
-        <div style="width: 40%">
-            <ul>
-                @if (webhooks is not null)
-                {
-                    foreach (var webhook in webhooks)
+        @if (webhooks?.Any() == true)
+        {
+            <div style="width: 40%;padding-right:1rem">
+                <ul>
+                    @foreach (var webhook in webhooks)
                     {
                         <li style="display:flex">
                             <Checkbox Checked="!webhook.Disabled" Style="width:3rem" CheckedChanged="enabled => UpdateEnableAsync(webhook.Guid, enabled)"></Checkbox>
-                            <a href="webhooks/@webhook.Guid" class="button button-flex" style="justify-content: left">
-                                <img class="icon" src="_content/BigBang1112.Essentials.Razor/img/discord_small.png" style="width: 1rem;margin-left: 1rem" />
+                            <a href="webhooks/@webhook.Guid" class="button button-flex" style="justify-content: left" @onclick="() => IsCreate = false">
+                                <img class="icon" src="_content/BigBang1112.Essentials.Razor/img/discord_mini.png" style="width: 1rem;margin-left: 1rem" />
                                 <span style="margin-left: 1rem">@webhook.DisplayName</span>
                             </a>
-                            <button class="button" style="width:3rem">
+                            <button class="button" style="width:3rem" @onclick="() => PingWebhookAsync(webhook.Guid)">
                                 <i class="fas fa-bell"></i>
                             </button>
-                            <button class="button" style="width:3rem">
+                            <button class="button" style="width:3rem" @onclick="() => AskToDeleteWebhookAsync(webhook.Guid, webhook.DisplayName)">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </li>
                     }
-                    
-                    <li style="margin-top:0.5rem">
-                        <button class="button" disabled="@(webhooks.Count >= 5)" @onclick="CreateWebhookAsync">Create new webhook</button>
-                    </li>
-                }
-            </ul>
-        </div>
-        <div style="width: 60%; padding-left: 1rem">
-            @if (Webhook is not null)
+
+                    @if (!IsCreate)
+                    {
+                        <li style="margin-top:0.5rem">
+                            <a href="webhooks" class="button @(webhooks.Count >= 5 ? "disabled" : "")" @onclick="() => IsCreate = true">Create a new webhook</a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+        else if (!IsCreate)
+        {
+            <div style="width: 40%">
+                <button class="button" @onclick="() => IsCreate = true">Create a new webhook</button>
+            </div>
+        }
+        <div style="width: 60%;">
+            @if (IsCreate)
+            {
+                <table style="width: 100%;">
+					<colgroup>
+						<col style="width:15rem"/>
+						<col />
+					</colgroup>
+					<tbody>
+						<tr>
+							<td>Display name:</td>
+							<td><input type="text" class="textbox" @bind="DisplayNameOnCreate" style="@(string.IsNullOrWhiteSpace(DisplayNameOnCreate) ? "background-color: indianred" : "")" /></td>
+						</tr>
+						<tr>
+							<td>Webhook URL:</td>
+							<td><input type="password" class="textbox" @bind="WebhookUrlOnCreate" style="@(string.IsNullOrWhiteSpace(WebhookUrlOnCreate) ? "background-color: indianred" : "")" /></td>
+						</tr>
+					</tbody>
+				</table>
+                <ReportScopeSetRenderer Object="ScopeSet"></ReportScopeSetRenderer>
+                <button class="button" disabled="@(webhooks?.Count >= 5)" @onclick="CreateWebhookAsync">Create a new webhook</button>
+            }
+            else if (Webhook is not null)
             {
                 <table style="width: 100%;">
 					<colgroup>
@@ -64,6 +97,7 @@
 						</tr>
 					</tbody>
 				</table>
+                <button class="button" @onclick="UpdateWebhookAsync">Update</button>
             }
         </div>
     </div>
@@ -73,19 +107,31 @@
     private AccountModel? account;
     private IList<DiscordWebhookModel>? webhooks;
 
+    private const string WebhookDefaultName = "Webhook";
+
+    public bool IsCreate { get; set; }
+
     [Parameter]
-    public string? Id { get; set; }
+    public Guid? Id { get; set; }
 
-    public Guid? WebhookGuid => Guid.TryParse(Id, out var guid) ? guid : null;
+    public DiscordWebhookModel? Webhook => Id is not null ? webhooks?.FirstOrDefault(x => x.Guid == Id) : null;
 
-    public DiscordWebhookModel? Webhook => Id is not null ? webhooks?.FirstOrDefault(x => x.Guid == WebhookGuid) : null;
-
-    public string? DisplayNameOnCreate { get; set; } = "Webhook";
+    public string? DisplayNameOnCreate { get; set; } = WebhookDefaultName;
     public string? WebhookUrlOnCreate { get; set; }
-
     public bool NotifyWhenAddedOnCreate { get; set; }
+    public ReportScopeSet ScopeSet { get; set; } = new ReportScopeSet();
 
     protected override async Task OnInitializedAsync()
+    {
+        await UpdateWebhooksAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        StateHasChanged();
+    }
+
+    private async Task UpdateWebhooksAsync()
     {
         var (account, webhooksEnumerable) = await WrAuthService.GetDiscordWebhooksAsync();
 
@@ -129,64 +175,159 @@
             return;
         }
 
+        await WrUnitOfWork.DiscordWebhooks.AddAsync(webhook);
+
         await WrUnitOfWork.SaveAsync();
 
-        NavManager.NavigateTo($"/webhooks/{webhook.Guid}");
+        await UpdateWebhooksAsync();
+
+        IsCreate = false;
+        DisplayNameOnCreate = WebhookDefaultName;
+        WebhookUrlOnCreate = null;
+
+        NavManager.NavigateTo($"webhooks/{webhook.Guid}");
     }
 
-	private async Task UpdateEnableAsync(Guid guid, bool enabled)
-	{
-		// Put this into WrAuthService
+    private async Task UpdateEnableAsync(Guid guid, bool enabled)
+    {
+        // Put this into WrAuthService
 
-		var state = enabled ? "enable" : "disable";
+        var state = enabled ? "enable" : "disable";
 
-		Logger.LogInformation("Webhook {guid}: '{state}' requested.", guid, state);
+        Logger.LogInformation("Webhook {guid}: '{state}' requested.", guid, state);
 
-		var webhook = await GetAndAuthenticateWebhookAsync(guid);
+        var webhook = await GetAndAuthenticateWebhookAsync(guid);
 
-		if (webhook is null)
-		{
-			// Webhook should be removed from the list
-			return;
-		}
+        if (webhook is null)
+        {
+            // Webhook should be removed from the list
+            return;
+        }
 
-		webhook.Disabled = !enabled;
+        webhook.Disabled = !enabled;
 
-		Logger.LogInformation("Webhook {guid}: State changed to {state} successfully.", guid, state);
+        Logger.LogInformation("Webhook {guid}: State changed to {state} successfully.", guid, state);
 
-		await WrAuthService.SaveAsync();
+        await WrAuthService.SaveAsync();
 
-		//var enable = (bool)checkedValue;
+        //var enable = (bool)checkedValue;
 
-		//using var response = await http.PostAsync(@navigator.BaseUri + $"api/v1/report/webhook/discord/{guid}/" + (enable ? "enable" : "disable"), null);
-	}
+        //using var response = await http.PostAsync(@navigator.BaseUri + $"api/v1/report/webhook/discord/{guid}/" + (enable ? "enable" : "disable"), null);
+    }
 
-	private async Task<DiscordWebhookModel?> GetAndAuthenticateWebhookAsync(Guid guid)
-	{
-		// Check if it still exists
-		var webhook = await WrUnitOfWork.DiscordWebhooks.GetByGuidAsync(guid);
+    private async Task<DiscordWebhookModel?> GetAndAuthenticateWebhookAsync(Guid guid)
+    {
+        // Check if it still exists
+        var webhook = await WrUnitOfWork.DiscordWebhooks.GetByGuidAsync(guid);
 
-		if (webhook is null)
-		{
-			return null;
-		}
+        if (webhook is null)
+        {
+            return null;
+        }
 
-		Logger.LogInformation("Webhook {guid}: Exists.", guid);
+        Logger.LogInformation("Webhook {guid}: Exists.", guid);
 
-		account = await AccountService.GetAccountAsync();
-        
-		if (account is null || account.Guid != webhook.Account.Guid)
-		{
-			var accountGuid = account?.Guid.ToString() ?? "[no guid]";
-			var webhookOwnerAccountGuid = webhook.Account.Guid;
+        account = await AccountService.GetAccountAsync();
 
-			Logger.LogWarning("Webhook {guid}: Account doesn't match the webhook owner ({accountGuid} != {webhookOwnerAccountGuid}).", guid, accountGuid, webhookOwnerAccountGuid);
+        if (account is null || account.Guid != webhook.Account.Guid)
+        {
+            var accountGuid = account?.Guid.ToString() ?? "[no guid]";
+            var webhookOwnerAccountGuid = webhook.Account.Guid;
 
-			return null;
-		}
+            Logger.LogWarning("Webhook {guid}: Account doesn't match the webhook owner ({accountGuid} != {webhookOwnerAccountGuid}).", guid, accountGuid, webhookOwnerAccountGuid);
 
-		Logger.LogInformation("Webhook {guid}: Account matches the owner.", guid);
+            return null;
+        }
 
-		return webhook;
-	}
+        Logger.LogInformation("Webhook {guid}: Account matches the owner.", guid);
+
+        return webhook;
+    }
+
+    private async Task PingWebhookAsync(Guid guid)
+    {
+        // Put this into WrAuthService
+
+        Logger.LogInformation("Webhook {guid}: Ping requested.", guid);
+
+        var webhook = await GetAndAuthenticateWebhookAsync(guid);
+
+        if (webhook is null)
+        {
+            // Webhook should be removed from the visual list
+            return;
+        }
+
+        var embed = new Discord.EmbedBuilder()
+            .WithTitle("Successfully pinged!")
+            .WithFooter("Powered by wr.bigbang1112.cz", BigBang1112.WorldRecordReportLib.Services.DiscordWebhookService.LogoIconUrl)
+            .Build();
+
+        var msg = await DiscordWebhookService.SendMessageAsync(webhook, snowflake => new DiscordWebhookMessageModel
+        {
+            MessageId = snowflake,
+            SentOn = DateTime.UtcNow,
+            ModifiedOn = DateTime.UtcNow,
+            Webhook = webhook
+        }, embeds: Enumerable.Repeat(embed, 1));
+
+        if (msg is null)
+        {
+            Logger.LogInformation("Webhook {guid}: Webhook cannot be reached.", guid);
+        }
+    }
+
+    public async Task AskToDeleteWebhookAsync(Guid guid, string displayName)
+    {
+        await JS.InvokeVoidAsync("deleteWebhook",
+            DotNetObjectReference.Create(this),
+            nameof(DeleteWebhookAsync),
+            guid, displayName);
+    }
+
+    [JSInvokable]
+    public async Task DeleteWebhookAsync(Guid guid)
+    {
+        var webhook = await GetAndAuthenticateWebhookAsync(guid);
+
+        if (webhook is null)
+        {
+            // Webhook should be removed from the visual list
+            return;
+        }
+
+        WrUnitOfWork.DiscordWebhooks.Delete(webhook);
+
+        await WrUnitOfWork.SaveAsync();
+
+        await UpdateWebhooksAsync();
+
+        StateHasChanged();
+
+        Logger.LogInformation("Webhook {guid}: Deleted.", guid);
+
+        //await JS.InvokeVoidAsync("showNotification", "Webhook deleted", "success");
+    }
+
+    private async Task UpdateWebhookAsync()
+    {
+        if (Webhook is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Webhook.DisplayName) || string.IsNullOrWhiteSpace(Webhook.Url))
+        {
+            return;
+        }
+
+        using var client = DiscordWebhookService.CreateWebhookClient(Webhook.Url, out bool isDeleted);
+
+        if (client is null)
+        {
+            return;
+        }
+
+        await WrAuthService.SaveAsync();
+    }
 }
