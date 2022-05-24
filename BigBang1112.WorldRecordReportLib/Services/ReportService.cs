@@ -348,34 +348,6 @@ public class ReportService
 
     private static bool WebhookShouldReport(DiscordWebhookModel webhook, string[] scopePath)
     {
-        webhook.Scope = new()
-        {
-            TM2020 = new()
-            {
-                CurrentCampaign = new()
-                {
-                    WR = new()
-                }
-            },
-            TMUF = new()
-            {
-                TMX = new()
-                {
-                    Official = new()
-                    {
-                        Changes = new()
-                    }
-                }
-            },
-            TM2 = new()
-            {
-                Nadeo = new()
-                {
-                    Changes = new() { Param = new[] { "TMLagoon@nadeo", "TMValley@nadeo" } }
-                }
-            },
-        };
-
         if (webhook.Filter is not null)
         {
             return false;

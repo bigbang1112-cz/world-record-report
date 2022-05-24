@@ -106,24 +106,6 @@
         DisplayName = explanationAtt?.DisplayName;
     }
 
-        /*protected override void OnAfterRender(bool firstRender)
-            {
-        if (!firstRender)
-        {
-        return;
-        }
-
-            if (OwnerRenderer is null)
-            {
-            Value = Scope?.GetValue(SetRenderer?.Object) as ReportScope;
-
-            if (Value is not null)
-                {
-                Checkbox?.SetWithoutEvent(true);
-        }
-    }
-    }*/
-
     public async Task UpdateEnableAsync(bool enabled, string? param = null)
     {
         if (Scope is null)
@@ -131,10 +113,20 @@
             return;
         }
 
-        Value = enabled ? Activator.CreateInstance(Scope.PropertyType) as ReportScope : null;
+        var prevValue = Value;
+
+        if (enabled)
+        {
+            Value = Activator.CreateInstance(Scope.PropertyType) as ReportScope;
+        }
 
         if (OwnerRenderer is null)
         {
+            if (!enabled)
+            {
+                Value = null;
+            }
+
             Scope.SetValue(SetRenderer?.Object, Value);
 
             if (Value is null)
@@ -160,15 +152,25 @@
             {
                 Value = scopeParam;
             }
+            else if (param is null)
+            {
+                Value = null;
+                Scope.SetValue(OwnerRenderer.Value, Value);
+            }
         }
         else
         {
+            if (!enabled)
+            {
+                Value = null;
+            }
+
             Scope.SetValue(OwnerRenderer.Value, Value);
         }
 
-        CallParam(param, enabled);
+        CallParam(param, enabled, prevValue as ReportScopeWithParam);
 
-        if (Value is null)
+        if (Value is null && param is null)
         {
             await ResetChildrenAsync();
         }
@@ -176,15 +178,20 @@
         StateHasChanged();
     }
 
-    private void CallParam(string? param, bool enabled)
+    private void CallParam(string? param, bool enabled, ReportScopeWithParam? scopeParam = null)
     {
         if (param is null)
         {
             return;
         }
 
-        if (Value is ReportScopeWithParam scopeParam)
+        if (Value is ReportScopeWithParam scopeParamValue)
         {
+            scopeParam = scopeParamValue;
+        }
+
+        if (scopeParam is not null)
+        {            
             if (enabled)
             {
                 if (scopeParam.Param is null)
@@ -213,11 +220,11 @@
         if (enabled || param is null)
         {
             Checkbox?.SetWithoutEvent(enabled);
+        }
 
-            if (ValueParams is not null && param is not null)
-            {
-                ValueParams[param] = ValueParams[param] with { Item2 = enabled };
-            }
+        if (ValueParams is not null && param is not null)
+        {
+            ValueParams[param] = ValueParams[param] with { Item2 = enabled };
         }
     }
 
@@ -231,7 +238,7 @@
         ownerRenderer.Value = enabled ? Activator.CreateInstance(ownerRenderer.Scope.PropertyType) as ReportScope : null;
 
         renderer.Scope.SetValue(ownerRenderer.Value, renderer.Value);
-        
+
         ownerRenderer.Checkbox?.SetWithoutEvent(enabled);
 
         if (ownerRenderer.OwnerRenderer is null)
@@ -251,6 +258,8 @@
 
     private async Task ResetChildrenAsync()
     {
+        ValueParams = ValueParams?.Select(x => (x.Key, x.Value with { Item2 = false }))
+            .ToDictionary(x => x.Key, x => x.Item2);
         includeChildren = false;
         StateHasChanged();
         await Task.Delay(1);

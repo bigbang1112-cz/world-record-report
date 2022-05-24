@@ -98,9 +98,21 @@
 						</tr>
 					</tbody>
 				</table>
-                <div style="font-size: 0.8rem;background-color: rgba(41,42,45);border-radius: 0.3rem;margin:0.2rem 0;padding:0.7rem 1rem;text-align:center">Ticked means that you will receive reports from this scope.<br/>If you just tick a parent scope without ticking any of the children scopes, you will receive all reports from its child scopes.</div>
-                <ReportScopeSetRenderer Object="Webhook.Scope"></ReportScopeSetRenderer>
-                <button class="button" @onclick="UpdateWebhookAsync">Save changes</button>
+                @if (Webhook.Scope is null)
+                {
+                    <div style="font-size: 0.8rem;background-color: rgba(41,42,45);border-radius: 0.3rem;margin:0.2rem 0;padding:0.7rem 1rem;text-align:center">
+                        Webhook hasn't been converted to the new scope format yet. Please wait for the conversion.
+                    </div>
+                }
+                else
+                {
+                    <div style="font-size: 0.8rem;background-color: rgba(41,42,45);border-radius: 0.3rem;margin:0.2rem 0;padding:0.7rem 1rem;text-align:center">
+                        Ticked means that you will receive reports from this scope.<br/>If you just tick a parent scope without ticking any of the children scopes, you will receive all reports from its child scopes.
+                    </div>
+
+                    <ReportScopeSetRenderer Object="Webhook.Scope"></ReportScopeSetRenderer>
+                    <button class="button" @onclick="UpdateWebhookAsync">Save changes</button>
+                }
             }
         </div>
     </div>
@@ -129,11 +141,16 @@
         await UpdateWebhooksAsync();
     }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         DisplayNameOnCreate = WebhookDefaultName;
         WebhookUrlOnCreate = null;
 
+        var temp = Id;
+        Id = null;
+        StateHasChanged();
+        await Task.Delay(1);
+        Id = temp;
         StateHasChanged();
     }
 
@@ -286,6 +303,12 @@
         if (msg is null)
         {
             Logger.LogInformation("Webhook {guid}: Webhook cannot be reached.", guid);
+            
+            await JS.InvokeVoidAsync("alert", "Ping has been processed: Fail.");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Ping has been processed: Success!");
         }
     }
 
@@ -341,5 +364,7 @@
         }
 
         await WrAuthService.SaveAsync();
+
+        await JS.InvokeVoidAsync("alert", "Webhook changes saved!");
     }
 }
