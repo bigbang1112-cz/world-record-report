@@ -1,29 +1,260 @@
 ﻿@using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
+@using BigBang1112.WorldRecordReportLib.Attributes.ReportScope;
 @using System.Reflection;
 
-<Checkbox Style="width:3rem;display:inline" Label="@Scope?.Name" DisabledText="@(Scope?.DeclaringType == typeof(ReportScopeSet) ? null : "\u00A0")"></Checkbox>
+<Checkbox
+    @ref="Checkbox"
+    Style="width:3rem;display:inline"
+    Label="@(DisplayName ?? Scope?.Name)"
+    CheckedChanged="enabled => UpdateEnableAsync(enabled)"
+    Checked="@(Value is not null)"
+    DisabledText="@(Scope?.DeclaringType == typeof(ReportScopeSet) ? null : "\u00A0")"></Checkbox>
 
-@if (Scopes?.Any() == true)
+@if (Explanation is not null)
 {
-    <ul class="list">
-        @foreach (var scope in Scopes)
-        {
-            <li><ReportScopeRenderer Scope="scope"></ReportScopeRenderer></li>
-        }
-    </ul>
+    <span title="@Explanation" style="color:#555;margin-left:0.5rem"><i class="fa-solid fa-circle-question"></i></span>
+}
+
+@if (includeChildren)
+{
+    if (ValueParams is not null)
+    {
+        <ul class="list">
+            @foreach (var (name, (displayName, enabled)) in ValueParams)
+            {
+                <li>
+                    <Checkbox
+                        Style="width:3rem;display:inline"
+                        Checked="@enabled"
+                        Label="@(displayName ?? name)"
+                        CheckedChanged="enabled => UpdateEnableAsync(enabled, name)"
+                        DisabledText="&nbsp;"></Checkbox>
+                </li>
+            }
+        </ul>
+    }
+    else if (Scopes?.Any() == true)
+    {
+        <ul class="list">
+            @foreach (var scope in Scopes)
+            {
+                <li>
+                    <ReportScopeRenderer
+                        Scope="scope"
+                        OwnerRenderer="this"
+                        SetRenderer="SetRenderer">
+                    </ReportScopeRenderer>
+                </li>
+            }
+        </ul>
+    }
 }
 
 @code {
+    private bool includeChildren = true;
+
+    public Checkbox? Checkbox { get; set; }
+
     [Parameter]
     public PropertyInfo? Scope { get; set; }
 
     [Parameter]
-    public ReportScope? ScopeOwnerObject { get; set; }
+    public ReportScopeRenderer? OwnerRenderer { get; set; }
 
-    public IEnumerable<PropertyInfo>? Scopes => Scope?.PropertyType.GetProperties().Where(x => x.PropertyType.IsSubclassOf(typeof(ReportScope)));
+    [Parameter]
+    public ReportScopeSetRenderer? SetRenderer { get; set; }
+
+    [Parameter]
+    public ReportScope? Value { get; set; }
+
+    public Dictionary<string, (string?, bool)>? ValueParams { get; set; }
+
+    public IEnumerable<PropertyInfo>? Scopes { get; set; }
+
+    public string? Explanation { get; set; }
+    public string? DisplayName { get; set; }
 
     protected override void OnInitialized()
     {
-        base.OnInitialized();
+        if (OwnerRenderer is null)
+        {
+            Value = Scope?.GetValue(SetRenderer?.Object) as ReportScope;
+        }
+        else if (OwnerRenderer.Value is not null)
+        {
+            Value = Scope?.GetValue(OwnerRenderer.Value) as ReportScope;
+
+            if (Value is ReportScopeWithParam scopeParam)
+            {
+
+            }
+        }
+
+        Scopes = Scope?.PropertyType
+            .GetProperties()
+            .Where(x => x.PropertyType.IsSubclassOf(typeof(ReportScope)));
+
+        if (Scope?.PropertyType.IsSubclassOf(typeof(ReportScopeWithParam)) == true)
+        {
+            ValueParams = Scope.PropertyType.GetCustomAttributes<ReportScopeParamAttribute>()
+                .ToDictionary(x => x.Value, x => (x.DisplayValue, (Value as ReportScopeWithParam)?.Param?.Contains(x.Value, StringComparer.OrdinalIgnoreCase) ?? false));
+        }
+
+        var explanationAtt = Scope?.GetCustomAttribute<ReportScopeExplanationAttribute>();
+
+        Explanation = explanationAtt?.Description;
+        DisplayName = explanationAtt?.DisplayName;
+    }
+
+        /*protected override void OnAfterRender(bool firstRender)
+            {
+        if (!firstRender)
+        {
+        return;
+        }
+
+            if (OwnerRenderer is null)
+            {
+            Value = Scope?.GetValue(SetRenderer?.Object) as ReportScope;
+
+            if (Value is not null)
+                {
+                Checkbox?.SetWithoutEvent(true);
+        }
+    }
+    }*/
+
+    public async Task UpdateEnableAsync(bool enabled, string? param = null)
+    {
+        if (Scope is null)
+        {
+            return;
+        }
+
+        Value = enabled ? Activator.CreateInstance(Scope.PropertyType) as ReportScope : null;
+
+        if (OwnerRenderer is null)
+        {
+            Scope.SetValue(SetRenderer?.Object, Value);
+
+            if (Value is null)
+            {
+                await ResetChildrenAsync();
+            }
+
+            return;
+        }
+
+        if (OwnerRenderer.Value is null)
+        {
+            RecursivelySetParentScopes(this, OwnerRenderer, enabled);
+
+            CallParam(param, enabled);
+
+            return;
+        }
+
+        if (Scope.GetValue(OwnerRenderer.Value) is ReportScopeWithParam scopeParam)
+        {
+            if (enabled)
+            {
+                Value = scopeParam;
+            }
+        }
+        else
+        {
+            Scope.SetValue(OwnerRenderer.Value, Value);
+        }
+
+        CallParam(param, enabled);
+
+        if (Value is null)
+        {
+            await ResetChildrenAsync();
+        }
+
+        StateHasChanged();
+    }
+
+    private void CallParam(string? param, bool enabled)
+    {
+        if (param is null)
+        {
+            return;
+        }
+
+        if (Value is ReportScopeWithParam scopeParam)
+        {
+            if (enabled)
+            {
+                if (scopeParam.Param is null)
+                {
+                    scopeParam.Param = new[] { param };
+                }
+                else
+                {
+                    scopeParam.Param = scopeParam.Param
+                        .Concat(new[] { param })
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+                }
+            }
+            else
+            {
+                scopeParam.Param = scopeParam.Param?.Where(x => !string.Equals(x, param, StringComparison.OrdinalIgnoreCase)).ToArray();
+
+                if (scopeParam.Param is null || scopeParam.Param.Length == 0)
+                {
+                    scopeParam.Param = null;
+                }
+            }
+        }
+
+        if (enabled || param is null)
+        {
+            Checkbox?.SetWithoutEvent(enabled);
+
+            if (ValueParams is not null && param is not null)
+            {
+                ValueParams[param] = ValueParams[param] with { Item2 = enabled };
+            }
+        }
+    }
+
+    private void RecursivelySetParentScopes(ReportScopeRenderer renderer, ReportScopeRenderer ownerRenderer, bool enabled)
+    {
+        if (renderer.Scope is null || ownerRenderer.Scope is null)
+        {
+            return;
+        }
+
+        ownerRenderer.Value = enabled ? Activator.CreateInstance(ownerRenderer.Scope.PropertyType) as ReportScope : null;
+
+        renderer.Scope.SetValue(ownerRenderer.Value, renderer.Value);
+        
+        ownerRenderer.Checkbox?.SetWithoutEvent(enabled);
+
+        if (ownerRenderer.OwnerRenderer is null)
+        {
+            if (ownerRenderer.SetRenderer is null)
+            {
+                return;
+            }
+
+            ownerRenderer.Scope.SetValue(ownerRenderer.SetRenderer.Object, ownerRenderer.Value);
+
+            return;
+        }
+
+        RecursivelySetParentScopes(ownerRenderer, ownerRenderer.OwnerRenderer, enabled);
+    }
+
+    private async Task ResetChildrenAsync()
+    {
+        includeChildren = false;
+        StateHasChanged();
+        await Task.Delay(1);
+        includeChildren = true;
+        StateHasChanged();
     }
 }

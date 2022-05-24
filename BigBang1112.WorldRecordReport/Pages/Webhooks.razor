@@ -32,7 +32,7 @@
                             <button class="button" style="width:3rem" @onclick="() => PingWebhookAsync(webhook.Guid)">
                                 <i class="fas fa-bell"></i>
                             </button>
-                            <button class="button" style="width:3rem" @onclick="() => AskToDeleteWebhookAsync(webhook.Guid, webhook.DisplayName)">
+                            <button class="button" style="width:3rem" @onclick="() => AskToDeleteWebhookAsync(webhook.Guid, webhook.DisplayName ?? webhook.Guid.ToString())">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </li>
@@ -72,6 +72,7 @@
 						</tr>
 					</tbody>
 				</table>
+                <div style="font-size: 0.8rem;background-color: rgba(41,42,45);border-radius: 0.3rem;margin:0.2rem 0;padding:0.7rem 1rem;text-align:center">Ticked means that you will receive reports from this scope.<br/>If you just tick a parent scope without ticking any of the children scopes, you will receive all reports from its child scopes.</div>
                 <ReportScopeSetRenderer Object="ScopeSet"></ReportScopeSetRenderer>
                 <button class="button" disabled="@(webhooks?.Count >= 5)" @onclick="CreateWebhookAsync">Create a new webhook</button>
             }
@@ -97,7 +98,9 @@
 						</tr>
 					</tbody>
 				</table>
-                <button class="button" @onclick="UpdateWebhookAsync">Update</button>
+                <div style="font-size: 0.8rem;background-color: rgba(41,42,45);border-radius: 0.3rem;margin:0.2rem 0;padding:0.7rem 1rem;text-align:center">Ticked means that you will receive reports from this scope.<br/>If you just tick a parent scope without ticking any of the children scopes, you will receive all reports from its child scopes.</div>
+                <ReportScopeSetRenderer Object="Webhook.Scope"></ReportScopeSetRenderer>
+                <button class="button" @onclick="UpdateWebhookAsync">Save changes</button>
             }
         </div>
     </div>
@@ -116,7 +119,7 @@
 
     public DiscordWebhookModel? Webhook => Id is not null ? webhooks?.FirstOrDefault(x => x.Guid == Id) : null;
 
-    public string? DisplayNameOnCreate { get; set; } = WebhookDefaultName;
+    public string? DisplayNameOnCreate { get; set; }
     public string? WebhookUrlOnCreate { get; set; }
     public bool NotifyWhenAddedOnCreate { get; set; }
     public ReportScopeSet ScopeSet { get; set; } = new ReportScopeSet();
@@ -128,6 +131,9 @@
 
     protected override void OnParametersSet()
     {
+        DisplayNameOnCreate = WebhookDefaultName;
+        WebhookUrlOnCreate = null;
+
         StateHasChanged();
     }
 
@@ -159,13 +165,18 @@
             return;
         }
 
+        if (ScopeSet.IsReportless())
+        {
+            return;
+        }
+
         var webhook = new DiscordWebhookModel
         {
             Guid = Guid.NewGuid(),
             Account = associatedAccount,
             DisplayName = DisplayNameOnCreate,
             Url = WebhookUrlOnCreate,
-            //Scope =
+            Scope = ScopeSet
         };
 
         using var client = DiscordWebhookService.CreateWebhookClient(webhook.Url, out bool isDeleted);
@@ -184,6 +195,7 @@
         IsCreate = false;
         DisplayNameOnCreate = WebhookDefaultName;
         WebhookUrlOnCreate = null;
+        ScopeSet = new ReportScopeSet();
 
         NavManager.NavigateTo($"webhooks/{webhook.Guid}");
     }

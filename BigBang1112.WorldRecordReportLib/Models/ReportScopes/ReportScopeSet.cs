@@ -98,6 +98,14 @@ public sealed record ReportScopeSet : ReportScope
         throw new NotImplementedException();
     }
 
+    public bool IsReportless()
+    {
+        return typeof(ReportScopeSet).GetProperties()
+            .Where(x => x.PropertyType.IsSubclassOf(typeof(ReportScope)))
+            .Select(x => x.GetValue(this))
+            .All(x => x is null);
+    }
+
     public bool TryAdd(string scope, [NotNullWhen(true)] out string? addedScope)
     {
         _ = scope ?? throw new ArgumentNullException(nameof(scope));

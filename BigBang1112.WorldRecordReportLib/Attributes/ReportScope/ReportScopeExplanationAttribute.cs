@@ -4,6 +4,7 @@
 public class ReportScopeExplanationAttribute : Attribute
 {
     public string Description { get; }
+    public string? DisplayName { get; set; }
 
     public ReportScopeExplanationAttribute(string description)
     {
