@@ -235,8 +235,11 @@
             return;
         }
 
-        ownerRenderer.Value = enabled ? Activator.CreateInstance(ownerRenderer.Scope.PropertyType) as ReportScope : null;
-
+        if (ownerRenderer.Value is null)
+        {
+            ownerRenderer.Value = enabled ? Activator.CreateInstance(ownerRenderer.Scope.PropertyType) as ReportScope : null;
+        }
+        
         renderer.Scope.SetValue(ownerRenderer.Value, renderer.Value);
 
         ownerRenderer.Checkbox?.SetWithoutEvent(enabled);
