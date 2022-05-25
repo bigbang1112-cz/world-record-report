@@ -6,8 +6,12 @@
 @inject IWrUnitOfWork _wrUnitOfWork
 @inject IDiscordWebhookService _discordWebhookService
 @inject TmwrDiscordBotService _tmwr
+@inject WrrDiscordBotService _wrr
 
-<button class="button" @onclick="OverrideDiscordCommandsAsync">Override Discord commands</button>
+<button class="button" @onclick="UpdateGlobalDiscordCommandsAsync">Update global commands</button>
+<button class="button" @onclick="ClearGlobalDiscordCommandsAsync">Clear global commands</button>
+<button class="button" @onclick="UpdateDiscordServerCommandsAsync">Update Discord server commands</button>
+<button class="button" @onclick="ClearDiscordServerCommandsAsync">Clear Discord server commands</button>
 
 <input type="text" class="textbox" @bind="command" />
 
@@ -17,9 +21,28 @@
     private string? command;
     private bool sending;
 
-    private async Task OverrideDiscordCommandsAsync()
+    private async Task UpdateGlobalDiscordCommandsAsync()
+    {
+        await _tmwr.OverwriteGlobalApplicationCommandsAsync();
+        await _wrr.OverwriteGlobalApplicationCommandsAsync();
+    }
+
+    private async Task ClearGlobalDiscordCommandsAsync()
+    {
+        await _tmwr.ClearGlobalApplicationCommandsAsync();
+        await _wrr.ClearGlobalApplicationCommandsAsync();
+    }
+
+    private async Task UpdateDiscordServerCommandsAsync()
     {
         await _tmwr.OverwriteGuildApplicationCommandsAsync();
+        await _wrr.OverwriteGuildApplicationCommandsAsync();
+    }
+
+    private async Task ClearDiscordServerCommandsAsync()
+    {
+        await _tmwr.ClearGuildApplicationCommandsAsync();
+        await _wrr.ClearGuildApplicationCommandsAsync();
     }
 
     private async Task SendAsync()
