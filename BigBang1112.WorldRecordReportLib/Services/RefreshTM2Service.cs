@@ -496,6 +496,7 @@ public class RefreshTM2Service : RefreshService
         var currentWr = await _wrUnitOfWork.WorldRecords.GetCurrentByMapUidAsync(mapModel.MapUid, cancellationToken);
         var login = loginModels[wr.Login];
 
+        // manialink sync issue resolve
         if (!isFromManialink && currentWr is not null && currentWr.Unverified && wr.Time > currentWr.TimeInt32)
         {
             return null;
@@ -519,12 +520,6 @@ public class RefreshTM2Service : RefreshService
             removedWrs.Add(previousWr);
 
             previousWr = previousWr.PreviousWorldRecord;
-        }
-
-        // manialink sync issue resolve
-        if (previousWr is not null && isFromManialink && wr.Time.TotalMilliseconds >= previousWr.Time)
-        {
-            return null;
         }
 
         // WR that has been already reported is ignored
