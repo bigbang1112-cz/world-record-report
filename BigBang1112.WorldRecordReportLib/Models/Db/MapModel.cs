@@ -1,5 +1,6 @@
 ﻿using BigBang1112.Models.Db;
 using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Enums;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -73,6 +74,10 @@ public class MapModel : DbModel
     [Column(TypeName = "datetime")]
     public DateTime? FileLastModifiedOn { get; set; }
 
+    public Guid? MapId { get; set; }
+
+    public ScoreContextValue<DateTimeOffset>? LastRefreshedOn { get; set; }
+
     public virtual ICollection<WorldRecordModel> WorldRecords { get; set; } = default!;
     public virtual ICollection<RecordSetChangeModel> RecordSetChanges { get; set; } = default!;
     public virtual ICollection<RecordSetDetailedChangeModel> RecordSetDetailedChanges { get; set; } = default!;
@@ -124,9 +129,9 @@ public class MapModel : DbModel
                 return null;
             }
 
-            return TmxAuthor.Site.ShortName switch
+            return (TmxSite)TmxAuthor.Site.Id switch
             {
-                NameConsts.TMXSiteUnited or NameConsts.TMXSiteTMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}/image/0",
+                TmxSite.United or TmxSite.TMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}/image/0",
                 _ => null,
             };
         }
@@ -153,9 +158,9 @@ public class MapModel : DbModel
                 return null;
             }
 
-            return TmxAuthor.Site.ShortName switch
+            return (TmxSite)TmxAuthor.Site.Id switch
             {
-                NameConsts.TMXSiteUnited or NameConsts.TMXSiteTMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}",
+                TmxSite.United or TmxSite.TMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}",
                 _ => null,
             };
         }
@@ -180,11 +185,55 @@ public class MapModel : DbModel
             return null;
         }
 
-        return $"https://trackmania.io/#/campaigns/leaderboard/{Campaign.LeaderboardUid}/{MapUid}";
+        return $"https://trackmania.io/#/leaderboard/{MapUid}";
     }
 
     public string? GetInfoUrl()
     {
         return GetTrackmaniaIoUrl() ?? GetTmxUrl();
+    }
+
+    public string GetMdLink()
+    {
+        var infoUrl = GetInfoUrl();
+
+        if (infoUrl is null)
+        {
+            return DeformattedName;
+        }
+
+        return $"[{DeformattedName}]({infoUrl})";
+    }
+
+    public string GetMdLinkHumanized()
+    {
+        var infoUrl = GetInfoUrl();
+
+        if (infoUrl is null)
+        {
+            return GetHumanizedDeformattedName();
+        }
+
+        return $"[{GetHumanizedDeformattedName()}]({infoUrl})";
+    }
+
+    public string GetAuthorNickname()
+    {
+        return TmxAuthor?.Nickname ?? Author?.Nickname ?? "[unknown author]";
+    }
+
+    public string GetAuthorNicknameDeformatted()
+    {
+        return TmxAuthor?.Nickname ?? Author?.GetDeformattedNickname() ?? "[unknown author]";
+    }
+
+    public string GetAuthorNicknameMdLink()
+    {
+        return TmxAuthor?.GetMdLink() ?? Author?.GetMdLink() ?? "[unknown author]";
+    }
+
+    public string? GetAuthorInfoUrl()
+    {
+        return TmxAuthor?.GetInfoUrl() ?? Author?.GetInfoUrl();
     }
 }

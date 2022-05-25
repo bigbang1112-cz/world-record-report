@@ -1,11 +1,15 @@
-﻿namespace BigBang1112.WorldRecordReportLib.Models;
+﻿using TmEssentials;
+
+namespace BigBang1112.WorldRecordReportLib.Models;
 
 /// <summary>
 /// General record in a leaderboard.
 /// </summary>
-/// <typeparam name="T">Player ID type.</typeparam>
-public interface IRecord<T> where T : notnull
+public interface IRecord
 {
-    T PlayerId { get; init; }
-    int Time { get; init; }
+    int? Rank { get; init; }
+    TimeInt32 Time { get; init; }
+    string? DisplayName { get; init; }
+
+    string GetPlayerId();
 }

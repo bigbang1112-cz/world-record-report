@@ -1,11 +1,11 @@
 ﻿<CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly" AdditionalAssemblies="new[] { typeof(BigBang1112.Razor.Temp).Assembly}">
         <Found Context="routeData">
-            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="typeof(MainLayout)">
                 <NotAuthorized>
-                    <div class="section">
-                        <span>Not authorized.</span>
-                    </div>
+                    <LayoutView>
+                        <StatusCode Value="401" Message="Sorry, you're not allowed to see this."></StatusCode>
+                    </LayoutView>
                 </NotAuthorized>
                 <Authorizing>
                     <div class="section">
@@ -16,11 +16,8 @@
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
-            <PageTitle>Not found</PageTitle>
-            <LayoutView Layout="@typeof(MainLayout)">
-                <div class="section">
-                    <span role="alert">Sorry, there's nothing at this address.</span>
-                </div>
+            <LayoutView Layout="typeof(MainLayout)">
+                <StatusCode Value="404" Message="Sorry, there's nothing at this address."></StatusCode>
             </LayoutView>
         </NotFound>
     </Router>

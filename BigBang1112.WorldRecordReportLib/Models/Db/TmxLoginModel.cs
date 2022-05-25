@@ -3,10 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class TmxLoginModel
+public class TmxLoginModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     public int UserId { get; set; }
 
@@ -21,4 +19,14 @@ public class TmxLoginModel
 
     [Required]
     public virtual TmxSiteModel Site { get; set; } = default!;
+
+    public string GetMdLink()
+    {
+        return $"[{Nickname?.EscapeDiscord() ?? UserId.ToString()}]({GetInfoUrl()})";
+    }
+
+    public string GetInfoUrl()
+    {
+        return $"{Site.Url}usershow/{UserId}";
+    }
 }

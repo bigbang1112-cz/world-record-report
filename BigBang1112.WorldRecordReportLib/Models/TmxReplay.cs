@@ -1,11 +1,12 @@
-﻿using TmEssentials;
+﻿using BigBang1112.WorldRecordReportLib.Enums;
+using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Models;
 
 public class TmxReplay : IRecord<int>
 {
     public int ReplayId { get; init; }
-    public int ReplayTime { get; init; }
+    public TimeInt32 ReplayTime { get; init; }
     public int ReplayScore { get; init; }
     public int ReplayRespawns { get; init; }
     public DateTime ReplayAt { get; init; }
@@ -22,14 +23,48 @@ public class TmxReplay : IRecord<int>
         init => UserId = value;
     }
     
-    int IRecord<int>.Time
+    TimeInt32 IRecord.Time
     {
         get => ReplayTime;
         init => ReplayTime = value;
     }
+    
+    string? IRecord.DisplayName
+    {
+        get => UserName;
+        init => UserName = value;
+    }
+
+    public string GetDisplayNameMdLink()
+    {
+        // It's hard to pass the site url to this one
+        return UserName?.EscapeDiscord() ?? UserId.ToString();
+    }
+
+    public string GetDisplayNameMdLink(TmxSite tmxSite)
+    {
+        var site = tmxSite switch
+        {
+            TmxSite.United => "united",
+            TmxSite.TMNF => "tmnforever",
+            _ => null
+        };
+
+        if (site is null)
+        {
+            return GetDisplayNameMdLink();
+        }
+
+        return $"[{GetDisplayNameMdLink()}](https://{site}.tm-exchange.com/usershow/{UserId})";
+    }
+
+    public string GetPlayerId()
+    {
+        return UserId.ToString();
+    }
 
     public override string ToString()
     {
-        return $"{Rank?.ToString() ?? "-"}) {new TimeInt32(ReplayTime)} by {UserId} ({ReplayAt})";
+        return $"{Rank?.ToString() ?? "-"}) {ReplayTime} by {UserName} ({ReplayAt})";
     }
 }

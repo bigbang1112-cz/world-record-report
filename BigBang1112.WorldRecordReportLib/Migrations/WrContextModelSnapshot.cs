@@ -81,6 +81,9 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
+                    b.Property<DateTime>("PublishedOn")
+                        .HasColumnType("datetime");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GameId");
@@ -146,6 +149,9 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.Property<Guid>("Guid")
                         .HasColumnType("char(36)");
+
+                    b.Property<string>("Scope")
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Url")
                         .IsRequired()
@@ -400,6 +406,9 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.Property<DateTime?>("JoinedOn")
                         .HasColumnType("datetime");
 
+                    b.Property<DateTime?>("LastNicknameChangeOn")
+                        .HasColumnType("datetime");
+
                     b.Property<DateTime>("LastSeenOn")
                         .HasColumnType("datetime");
 
@@ -495,6 +504,12 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.Property<DateTime?>("LastActivityOn")
                         .HasColumnType("datetime");
+
+                    b.Property<string>("LastRefreshedOn")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("MapId")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("MapStyle")
                         .HasMaxLength(255)
@@ -799,7 +814,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
-                    b.Property<int>("WorldRecordId")
+                    b.Property<int?>("WorldRecordId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -1282,9 +1297,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasOne("BigBang1112.WorldRecordReportLib.Models.Db.WorldRecordModel", "WorldRecord")
                         .WithMany()
-                        .HasForeignKey("WorldRecordId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("WorldRecordId");
 
                     b.Navigation("RemovedWorldRecord");
 

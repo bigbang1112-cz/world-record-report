@@ -2,10 +2,8 @@
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class MapGroupModel
+public class MapGroupModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     public Guid Guid { get; set; }
 

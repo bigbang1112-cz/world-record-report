@@ -11,6 +11,7 @@ public class LoginModel : DbModel
 {
     [Required]
     public virtual GameModel Game { get; set; } = default!;
+    public virtual int GameId { get; set; }
 
     [Required]
     [StringLength(255)]
@@ -25,6 +26,9 @@ public class LoginModel : DbModel
     [Column(TypeName = "datetime")]
     public DateTime LastSeenOn { get; set; }
 
+    [Column(TypeName = "datetime")]
+    public DateTime? LastNicknameChangeOn { get; set; }
+
     public override string ToString()
     {
         return string.IsNullOrWhiteSpace(Nickname) ? Name : Nickname;
@@ -33,5 +37,29 @@ public class LoginModel : DbModel
     public string GetDeformattedNickname()
     {
         return string.IsNullOrWhiteSpace(Nickname) ? Name : TextFormatter.Deformat(Nickname).Trim();
+    }
+
+    public string GetMdLink()
+    {
+        var escapedNickname = GetDeformattedNickname().EscapeDiscord();
+
+        var infoUrl = GetInfoUrl();
+
+        if (infoUrl is not null)
+        {
+            return $"[{escapedNickname}]({infoUrl})";
+        }
+
+        return escapedNickname;
+    }
+
+    public string? GetInfoUrl()
+    {
+        if (Game.IsTM2020())
+        {
+            return $"https://trackmania.io/#/player/{Name}";
+        }
+
+        return null;
     }
 }

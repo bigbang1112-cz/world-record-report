@@ -2,10 +2,8 @@
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class AssociatedAccountModel
+public class AssociatedAccountModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     public Guid Guid { get; set; }
 

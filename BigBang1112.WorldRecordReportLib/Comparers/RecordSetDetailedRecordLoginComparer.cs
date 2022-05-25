@@ -3,9 +3,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace BigBang1112.WorldRecordReportLib.Comparers;
 
-public class RecordSetDetailedRecordLoginComparer : IEqualityComparer<RecordSetDetailedRecord>
+public class RecordSetDetailedRecordLoginComparer : IEqualityComparer<TM2Record>
 {
-    public bool Equals(RecordSetDetailedRecord? x, RecordSetDetailedRecord? y)
+    public bool Equals(TM2Record? x, TM2Record? y)
     {
         if (x is null || y is null)
         {
@@ -15,7 +15,7 @@ public class RecordSetDetailedRecordLoginComparer : IEqualityComparer<RecordSetD
         return x.Login == y.Login;
     }
 
-    public int GetHashCode([DisallowNull] RecordSetDetailedRecord obj)
+    public int GetHashCode([DisallowNull] TM2Record obj)
     {
         return obj.Login?.GetHashCode() ?? string.Empty.GetHashCode();
     }

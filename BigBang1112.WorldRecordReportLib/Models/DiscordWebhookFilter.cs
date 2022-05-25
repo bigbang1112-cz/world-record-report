@@ -1,5 +1,6 @@
 ﻿using BigBang1112.WorldRecordReportLib.Data;
-using TmExchangeApi;
+using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
+using ManiaAPI.TMX;
 
 namespace BigBang1112.WorldRecordReportLib.Models;
 
@@ -23,6 +24,64 @@ public class DiscordWebhookFilter
     public DiscordWebhookFilter()
     {
 
+    }
+
+    public ReportScopeSet ToReportScopeSet()
+    {
+        var reportTM2 = default(ReportScopeTM2);
+        var reportTMUF = default(ReportScopeTMUF);
+
+        if (ReportTM2 is not null && ReportTM2.Any())
+        {
+            reportTM2 = new()
+            {
+                Nadeo = new()
+                {
+                    WR = new()
+                    {
+                        Param = ReportTM2.Select(x => x.TitleId).ToArray()
+                    }
+                }
+            };
+        }
+
+        if (ReportTMUF is not null && ReportTMUF.Any())
+        {
+            reportTMUF = new()
+            {
+                TMX = new()
+                {
+                    Official = new()
+                    {
+                        WR = new()
+                        {
+                            Param = ReportTMUF.Select(x => x.Site switch
+                            {
+                                NameConsts.TMXSiteUnited => (int?)x.LeaderboardType switch
+                                {
+                                    2 => "NadeoTMUF",
+                                    4 => "StarTrack",
+                                    _ => x.UserId switch
+                                    {
+                                        1001 => "NadeoTMUF",
+                                        500 => "StarTrack",
+                                        _ => throw new Exception($"Unknown leaderboard type ({x.LeaderboardType?.ToString() ?? "null"}) or user ID ({x.UserId?.ToString() ?? "null"})")
+                                    },
+                                },
+                                NameConsts.TMXSiteTMNF => "NadeoTMNF",
+                                _ => throw new Exception("Unknown site"),
+                            }).ToArray()
+                        }
+                    }
+                }
+            };
+        }
+
+        return new ReportScopeSet()
+        {
+            TM2 = reportTM2,
+            TMUF = reportTMUF,
+        };
     }
 
     public static DiscordWebhookFilter CreateTM2Filter(string[] titleIds)

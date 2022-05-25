@@ -3,10 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class NicknameChangeModel
+public class NicknameChangeModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     public virtual LoginModel Login { get; set; } = default!;
 

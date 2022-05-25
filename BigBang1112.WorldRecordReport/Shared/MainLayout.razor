@@ -1,9 +1,61 @@
 ﻿@inherits LayoutComponentBase
+@inject IAuthorizationService AuthorizationService
 
-<PageTitle>World Record Report - BigBang1112.cz</PageTitle>
+@inject AccountService AccountService
 
-<div class="page">
-    <main>
+<div class="outer-space page">
+    <header class="section">
+        <div class="area area-project-title">
+            <p class="project-title">World Record Report</p>
+            <p>The best care for the best Trackmania records</p>
+        </div>
+    </header>
+    <section class="section">
+        <AuthorizeView>
+            <Authorized>
+                Account UUID: <b style="margin-left: 0.5rem;">@Account?.Guid</b>
+                <a class="button" href="logout" style="width: 20rem; font-size: 3rem; margin-left: 2rem;"><b>Logout</b></a>
+            </Authorized>
+            <NotAuthorized>
+                <a class="button" href="login" style="width: 20rem; font-size: 3rem"><b>Login</b></a>
+            </NotAuthorized>
+        </AuthorizeView>
+    </section>
+    <nav class="section">
+        <Button Href="/" Id="NavHome">Home</Button>
+        <Button Href="webhooks" Id="NavWebhooks" Class="@(User?.Identity?.IsAuthenticated == true ? "" : "disabled")">Webhooks</Button>
+        <Button Href="tmwr" Id="NavTMWR" Class="button-tmwr">&nbsp;</Button>
+        <AuthorizeView Roles="SuperAdmin, Admin">
+            <Button Href="admin" Id="NavAdmin" Class="button-orange">Admin</Button>
+        </AuthorizeView>
+        <Button Href="swagger" Id="NavAPI" Class="align-bottom">API</Button>
+    </nav>
+    <main class="section">
         @Body
     </main>
+    <footer class="section">
+        <span>© 2022 Petr &nbsp;'&nbsp;</span>
+        <img class="footer-developer" src="_content/BigBang1112.Essentials.Razor/img/bigbang1112.png" />
+        <span>&nbsp;'&nbsp; Pivoňka</span>
+    </footer>
 </div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    private ClaimsPrincipal? User { get; set; }
+    private AccountModel? Account { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationState is null)
+        {
+            return;
+        }
+
+        User = (await AuthenticationState).User;
+
+        Account = await AccountService.GetAccountAsync();
+    }
+}

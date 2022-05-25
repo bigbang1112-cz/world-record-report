@@ -4,10 +4,8 @@ using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class WorldRecordModel
+public class WorldRecordModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     public Guid Guid { get; set; }
 
@@ -71,7 +69,7 @@ public class WorldRecordModel
 
     public string GetPlayerLogin()
     {
-        return Player?.Name ?? TmxPlayer?.Nickname ?? "[unknown player]";
+        return Player?.Name ?? TmxPlayer?.UserId.ToString() ?? "[unknown player]";
     }
 
     public string GetPlayerNickname()
@@ -82,6 +80,16 @@ public class WorldRecordModel
     public string GetPlayerNicknameDeformatted()
     {
         return Player?.GetDeformattedNickname() ?? TmxPlayer?.Nickname ?? "[unknown player]";
+    }
+
+    public string GetPlayerNicknameMdLink()
+    {
+        return Player?.GetMdLink() ?? TmxPlayer?.GetMdLink() ?? "[unknown player]";
+    }
+
+    public string? GetPlayerInfoUrl()
+    {
+        return Player?.GetInfoUrl() ?? TmxPlayer?.GetInfoUrl();
     }
 
     public string GetTimeFormattedToGame()

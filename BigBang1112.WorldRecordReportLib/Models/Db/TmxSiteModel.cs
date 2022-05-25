@@ -1,7 +1,7 @@
 ﻿using BigBang1112.Models.Db;
 using BigBang1112.WorldRecordReportLib.Data;
 using System.ComponentModel.DataAnnotations;
-using TmExchangeApi;
+using ManiaAPI.TMX;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 

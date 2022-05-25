@@ -3,19 +3,47 @@
 
 @attribute [Authorize(Roles = "SuperAdmin")]
 
-@inject IWrRepo _repo
+@inject IWrUnitOfWork _wrUnitOfWork
 @inject IDiscordWebhookService _discordWebhookService
-@inject TMWR.TmwrDiscordBotService _tmwr
+@inject TmwrDiscordBotService _tmwr
+@inject WrrDiscordBotService _wrr
 
-<h3>Admin</h3>
+<button class="button" @onclick="UpdateGlobalDiscordCommandsAsync">Update global commands</button>
+<button class="button" @onclick="ClearGlobalDiscordCommandsAsync">Clear global commands</button>
+<button class="button" @onclick="UpdateDiscordServerCommandsAsync">Update Discord server commands</button>
+<button class="button" @onclick="ClearDiscordServerCommandsAsync">Clear Discord server commands</button>
 
-<input type="text" class="textbox" style="width:50rem" @bind="command" />
+<input type="text" class="textbox" @bind="command" />
 
 <button @onclick="SendAsync">Send</button>
 
 @code {
     private string? command;
     private bool sending;
+
+    private async Task UpdateGlobalDiscordCommandsAsync()
+    {
+        await _tmwr.OverwriteGlobalApplicationCommandsAsync();
+        await _wrr.OverwriteGlobalApplicationCommandsAsync();
+    }
+
+    private async Task ClearGlobalDiscordCommandsAsync()
+    {
+        await _tmwr.ClearGlobalApplicationCommandsAsync();
+        await _wrr.ClearGlobalApplicationCommandsAsync();
+    }
+
+    private async Task UpdateDiscordServerCommandsAsync()
+    {
+        await _tmwr.OverwriteGuildApplicationCommandsAsync();
+        await _wrr.OverwriteGuildApplicationCommandsAsync();
+    }
+
+    private async Task ClearDiscordServerCommandsAsync()
+    {
+        await _tmwr.ClearGuildApplicationCommandsAsync();
+        await _wrr.ClearGuildApplicationCommandsAsync();
+    }
 
     private async Task SendAsync()
     {
@@ -46,7 +74,7 @@
                 await ReportAsync(partsEnumerator);
                 break;
             case "commandoverride":
-                await _tmwr.OverwriteApplicationCommandsAsync();
+                await _tmwr.OverwriteGuildApplicationCommandsAsync();
                 break;
         }
     }
@@ -60,7 +88,7 @@
 
         var wrGuid = new Guid((string)partsEnumerator.Current);
 
-        var wrModel = await _repo.GetWorldRecordAsync(wrGuid);
+        var wrModel = await _wrUnitOfWork.WorldRecords.GetByGuidAsync(wrGuid);
 
         if (wrModel is null)
         {
@@ -75,9 +103,9 @@
             WorldRecord = wrModel
         };
 
-        await _repo.AddReportAsync(report);
+        await _wrUnitOfWork.Reports.AddAsync(report);
 
-        Discord.Embed embed;
+        /*Discord.Embed embed;
         if (wrModel.Map.Mode?.Name == NameConsts.MapModeStunts)
             embed = _discordWebhookService.GetDefaultEmbed_NewStuntsWorldRecord(wrModel);
         else
@@ -104,6 +132,6 @@
             }, embeds: Enumerable.Repeat(embed, 1));
 
             await _repo.SaveAsync();
-        }
+        }*/
     }
 }

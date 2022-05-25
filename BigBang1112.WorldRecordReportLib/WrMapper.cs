@@ -1,6 +1,6 @@
 ﻿using BigBang1112.WorldRecordReportLib.Models;
 using Mapster;
-using TmExchangeApi.Models;
+using ManiaAPI.TMX;
 
 namespace BigBang1112.WorldRecordReportLib;
 
@@ -21,7 +21,14 @@ public class WrMapper : Mapper
             .Map(dest => dest.Rank, src => src.Position.HasValue ? src.Position + 1 : null)
             .Map(dest => dest.IsCompPatch, src => src.Validated)
             .Map(dest => dest.UserId, src => src.User.UserId)
-            .Map(dest => dest.UserName, src => src.User.Name)
-            .Map(dest => dest.ReplayAt, src => src.ReplayAt.UtcDateTime);
+            .Map(dest => dest.UserName, src => src.User.Name);
+
+        TypeAdapterConfig<ManiaAPI.NadeoAPI.Record, TM2020RecordFundamental>
+            .ForType()
+            .Map(dest => dest.Rank, src => src.Position);
+
+        TypeAdapterConfig<MapGroupModel, MapGroupRefreshData>
+            .ForType()
+            .Map(dest => dest.TitleId, src => src.TitlePack != null ? src.TitlePack.GetTitleUid() : null);
     }
 }
