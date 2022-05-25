@@ -185,7 +185,7 @@ public class MapModel : DbModel
             return null;
         }
 
-        return $"https://trackmania.io/#/campaigns/leaderboard/{Campaign.LeaderboardUid}/{MapUid}";
+        return $"https://trackmania.io/#/leaderboard/{MapUid}";
     }
 
     public string? GetInfoUrl()
