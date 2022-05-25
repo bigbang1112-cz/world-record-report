@@ -496,6 +496,11 @@ public class RefreshTM2Service : RefreshService
         var currentWr = await _wrUnitOfWork.WorldRecords.GetCurrentByMapUidAsync(mapModel.MapUid, cancellationToken);
         var login = loginModels[wr.Login];
 
+        if (!isFromManialink && currentWr is not null && currentWr.Unverified && wr.Time > currentWr.TimeInt32)
+        {
+            return null;
+        }
+
         var previousWr = currentWr;
 
         // Worse WR is a sign of a removed world record
