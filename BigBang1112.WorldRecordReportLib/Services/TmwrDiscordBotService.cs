@@ -69,8 +69,8 @@ public class TmwrDiscordBotService : DiscordBotService
         {
             "wr" => await ExecuteWrDetailsButtonAsync(messageComponent, deferer, wrGuidStr: split[2].Replace('_', '-')),
             "comparewrs" => await ExecuteCompareWrsButtonAsync(messageComponent, deferer, wrGuidStr: split[2].Replace('_', '-')),
-            "historywr" => await ExecuteHistoryWrAsync(messageComponent, deferer, split[2].Replace('_', '-')),
-            "mapinfo" => await ExecuteMapInfoAsync(messageComponent, deferer, split[2].Replace('_', '-')),
+            "historywr" => await ExecuteHistoryWrAsync(messageComponent, deferer, split[2]),
+            "mapinfo" => await ExecuteMapInfoAsync(messageComponent, deferer, split[2]),
             _ => null,
         };
     }
