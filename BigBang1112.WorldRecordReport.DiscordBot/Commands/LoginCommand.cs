@@ -22,7 +22,7 @@ public class LoginCommand : DiscordBotCommand
     [DiscordBotCommandOption("nickname", ApplicationCommandOptionType.String, "Nickname.", IsRequired = true)]
     public string? Nickname { get; set; }
 
-    public async Task<IEnumerable<string>> AutocompleteNicknameAsync(string value)
+    internal async Task<IEnumerable<string>> AutocompleteNicknameAsync(string value)
     {
         return await _wrUnitOfWork.Logins.GetAllNicknamesLikeAsync(value, max: 25);
     }

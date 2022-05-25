@@ -27,7 +27,7 @@ public class IgnoreLoginCommand : DiscordBotCommand
     [DiscordBotCommandOption("game", ApplicationCommandOptionType.String, "Game of the login.", IsRequired = true)]
     public string? Game { get; set; }
 
-    public async Task<IEnumerable<string>> AutocompleteGameAsync(string value)
+    internal async Task<IEnumerable<string>> AutocompleteGameAsync(string value)
     {
         return await _wrUnitOfWork.Games.GetAllNamesLikeAsync(value, max: 25);
     }
@@ -35,7 +35,7 @@ public class IgnoreLoginCommand : DiscordBotCommand
     [DiscordBotCommandOption("name", ApplicationCommandOptionType.String, "Login name.", IsRequired = true)]
     public string? Name { get; set; }
 
-    public async Task<IEnumerable<string>> AutocompleteNameAsync(string value)
+    internal async Task<IEnumerable<string>> AutocompleteNameAsync(string value)
     {
         return await _wrUnitOfWork.Logins.GetAllNamesLikeAsync(value, max: 25);
     }

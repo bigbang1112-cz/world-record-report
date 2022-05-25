@@ -17,5 +17,5 @@ public class CampaignModel : DbModel
     public bool IsOver { get; set; }
 
     [Column(TypeName = "datetime")]
-    public DateTime PublishedOn { get; internal set; }
+    public DateTime PublishedOn { get; set; }
 }
