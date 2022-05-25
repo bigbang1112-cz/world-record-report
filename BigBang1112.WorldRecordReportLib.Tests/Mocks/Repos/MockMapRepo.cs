@@ -17,6 +17,11 @@ public class MockMapRepo : MockRepo<MapModel>, IMapRepo
         throw new NotImplementedException();
     }
 
+    public Task<IEnumerable<MapModel>> GetAllByCampaignLeaderboardUidAsync(string leaderboardUid, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<IEnumerable<string>> GetAllDeformattedNamesLikeAsync(string value, int limit = 25, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();

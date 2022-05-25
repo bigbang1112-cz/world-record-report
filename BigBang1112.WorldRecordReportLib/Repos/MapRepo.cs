@@ -131,4 +131,11 @@ public class MapRepo : Repo<MapModel>, IMapRepo
             .Where(x => x.Game.Id == (int)game && x.Campaign!.IsOver)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<MapModel>> GetAllByCampaignLeaderboardUidAsync(string leaderboardUid, CancellationToken cancellationToken = default)
+    {
+        return await _context.Maps
+            .Where(x => x.Campaign != null && x.Campaign.LeaderboardUid == leaderboardUid)
+            .ToListAsync(cancellationToken);
+    }
 }
