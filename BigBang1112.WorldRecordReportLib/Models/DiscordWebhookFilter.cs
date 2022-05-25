@@ -60,7 +60,7 @@ public class DiscordWebhookFilter
                                 NameConsts.TMXSiteUnited => (int?)x.LeaderboardType switch
                                 {
                                     2 => "NadeoTMUF",
-                                    5 => "StarTrack",
+                                    4 or 5 => "StarTrack",
                                     _ => x.UserId switch
                                     {
                                         1001 => "NadeoTMUF",
