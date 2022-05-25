@@ -139,7 +139,8 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
             Login: x.Login,
             Time: new TimeInt32(x.Time),
             DisplayName: x.Nickname,
-            ReplayUrl: x.ReplayUrl
+            ReplayUrl: x.ReplayUrl,
+            Timestamp: DateTimeOffset.FromUnixTimeSeconds(x.Timestamp)
         ));
 
         var changes = await _refreshTM2Service.CheckWorldRecordAsync(map, records, loginModels, isFromManialink: true, cancellationToken: default);

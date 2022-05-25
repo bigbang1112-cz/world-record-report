@@ -562,21 +562,33 @@ public class RefreshTM2Service : RefreshService
                                                                 bool unverified,
                                                                 CancellationToken cancellationToken)
     {
-        var drivenOn = DateTime.UtcNow;
+        var drivenOn = wr.Timestamp;
 
-        if (wr.ReplayUrl is not null)
+        if (drivenOn is null && wr.ReplayUrl is not null)
         {
-            using var response = await _http.HeadAsync(wr.ReplayUrl);
-            
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var lastModified = response.Content.Headers.LastModified;
+                using var response = await _http.HeadAsync(wr.ReplayUrl);
 
-                if (lastModified.HasValue)
+                if (response.IsSuccessStatusCode)
                 {
-                    drivenOn = lastModified.Value.UtcDateTime;
+                    var lastModified = response.Content.Headers.LastModified;
+
+                    if (lastModified.HasValue)
+                    {
+                        drivenOn = lastModified.Value.UtcDateTime;
+                    }
                 }
             }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "When creating WR: Url {replayUrl} is not usable.", wr.ReplayUrl);
+            }
+        }
+
+        if (drivenOn is null)
+        {
+            throw new Exception("No timestamp provided");
         }
 
         return new WorldRecordModel
@@ -584,8 +596,8 @@ public class RefreshTM2Service : RefreshService
             Guid = Guid.NewGuid(),
             Map = map,
             Player = login,
-            DrivenOn = drivenOn,
-            PublishedOn = drivenOn,
+            DrivenOn = drivenOn.Value.UtcDateTime,
+            PublishedOn = drivenOn.Value.UtcDateTime,
             ReplayUrl = wr.ReplayUrl,
             Time = wr.Time.TotalMilliseconds,
             PreviousWorldRecord = previousWr,
