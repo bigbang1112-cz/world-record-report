@@ -11,7 +11,7 @@ namespace BigBang1112.WorldRecordReportLib.TMWR.Commands;
 
 public partial class ReportCommand
 {
-    [DiscordBotSubCommand("unsubscribe", "Gets the channel information about the subscription, or subscribes to the reports in this channel.")]
+    [DiscordBotSubCommand("unsubscribe", "Unsubscribes from reports in this channel.")]
     public class Unsubscribe : TmwrCommand
     {
         private readonly IDiscordBotUnitOfWork _discordBotUnitOfWork;

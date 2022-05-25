@@ -10,11 +10,10 @@ namespace BigBang1112.WorldRecordReportLib.TMWR.Commands;
 
 public partial class ReportCommand
 {
-    [DiscordBotSubCommand("subscribe", "Gets the channel information about the subscription, or subscribes to the reports in this channel.")]
+    [DiscordBotSubCommand("subscribe", "Gets the channel info about the report subscription, or subscribes to the reports in this channel.")]
     public class Subscribe : TmwrCommand
     {
         private readonly IDiscordBotUnitOfWork _discordBotUnitOfWork;
-        private readonly DiscordBotDataService _discordBotDataService;
 
         [DiscordBotCommandOption("scope",
             ApplicationCommandOptionType.String,
@@ -31,11 +30,9 @@ public partial class ReportCommand
         public SocketChannel? OtherChannel { get; set; }
 
         public Subscribe(TmwrDiscordBotService tmwrDiscordBotService,
-                         IDiscordBotUnitOfWork discordBotUnitOfWork,
-                         DiscordBotDataService discordBotDataService) : base(tmwrDiscordBotService)
+                         IDiscordBotUnitOfWork discordBotUnitOfWork) : base(tmwrDiscordBotService)
         {
             _discordBotUnitOfWork = discordBotUnitOfWork;
-            _discordBotDataService = discordBotDataService;
         }
 
         public override async Task<DiscordBotMessage> ExecuteAsync(SocketInteraction slashCommand)
