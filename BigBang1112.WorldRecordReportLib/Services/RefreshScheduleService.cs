@@ -6,50 +6,33 @@ namespace BigBang1112.WorldRecordReportLib.Services;
 
 public class RefreshScheduleService
 {
-    public ReadOnlyCollection<MapModel>? TM2020OfficialMapCycle { get; private set; }
-    public int? CurrentTM2020OfficialMap { get; private set; }
-    public ReadOnlyCollection<MapModel>? TM2020OfficialOldMapCycle { get; private set; }
-    public int? CurrentTM2020OfficialOldMap { get; private set; }
     public ReadOnlyCollection<MapGroupModel>? TM2OfficialMapGroupCycle { get; private set; }
     public int? CurrentTM2OfficialMapGroup { get; private set; }
-
-    public void SetupTM2020Official(IEnumerable<MapModel> maps)
-    {
-        TM2020OfficialMapCycle = new((maps as IList<MapModel>) ?? maps.ToList());
-    }
-
-    public void SetupTM2020OfficialOld(IEnumerable<MapModel> maps)
-    {
-        TM2020OfficialOldMapCycle = new((maps as IList<MapModel>) ?? maps.ToList());
-    }
+    public ReadOnlyCollection<MapModel>? TM2020CurrentCampaignMapCycle { get; private set; }
+    public int? CurrentTM2020CurrentCampaignMap { get; private set; }
+    public ReadOnlyCollection<MapModel>? TM2020PreviousCampaignsMapCycle { get; private set; }
+    public int? CurrentTM2020PreviousCampaignsMap { get; private set; }
+    public ReadOnlyCollection<MapModel>? TM2020TrainingMapCycle { get; private set; }
+    public int? CurrentTM2020TrainingMap { get; private set; }
 
     public void SetupTM2Official(IEnumerable<MapGroupModel> mapGroups)
     {
         TM2OfficialMapGroupCycle = new((mapGroups as IList<MapGroupModel>) ?? mapGroups.ToList());
     }
 
-    public MapModel? NextTM2020CurrentCampaignMap()
+    public void SetupTM2020CurrentCampaign(IEnumerable<MapModel> maps)
     {
-        if (TM2020OfficialMapCycle is null || TM2020OfficialMapCycle.Count == 0)
-        {
-            return null;
-        }
-
-        CurrentTM2020OfficialMap = (CurrentTM2020OfficialMap + 1) % TM2020OfficialMapCycle.Count ?? 0;
-
-        return TM2020OfficialMapCycle[CurrentTM2020OfficialMap.Value];
+        TM2020CurrentCampaignMapCycle = new((maps as IList<MapModel>) ?? maps.ToList());
     }
 
-    public MapModel? NextTM2020PreviousCampaignMap()
+    public void SetupTM2020PreviousCampaigns(IEnumerable<MapModel> maps)
     {
-        if (TM2020OfficialOldMapCycle is null || TM2020OfficialOldMapCycle.Count == 0)
-        {
-            return null;
-        }
+        TM2020PreviousCampaignsMapCycle = new((maps as IList<MapModel>) ?? maps.ToList());
+    }
 
-        CurrentTM2020OfficialOldMap = (CurrentTM2020OfficialOldMap + 1) % TM2020OfficialOldMapCycle.Count ?? 0;
-
-        return TM2020OfficialOldMapCycle[CurrentTM2020OfficialOldMap.Value];
+    public void SetupTM2020TrainingMaps(IEnumerable<MapModel> maps)
+    {
+        TM2020TrainingMapCycle = new((maps as IList<MapModel>) ?? maps.ToList());
     }
 
     public MapGroupModel? NextTM2OfficialMapGroup()
@@ -62,5 +45,41 @@ public class RefreshScheduleService
         CurrentTM2OfficialMapGroup = (CurrentTM2OfficialMapGroup + 1) % TM2OfficialMapGroupCycle.Count ?? 0;
 
         return TM2OfficialMapGroupCycle[CurrentTM2OfficialMapGroup.Value];
+    }
+
+    public MapModel? NextTM2020CurrentCampaignMap()
+    {
+        if (TM2020CurrentCampaignMapCycle is null || TM2020CurrentCampaignMapCycle.Count == 0)
+        {
+            return null;
+        }
+
+        CurrentTM2020CurrentCampaignMap = (CurrentTM2020CurrentCampaignMap + 1) % TM2020CurrentCampaignMapCycle.Count ?? 0;
+
+        return TM2020CurrentCampaignMapCycle[CurrentTM2020CurrentCampaignMap.Value];
+    }
+
+    public MapModel? NextTM2020PreviousCampaignMap()
+    {
+        if (TM2020PreviousCampaignsMapCycle is null || TM2020PreviousCampaignsMapCycle.Count == 0)
+        {
+            return null;
+        }
+
+        CurrentTM2020PreviousCampaignsMap = (CurrentTM2020PreviousCampaignsMap + 1) % TM2020PreviousCampaignsMapCycle.Count ?? 0;
+
+        return TM2020PreviousCampaignsMapCycle[CurrentTM2020PreviousCampaignsMap.Value];
+    }
+
+    public MapModel? NextTM2020TrainingMap()
+    {
+        if (TM2020TrainingMapCycle is null || TM2020TrainingMapCycle.Count == 0)
+        {
+            return null;
+        }
+
+        CurrentTM2020TrainingMap = (CurrentTM2020TrainingMap + 1) % TM2020TrainingMapCycle.Count ?? 0;
+
+        return TM2020TrainingMapCycle[CurrentTM2020TrainingMap.Value];
     }
 }

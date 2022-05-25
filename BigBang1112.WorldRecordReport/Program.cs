@@ -89,8 +89,9 @@ builder.Services.AddQuartz(q =>
 {
     q.UseMicrosoftDependencyInjectionJobFactory();
 
-    q.AddIntervalTrigger<RefreshTM2020OfficialJob>(config);
-    q.AddIntervalTrigger<RefreshTM2020OfficialOldJob>(config);
+    q.AddIntervalTrigger<RefreshTM2020CurrentCampaignJob>(config);
+    q.AddIntervalTrigger<RefreshTM2020PreviousCampaignsJob>(config);
+    q.AddIntervalTrigger<RefreshTM2020TrainingMapsJob>(config);
     q.AddIntervalTrigger<RefreshTM2OfficialJob>(config);
     q.AddIntervalTrigger<RefreshTmxOfficialJob>(config);
     q.AddIntervalTrigger<CleanupTmxRemovedWorldRecordsJob>(config);

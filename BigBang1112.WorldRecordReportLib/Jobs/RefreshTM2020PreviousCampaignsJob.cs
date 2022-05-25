@@ -4,15 +4,15 @@ using Quartz;
 
 namespace BigBang1112.WorldRecordReportLib.Jobs;
 
-public class RefreshTM2020OfficialOldJob : IJob
+public class RefreshTM2020PreviousCampaignsJob : IJob
 {
     private readonly RefreshTM2020Service _refreshService;
     private readonly RefreshScheduleService _refreshScheduleService;
     private readonly IWrUnitOfWork _wrUnitOfWork;
 
-    public RefreshTM2020OfficialOldJob(RefreshTM2020Service refreshService,
-                                       RefreshScheduleService refreshScheduleService,
-                                       IWrUnitOfWork wrUnitOfWork)
+    public RefreshTM2020PreviousCampaignsJob(RefreshTM2020Service refreshService,
+                                             RefreshScheduleService refreshScheduleService,
+                                             IWrUnitOfWork wrUnitOfWork)
     {
         _refreshService = refreshService;
         _refreshScheduleService = refreshScheduleService;
@@ -21,9 +21,10 @@ public class RefreshTM2020OfficialOldJob : IJob
 
     public async Task Execute(IJobExecutionContext context)
     {
-        if (_refreshScheduleService.TM2020OfficialOldMapCycle is null)
+        if (_refreshScheduleService.TM2020PreviousCampaignsMapCycle is null
+         && _refreshScheduleService.TM2020CurrentCampaignMapCycle is not null)
         {
-            _refreshScheduleService.SetupTM2020OfficialOld(
+            _refreshScheduleService.SetupTM2020PreviousCampaigns(
                 await _wrUnitOfWork.Maps.GetByCampaignsThatAreOverAsync(Game.TM2020));
         }
 

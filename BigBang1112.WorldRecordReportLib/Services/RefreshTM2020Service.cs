@@ -57,7 +57,7 @@ public class RefreshTM2020Service : RefreshService
 
         if (map is null)
         {
-            _logger.LogInformation("Skipping the TM2020 official refresh. No maps found.");
+            _logger.LogInformation("Skipping the TM2020 current campaign refresh. No maps found.");
             return;
         }
 
@@ -70,11 +70,24 @@ public class RefreshTM2020Service : RefreshService
 
         if (map is null)
         {
-            _logger.LogInformation("Skipping the TM2020 official (old) refresh. No maps found.");
+            _logger.LogInformation("Skipping the TM2020 previous campaigns refresh. No maps found.");
             return;
         }
 
         await RefreshAsync(map, forceUpdate, ScopePreviousCampaignsWR, ScopePreviousCampaignsChanges, cancellationToken);
+    }
+
+    public async Task RefreshTrainingMapsAsync(bool forceUpdate = false, CancellationToken cancellationToken = default)
+    {
+        var map = _refreshSchedule.NextTM2020TrainingMap();
+
+        if (map is null)
+        {
+            _logger.LogInformation("Skipping the TM2020 training maps refresh. No maps found.");
+            return;
+        }
+
+        await RefreshAsync(map, forceUpdate, ScopeTrainingMapsWR, ScopeTrainingMapsChanges, cancellationToken);
     }
 
     public async Task RefreshAsync(MapModel map,

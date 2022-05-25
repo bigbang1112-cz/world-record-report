@@ -88,7 +88,7 @@ public class AcquireNewOfficialCampaignsJob : IJob
 
         var maps = await _wrUnitOfWork.Maps.GetByCampaignAsync(currentOfficialCampaign, cancellationToken);
 
-        _refreshScheduleService.SetupTM2020Official(maps);
+        _refreshScheduleService.SetupTM2020CurrentCampaign(maps);
     }
 
     internal async Task<CampaignModel> ProcessOfficialCampaignAsync(OfficialCampaignItem officialCampaign,
@@ -143,7 +143,7 @@ public class AcquireNewOfficialCampaignsJob : IJob
                 Game = game,
                 Environment = env,
                 Name = map.Name,
-                DeformattedName = map.Name,
+                DeformattedName = TextFormatter.Deformat(map.Name),
                 Author = loginModel,
                 MxId = map.ExchangeId,
                 Mode = mode,
