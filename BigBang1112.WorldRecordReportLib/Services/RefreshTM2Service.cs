@@ -497,7 +497,7 @@ public class RefreshTM2Service : RefreshService
         var login = loginModels[wr.Login];
 
         // manialink sync issue resolve
-        if (!isFromManialink && currentWr is not null && currentWr.Unverified && wr.Time > currentWr.TimeInt32)
+        if (!isFromManialink && currentWr is not null && currentWr.Unverified && wr.Time >= currentWr.TimeInt32)
         {
             return null;
         }
