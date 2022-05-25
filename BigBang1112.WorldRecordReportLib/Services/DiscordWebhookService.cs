@@ -62,18 +62,25 @@ public class DiscordWebhookService : IDiscordWebhookService
 
         msg.ModifiedOn = DateTime.UtcNow;
 
-        await webhookClient.ModifyMessageAsync(msg.MessageId, x =>
+        try
         {
-            if (text is not null)
+            await webhookClient.ModifyMessageAsync(msg.MessageId, x =>
             {
-                x.Content = text;
-            }
+                if (text is not null)
+                {
+                    x.Content = text;
+                }
 
-            if (embeds is not null)
-            {
-                x.Embeds = new(embeds);
-            }
-        });
+                if (embeds is not null)
+                {
+                    x.Embeds = new(embeds);
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Message (DB ID: {msgId}) couldn't be modified.", msg.Id);
+        }
     }
 
     private DiscordWebhookClient? CreateWebhookClientOrDisable(DiscordWebhookModel webhook)
