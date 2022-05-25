@@ -1,11 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class DiscordWebhookModel
+public class DiscordWebhookModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     public Guid Guid { get; set; }
 
@@ -24,6 +23,8 @@ public class DiscordWebhookModel
 
     [StringLength(1024)]
     public string? Filter { get; set; }
+
+    public ReportScopeSet? Scope { get; set; }
 
     public virtual ICollection<DiscordWebhookMessageModel> Messages { get; set; } = default!;
 }

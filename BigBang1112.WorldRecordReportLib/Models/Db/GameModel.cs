@@ -1,12 +1,12 @@
-﻿using BigBang1112.WorldRecordReportLib.Data;
+﻿using BigBang1112.Models.Db;
+using BigBang1112.WorldRecordReportLib.Data;
+using BigBang1112.WorldRecordReportLib.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
-public class GameModel
+public class GameModel : DbModel
 {
-    public int Id { get; set; }
-
     [Required]
     [StringLength(255)]
     public string Name { get; set; } = default!;
@@ -21,13 +21,23 @@ public class GameModel
         return string.IsNullOrWhiteSpace(DisplayName) ? Name : DisplayName;
     }
 
+    public bool Is(Game game)
+    {
+        return Id == (int)game;
+    }
+
     public bool IsTMUF()
     {
-        return Name == NameConsts.GameTMUFName;
+        return Is(Game.TMUF);
     }
 
     public bool IsTM2()
     {
-        return Name == NameConsts.GameTM2Name;
+        return Is(Game.TM2);
+    }
+
+    public bool IsTM2020()
+    {
+        return Is(Game.TM2020);
     }
 }

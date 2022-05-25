@@ -18,6 +18,8 @@ using Microsoft.Extensions.Configuration;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Microsoft.AspNetCore.Http;
 using System.Net.Http.Json;
+using TmEssentials;
+using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
@@ -28,24 +30,27 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
     private readonly IFileHostService _fileHost;
     private readonly IMemoryCache _cache;
     private readonly IConfiguration _config;
-    private readonly IAccountsRepo _accountsRepo;
-    private readonly IWrRepo _wrRepo;
-    private readonly ITM2ReportService _worldRecordTM2Service;
+    private readonly IAccountsUnitOfWork _accountsUnitOfWork;
+    private readonly IWrUnitOfWork _wrUnitOfWork;
+    private readonly ReportService _reportService;
+    private readonly RefreshTM2Service _refreshTM2Service;
 
     public LeaderboardsManialinkService(IFileHostService fileHost, IMemoryCache cache, IConfiguration config,
-        IAccountsRepo accountsRepo, IWrRepo wrRepo, ITM2ReportService worldRecordTM2Service)
+        IAccountsUnitOfWork accountsUnitOfWork, IWrUnitOfWork wrUnitOfWork, ReportService reportService,
+        RefreshTM2Service refreshTM2Service)
     {
         _fileHost = fileHost;
         _cache = cache;
         _config = config;
-        _accountsRepo = accountsRepo;
-        _wrRepo = wrRepo;
-        _worldRecordTM2Service = worldRecordTM2Service;
+        _accountsUnitOfWork = accountsUnitOfWork;
+        _wrUnitOfWork = wrUnitOfWork;
+        _reportService = reportService;
+        _refreshTM2Service = refreshTM2Service;
     }
 
     public async Task<string> GetManialinkAsync(HttpContext httpContext, CancellationToken cancellationToken)
     {
-        var xmlFile = _fileHost.GetFilePath("Data/LbManialink", "Leaderboards.xml");
+        var xmlFile = _fileHost.GetClosedFilePath("Data/LbManialink", "Leaderboards.xml");
         var lastWriteTime = File.GetLastWriteTimeUtc(xmlFile);
 
         httpContext.Response.Headers.AddLastModified(lastWriteTime);
@@ -56,7 +61,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
             return _cache.Get<string>(CacheKeys.LeaderboardsManialink);
         }
 
-        var scriptFile = _fileHost.GetFilePath("Data/LbManialink", "Leaderboards.Script.txt");
+        var scriptFile = _fileHost.GetClosedFilePath("Data/LbManialink", "Leaderboards.Script.txt");
 
         var contentXmlTask = File.ReadAllTextAsync(xmlFile, Encoding.UTF8, cancellationToken);
         var contentScriptTask = File.ReadAllTextAsync(scriptFile, Encoding.UTF8, cancellationToken);
@@ -88,7 +93,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
 
     public void Head(IHeaderDictionary headers)
     {
-        var xmlFile = _fileHost.GetFilePath("Data/LbManialink", "Leaderboards.xml");
+        var xmlFile = _fileHost.GetClosedFilePath("Data/LbManialink", "Leaderboards.xml");
         var xmlFileInfo = new FileInfo(xmlFile);
 
         headers.AddLastModified(xmlFileInfo.LastWriteTimeUtc);
@@ -97,24 +102,56 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
     public async Task<OneOf<LbManialinkWorldRecordsResponse, AccountUnauthorized, AccountForbidden>>
         PostWorldRecordsAsync(HttpContext httpContext, LbManialinkMap lbManialinkMap)
     {
+        _ = lbManialinkMap ?? throw new ArgumentNullException(nameof(lbManialinkMap));
+
         if (!httpContext.Request.Headers.TryGetValue("X-ManiaPlanet-Token", out StringValues stringToken))
+        {
             return new AccountUnauthorized();
+        }
 
         var token = await DecryptAsync(stringToken.ToString());
 
-        var mpAuth = await _accountsRepo.GetManiaPlanetAuthByAccessTokenAsync(token);
+        var mpAuth = await _accountsUnitOfWork.ManiaPlanetAuth.GetByAccessTokenAsync(token);
 
         if (mpAuth is null)
+        {
             return new AccountUnauthorized();
+        }
 
         if (!mpAuth.LbManialink.IsIWRUP)
+        {
             return new AccountForbidden();
+        }
 
         // can update wrs
-        var leaderboard = lbManialinkMap.Adapt<Leaderboard>();
 
-        await _worldRecordTM2Service.HandleLeaderboardAsync(lbManialinkMap.MapUid, leaderboard,
-            isManialinkReport: true);
+        var map = await _wrUnitOfWork.Maps.GetByUidAsync(lbManialinkMap.MapUid);
+
+        if (map is null || map.TitlePack is null)
+        {
+            return new AccountForbidden(); // Rather BadRequest
+        }
+
+        var loginModels = await _wrUnitOfWork.Logins.GetByNamesAsync(Enums.Game.TM2, lbManialinkMap.Records.Select(x => x.Login));
+
+        var records = lbManialinkMap.Records.Select(x => new TM2Record(
+            Rank: x.Rank,
+            Login: x.Login,
+            Time: new TimeInt32(x.Time),
+            DisplayName: x.Nickname,
+            ReplayUrl: x.ReplayUrl
+        ));
+
+        var changes = await _refreshTM2Service.CheckWorldRecordAsync(map, records, loginModels, isFromManialink: true, cancellationToken: default);
+
+        if (changes is not null && changes.WorldRecord is not null)
+        {
+            await _wrUnitOfWork.WorldRecords.AddAsync(changes.WorldRecord);
+
+            await _reportService.ReportWorldRecordAsync(changes.WorldRecord, $"{nameof(ReportScopeSet.TM2)}:{nameof(ReportScopeTM2.Nadeo)}:{nameof(ReportScopeTM2Nadeo.WR)}:{map.TitlePack.GetTitleUid()}");
+                
+            await _wrUnitOfWork.SaveAsync();
+        }
 
         return new LbManialinkWorldRecordsResponse();
     }
@@ -152,7 +189,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
             throw new Exception();
         }
 
-        var mpAuth = await _accountsRepo.GetManiaPlanetAuthByLoginAsync(me.Login);
+        var mpAuth = await _accountsUnitOfWork.ManiaPlanetAuth.GetByLoginAsync(me.Login);
 
         if (mpAuth is null)
         {
@@ -161,7 +198,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
                 Login = me.Login
             };
 
-            await _accountsRepo.AddManiaPlanetAuthAsync(mpAuth);
+            await _accountsUnitOfWork.ManiaPlanetAuth.AddAsync(mpAuth);
 
             var account = new AccountModel
             {
@@ -171,7 +208,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
                 ManiaPlanet = mpAuth
             };
 
-            await _accountsRepo.AddAccountAsync(account);
+            await _accountsUnitOfWork.Accounts.AddAsync(account);
         }
 
         mpAuth.Nickname = me.Nickname;
@@ -180,7 +217,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
         mpAuth.RefreshToken = authResponse.RefreshToken;
         mpAuth.ExpiresOn = DateTime.UtcNow + TimeSpan.FromSeconds(authResponse.ExpiresIn);
 
-        var zoneModel = await _accountsRepo.GetOrAddZoneAsync(me.Zone);
+        var zoneModel = await _accountsUnitOfWork.Zones.GetOrAddAsync(me.Zone);
 
         zoneModel.IsMP = true;
 
@@ -198,13 +235,13 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
         mpAuth.LbManialink.LastVisitedOn = DateTime.UtcNow;
         mpAuth.LbManialink.Visits++;
 
-        await _accountsRepo.SaveAsync();
+        await _accountsUnitOfWork.SaveAsync();
 
         var authManialink = await _cache.GetOrCreateAsync(CacheKeys.LeaderboardsManialinkAuth, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
 
-            var xmlFile = _fileHost.GetFilePath("Data/LbManialink", "LeaderboardsAuth.xml");
+            var xmlFile = _fileHost.GetClosedFilePath("Data/LbManialink", "LeaderboardsAuth.xml");
             return await File.ReadAllTextAsync(xmlFile, Encoding.UTF8);
         });
 
@@ -217,7 +254,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
 
     public async Task<LbManialinkMember> GetMemberAsync(string login, CancellationToken cancellationToken)
     {
-        var mpAuth = await _accountsRepo.GetManiaPlanetAuthByLoginAsync(login, cancellationToken);
+        var mpAuth = await _accountsUnitOfWork.ManiaPlanetAuth.GetByLoginAsync(login, cancellationToken);
 
         if (mpAuth is null)
         {
@@ -251,7 +288,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
 
     public async Task<IEnumerable<LbManialinkMember>> GetMembersAsync(CancellationToken cancellationToken)
     {
-        var members = await _accountsRepo.GetLbManialinkMembersAsync(cancellationToken);
+        var members = await _accountsUnitOfWork.LbManialink.GetMembersAsync(cancellationToken);
 
         return members.Select(x => new LbManialinkMember
         {
@@ -273,7 +310,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
         var titleId = titleUidSplit[0];
         var titleAuthor = titleUidSplit[1];
 
-        var reports = await _wrRepo.GetReportsFromTitlePackAsync(titleId, titleAuthor, count: 12);
+        var reports = await _wrUnitOfWork.WorldRecords.GetRecentByTitlePackAsync(titleId, titleAuthor, limit: 12);
 
         return reports.Where(x => x.Player is not null).Select(x =>
         {

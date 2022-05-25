@@ -1,9 +1,17 @@
-﻿using BigBang1112.WorldRecordReportLib.Models.Db;
+﻿using BigBang1112.Exceptions;
+using BigBang1112.WorldRecordReportLib.Attributes;
+using BigBang1112.WorldRecordReportLib.Enums;
+using BigBang1112.WorldRecordReportLib.Exceptions;
+using BigBang1112.WorldRecordReportLib.Models;
+using BigBang1112.WorldRecordReportLib.Models.Db;
+using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.DataEncryption;
 using Microsoft.EntityFrameworkCore.DataEncryption.Providers;
 using Microsoft.Extensions.Configuration;
+using System.Reflection;
 using System.Text;
+using System.Text.Json;
 
 namespace BigBang1112.WorldRecordReportLib.Data;
 
@@ -11,32 +19,33 @@ public class WrContext : DbContext
 {
     private readonly IEncryptionProvider encryption;
 
-    public DbSet<AssociatedAccountModel> AssociatedAccounts { get; set; } = default!;
-    public DbSet<WorldRecordModel> WorldRecords { get; set; } = default!;
-    public DbSet<MapModel> Maps { get; set; } = default!;
-    public DbSet<GameModel> Games { get; set; } = default!;
-    public DbSet<LoginModel> Logins { get; set; } = default!;
-    public DbSet<TmxLoginModel> TmxLogins { get; set; } = default!;
-    public DbSet<IgnoredLoginModel> IgnoredLogins { get; set; } = default!;
-    public DbSet<IgnoredLoginFromMapModel> IgnoredLoginsFromMaps { get; set; } = default!;
-    public DbSet<IgnoredLoginFromRemovedRecordReportModel> IgnoredLoginsFromRemovedRecordReport { get; internal set; } = default!;
-    public DbSet<RefreshModel> Refreshes { get; set; } = default!;
-    public DbSet<RefreshLoopModel> RefreshLoops { get; set; } = default!;
-    public DbSet<ReportModel> Reports { get; set; } = default!;
-    public DbSet<TitlePackModel> TitlePacks { get; set; } = default!;
-    public DbSet<EnvModel> Environments { get; set; } = default!;
-    public DbSet<AltReplayModel> AltReplays { get; set; } = default!;
-    public DbSet<MapGroupModel> MapGroups { get; set; } = default!;
-    public DbSet<DiscordWebhookModel> DiscordWebhooks { get; set; } = default!;
-    public DbSet<DiscordWebhookMessageModel> DiscordWebhookMessages { get; set; } = default!;
-    public DbSet<TmxSiteModel> TmxSites { get; set; } = default!;
-    public DbSet<TmxInitModel> TmxInits { get; set; } = default!;
-    public DbSet<MapModeModel> MapModes { get; set; } = default!;
-    public DbSet<RecordChangeModel> RecordChanges { get; set; } = default!;
-    public DbSet<RecordSetChangeModel> RecordSetChanges { get; set; } = default!;
-    public DbSet<RecordSetDetailedChangeModel> RecordSetDetailedChanges { get; set; } = default!;
-    public DbSet<RecordCountModel> RecordCounts2 { get; set; } = default!;
-    public DbSet<NicknameChangeModel> NicknameChanges { get; set; } = default!;
+    public virtual DbSet<AssociatedAccountModel> AssociatedAccounts { get; set; } = default!;
+    public virtual DbSet<WorldRecordModel> WorldRecords { get; set; } = default!;
+    public virtual DbSet<MapModel> Maps { get; set; } = default!;
+    public virtual DbSet<GameModel> Games { get; set; } = default!;
+    public virtual DbSet<LoginModel> Logins { get; set; } = default!;
+    public virtual DbSet<TmxLoginModel> TmxLogins { get; set; } = default!;
+    public virtual DbSet<IgnoredLoginModel> IgnoredLogins { get; set; } = default!;
+    public virtual DbSet<IgnoredLoginFromMapModel> IgnoredLoginsFromMaps { get; set; } = default!;
+    public virtual DbSet<IgnoredLoginFromRemovedRecordReportModel> IgnoredLoginsFromRemovedRecordReport { get; internal set; } = default!;
+    public virtual DbSet<RefreshModel> Refreshes { get; set; } = default!;
+    public virtual DbSet<RefreshLoopModel> RefreshLoops { get; set; } = default!;
+    public virtual DbSet<ReportModel> Reports { get; set; } = default!;
+    public virtual DbSet<TitlePackModel> TitlePacks { get; set; } = default!;
+    public virtual DbSet<EnvModel> Environments { get; set; } = default!;
+    public virtual DbSet<AltReplayModel> AltReplays { get; set; } = default!;
+    public virtual DbSet<MapGroupModel> MapGroups { get; set; } = default!;
+    public virtual DbSet<DiscordWebhookModel> DiscordWebhooks { get; set; } = default!;
+    public virtual DbSet<DiscordWebhookMessageModel> DiscordWebhookMessages { get; set; } = default!;
+    public virtual DbSet<TmxSiteModel> TmxSites { get; set; } = default!;
+    public virtual DbSet<TmxInitModel> TmxInits { get; set; } = default!;
+    public virtual DbSet<MapModeModel> MapModes { get; set; } = default!;
+    public virtual DbSet<RecordChangeModel> RecordChanges { get; set; } = default!;
+    public virtual DbSet<RecordSetChangeModel> RecordSetChanges { get; set; } = default!;
+    public virtual DbSet<RecordSetDetailedChangeModel> RecordSetDetailedChanges { get; set; } = default!;
+    public virtual DbSet<RecordCountModel> RecordCounts2 { get; set; } = default!;
+    public virtual DbSet<NicknameChangeModel> NicknameChanges { get; set; } = default!;
+    public virtual DbSet<CampaignModel> Campaigns { get; set; } = default!;
 
     public WrContext(DbContextOptions<WrContext> options, IConfiguration config) : base(options)
     {
@@ -55,6 +64,11 @@ public class WrContext : DbContext
     {
         modelBuilder.UseEncryption(encryption);
 
+        modelBuilder.Entity<GameModel>().HasEnumData<GameModel, Game, GameAttribute>(WrEnumData.GameAttributeToModel);
+        modelBuilder.Entity<EnvModel>().HasEnumData<EnvModel, Env, EnvAttribute>(WrEnumData.EnvAttributeToModel);
+        modelBuilder.Entity<TmxSiteModel>().HasEnumData<TmxSiteModel, TmxSite, TmxSiteAttribute>(WrEnumData.TmxSiteAttributeToModel);
+        modelBuilder.Entity<MapModeModel>().HasEnumData<MapModeModel, MapMode, MapModeAttribute>(WrEnumData.MapModeAttributeToModel);
+
         modelBuilder.Entity<RefreshLoopModel>()
             .HasMany(x => x.Refreshes)
             .WithOne(x => x.RefreshLoop)
@@ -65,44 +79,21 @@ public class WrContext : DbContext
             .WithMany(x => x.DiscordWebhookMessages)
             .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<GameModel>().HasData(
-            new GameModel { Id = 1, Name = NameConsts.GameTM2Name, DisplayName = NameConsts.GameTM2DisplayName },
-            new GameModel { Id = 2, Name = NameConsts.GameTMUFName, DisplayName = NameConsts.GameTMUFDisplayName },
-            new GameModel { Id = 3, Name = NameConsts.GameTMNFName, DisplayName = NameConsts.GameTMNFDisplayName },
-            new GameModel { Id = 4, Name = NameConsts.GameTMUName, DisplayName = NameConsts.GameTMUDisplayName },
-            new GameModel { Id = 5, Name = NameConsts.GameTMSName, DisplayName = NameConsts.GameTMSDisplayName },
-            new GameModel { Id = 6, Name = NameConsts.GameTMNName, DisplayName = NameConsts.GameTMNDisplayName },
-            new GameModel { Id = 7, Name = NameConsts.GameTMOName, DisplayName = NameConsts.GameTMODisplayName },
-            new GameModel { Id = 8, Name = NameConsts.GameTM2020Name, DisplayName = NameConsts.GameTM2020DisplayName }
-            );
-
-        modelBuilder.Entity<EnvModel>().HasData(
-            new EnvModel { Id = 1, Name = "Desert", Name2 = "Speed", Color = OfficialColors.EnvDesert },
-            new EnvModel { Id = 2, Name = "Snow", Name2 = "Alpine", Color = OfficialColors.EnvSnow },
-            new EnvModel { Id = 3, Name = "Rally", Color = OfficialColors.EnvRally },
-            new EnvModel { Id = 4, Name = "Island", Color = OfficialColors.EnvIsland },
-            new EnvModel { Id = 5, Name = "Bay", Color = OfficialColors.EnvBay },
-            new EnvModel { Id = 6, Name = "Coast", Color = OfficialColors.EnvCoast },
-            new EnvModel { Id = 7, Name = "Stadium", Color = OfficialColors.EnvStadium },
-            new EnvModel { Id = 8, Name = "Canyon", Color = OfficialColors.EnvCanyon },
-            new EnvModel { Id = 9, Name = "Valley", Color = OfficialColors.EnvValley },
-            new EnvModel { Id = 10, Name = "Lagoon", Color = OfficialColors.EnvLagoon },
-            new EnvModel { Id = 11, Name = "Stadium2020", DisplayName = "Stadium 2020", Color = OfficialColors.EnvStadium2020 });
-
-        modelBuilder.Entity<TmxSiteModel>().HasData(
-            new TmxSiteModel { Id = 1, ShortName = NameConsts.TMXSiteNations, Url = "http://nations.tm-exchange.com/" },
-            new TmxSiteModel { Id = 2, ShortName = NameConsts.TMXSiteUnited, Url = "https://united.tm-exchange.com/" },
-            new TmxSiteModel { Id = 3, ShortName = NameConsts.TMXSiteTMNF, Url = "https://tmnforever.tm-exchange.com/" },
-            new TmxSiteModel { Id = 4, ShortName = NameConsts.TMXSiteTM2, Url = "https://tm.mania-exchange.com/" },
-            new TmxSiteModel { Id = 5, ShortName = NameConsts.TMXSiteTrackmania, Url = "https://trackmania.exchange/" });
-
-        modelBuilder.Entity<MapModeModel>().HasData(
-            new MapModeModel { Id = 1, Name = NameConsts.MapModeRace },
-            new MapModeModel { Id = 2, Name = NameConsts.MapModeStunts }
-            );
-
         modelBuilder.Entity<RecordSetDetailedChangeModel>()
             .Property(e => e.Type)
             .HasConversion<int>();
+
+        modelBuilder.Entity<DiscordWebhookModel>()
+            .Property(e => e.Scope)
+            .HasConversion(
+                x => JsonSerializer.Serialize(x, ReportScopeSet.JsonSerializerOptions),
+                x => JsonSerializer.Deserialize<ReportScopeSet>(x, ReportScopeSet.JsonSerializerOptions));
+
+        modelBuilder.Entity<MapModel>()
+            .Property(e => e.LastRefreshedOn)
+            .HasColumnType("text")
+            .HasConversion(
+                x => JsonSerializer.Serialize(x, ReportScopeSet.JsonSerializerOptions),
+                x => JsonSerializer.Deserialize<ScoreContextValue<DateTimeOffset>>(x, ReportScopeSet.JsonSerializerOptions));
     }
 }

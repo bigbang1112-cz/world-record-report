@@ -1,30 +1,33 @@
-﻿using BigBang1112.WorldRecordReportLib.Data;
-using BigBang1112.WorldRecordReportLib.Models.Db;
-using BigBang1112.WorldRecordReportLib.Models;
+﻿using BigBang1112.WorldRecordReportLib.Models;
 using Discord.Webhook;
 using System.Globalization;
 using TmEssentials;
 using BigBang1112.WorldRecordReportLib.Repos;
 using Microsoft.Extensions.Logging;
+using Discord;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
 public class DiscordWebhookService : IDiscordWebhookService
 {
     private readonly ILogger<DiscordWebhookService> _logger;
-    private readonly IWrRepo _repo;
+    private readonly IWrUnitOfWork _wrUnitOfWork;
 
     public const string LogoIconUrl = "https://bigbang1112.cz/assets/images/logo_small.png";
 
-    public DiscordWebhookService(ILogger<DiscordWebhookService> logger, IWrRepo repo)
+    public DiscordWebhookService(ILogger<DiscordWebhookService> logger, IWrUnitOfWork wrUnitOfWork)
     {
         _logger = logger;
-        _repo = repo;
+        _wrUnitOfWork = wrUnitOfWork;
     }
 
-    public async Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook, Func<ulong, DiscordWebhookMessageModel>? message = null, string? text = null, IEnumerable<Discord.Embed>? embeds = null)
+    public async Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook,
+                                                                    Func<ulong, DiscordWebhookMessageModel>? message = null,
+                                                                    string? text = null,
+                                                                    IEnumerable<Embed>? embeds = null,
+                                                                    CancellationToken cancellationToken = default)
     {
-        using var webhookClient = CreateWebhookClient(webhook.Url);
+        var webhookClient = CreateWebhookClientOrDisable(webhook);
 
         if (webhookClient is null)
         {
@@ -40,13 +43,62 @@ public class DiscordWebhookService : IDiscordWebhookService
 
         var msg = message.Invoke(msgId);
 
-        await _repo.AddDiscordWebhookMessageAsync(msg);
+        await _wrUnitOfWork.DiscordWebhookMessages.AddAsync(msg, cancellationToken);
 
         return msg;
     }
 
-    public DiscordWebhookClient? CreateWebhookClient(string webhookUrl)
+    public async Task ModifyMessageAsync(DiscordWebhookMessageModel msg,
+                                         string? text = null,
+                                         IEnumerable<Embed>? embeds = null,
+                                         CancellationToken cancellationToken = default)
     {
+        var webhookClient = CreateWebhookClientOrDisable(msg.Webhook);
+
+        if (webhookClient is null)
+        {
+            return;
+        }
+
+        msg.ModifiedOn = DateTime.UtcNow;
+
+        await webhookClient.ModifyMessageAsync(msg.MessageId, x =>
+        {
+            if (text is not null)
+            {
+                x.Content = text;
+            }
+
+            if (embeds is not null)
+            {
+                x.Embeds = new(embeds);
+            }
+        });
+    }
+
+    private DiscordWebhookClient? CreateWebhookClientOrDisable(DiscordWebhookModel webhook)
+    {
+        if (webhook.Disabled)
+        {
+            return null;
+        }
+
+        var webhookClient = CreateWebhookClient(webhook.Url, out bool isDeleted);
+
+        if (isDeleted)
+        {
+            _logger.LogWarning("Webhook {guid} is deleted", webhook.Guid);
+
+            webhook.Disabled = true;
+        }
+
+        return webhookClient;
+    }
+
+    public DiscordWebhookClient? CreateWebhookClient(string webhookUrl, out bool isDeleted)
+    {
+        isDeleted = false;
+
         try
         {
             return new DiscordWebhookClient(webhookUrl);
@@ -62,6 +114,8 @@ public class DiscordWebhookService : IDiscordWebhookService
         catch (InvalidOperationException)
         {
             // Could not find a webhook with the supplied credentials.
+
+            isDeleted = true;
         }
         catch (Exception e)
         {
@@ -69,100 +123,6 @@ public class DiscordWebhookService : IDiscordWebhookService
         }
 
         return null;
-    }
-
-    public Discord.Embed GetDefaultEmbed_NewWorldRecord(WorldRecordModel wr)
-    {
-        var map = wr.Map;
-
-        var deltaFormat = map.Game.Name == NameConsts.GameTMUFName ? "0.00" : "0.000";
-
-        var time = wr.TimeInt32.ToString(map.Game.Name == NameConsts.GameTMUFName);
-
-        if (wr.PreviousWorldRecord is not null)
-        {
-            var delta = new TimeInt32(wr.Time - wr.PreviousWorldRecord.Time).TotalSeconds.ToString(deltaFormat, CultureInfo.InvariantCulture);
-            time += $" ({delta})";
-        }
-
-        var nickname = FilterOutNickname(
-            nickname: wr.GetPlayerNicknameDeformatted(),
-            loginIfFilteredOut: wr.GetPlayerLogin());
-
-        var builder = new Discord.EmbedBuilder()
-            .WithTitle("New world record!")
-            .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
-            .WithTimestamp(DateTime.SpecifyKind(wr.DrivenOn, DateTimeKind.Utc))
-            .WithColor(new Discord.Color(
-                map.Environment.Color[0],
-                map.Environment.Color[1],
-                map.Environment.Color[2]))
-            .AddField("Map", TextFormatter.Deformat(map.Name), true)
-            .AddField("Time", time, true)
-            .AddField("By", nickname, true);
-
-        AddThumbnailAndUrl(builder, map);
-
-        return builder.Build();
-    }
-
-    public Discord.Embed GetDefaultEmbed_NewStuntsWorldRecord(WorldRecordModel wr)
-    {
-        var map = wr.Map;
-
-        var score = wr.Time.ToString();
-        if (wr.PreviousWorldRecord is not null)
-            score += $" (+{wr.Time - wr.PreviousWorldRecord.Time})";
-
-        var builder = new Discord.EmbedBuilder()
-            .WithTitle("New world record!")
-            .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
-            .WithTimestamp(DateTime.SpecifyKind(wr.DrivenOn, DateTimeKind.Utc))
-            .WithColor(new Discord.Color(
-                map.Environment.Color[0],
-                map.Environment.Color[1],
-                map.Environment.Color[2]))
-            .AddField("Map", TextFormatter.Deformat(map.Name), true)
-            .AddField("Score", score, true)
-            .AddField("By", TextFormatter.Deformat(wr.Player?.Nickname ?? wr.TmxPlayer?.Nickname ?? "[unknown nickname]"), true);
-
-        AddThumbnailAndUrl(builder, map);
-
-        return builder.Build();
-    }
-
-    public Discord.Embed GetDefaultEmbed_RemovedWorldRecord(RemovedWorldRecord removedWr)
-    {
-        var previousWr = removedWr.Previous;
-        var map = previousWr.Map;
-        var time = previousWr.TimeInt32.ToString();
-
-        var builder = new Discord.EmbedBuilder()
-            .WithTitle("Removed world record detected")
-            .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
-            .WithColor(new Discord.Color(
-                map.Environment.Color[0],
-                map.Environment.Color[1],
-                map.Environment.Color[2]))
-            .AddField("Map", map.DeformattedName, true)
-            .AddField("Time", time, true)
-            .AddField("By", previousWr.GetPlayerNicknameDeformatted().EscapeDiscord(), true);
-
-        var currentWr = removedWr.Current;
-
-        if (currentWr is not null)
-        {
-            var prevTime = currentWr.TimeInt32.ToString();
-            var prevNickname = currentWr.GetPlayerNicknameDeformatted().EscapeDiscord();
-
-            builder
-                .AddField("New time", prevTime, true)
-                .AddField("Now by", prevNickname, true);
-        }
-
-        AddThumbnailAndUrl(builder, map);
-
-        return builder.Build();
     }
 
     private static Discord.EmbedBuilder AddThumbnailAndUrl(Discord.EmbedBuilder builder, MapModel map)
@@ -213,9 +173,9 @@ public class DiscordWebhookService : IDiscordWebhookService
         return nickname;
     }
 
-    public async Task DeleteMessageAsync(DiscordWebhookMessageModel msg)
+    public async Task DeleteMessageAsync(DiscordWebhookMessageModel msg, CancellationToken cancellationToken = default)
     {
-        using var webhookClient = CreateWebhookClient(msg.Webhook.Url);
+        using var webhookClient = CreateWebhookClientOrDisable(msg.Webhook);
 
         if (webhookClient is null)
         {

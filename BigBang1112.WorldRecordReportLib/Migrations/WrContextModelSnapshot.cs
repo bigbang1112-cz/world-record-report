@@ -61,6 +61,36 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.ToTable("AssociatedAccounts");
                 });
 
+            modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.CampaignModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsOver")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("LeaderboardUid")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("PublishedOn")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.ToTable("Campaigns");
+                });
+
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.DiscordWebhookMessageModel", b =>
                 {
                     b.Property<int>("Id")
@@ -119,6 +149,9 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.Property<Guid>("Guid")
                         .HasColumnType("char(36)");
+
+                    b.Property<string>("Scope")
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Url")
                         .IsRequired()
@@ -373,6 +406,9 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.Property<DateTime?>("JoinedOn")
                         .HasColumnType("datetime");
 
+                    b.Property<DateTime?>("LastNicknameChangeOn")
+                        .HasColumnType("datetime");
+
                     b.Property<DateTime>("LastSeenOn")
                         .HasColumnType("datetime");
 
@@ -388,6 +424,8 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("GameId");
+
+                    b.HasIndex("Name");
 
                     b.ToTable("Logins");
                 });
@@ -434,6 +472,9 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.Property<int>("AuthorId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("CampaignId")
+                        .HasColumnType("int");
+
                     b.Property<byte[]>("Checksum")
                         .HasMaxLength(32)
                         .HasColumnType("varbinary(32)");
@@ -443,8 +484,14 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
+                    b.Property<Guid?>("DownloadGuid")
+                        .HasColumnType("char(36)");
+
                     b.Property<int>("EnvironmentId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("FileLastModifiedOn")
+                        .HasColumnType("datetime");
 
                     b.Property<int>("GameId")
                         .HasColumnType("int");
@@ -457,6 +504,20 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.Property<DateTime?>("LastActivityOn")
                         .HasColumnType("datetime");
+
+                    b.Property<string>("LastRefreshedOn")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("MapId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("MapStyle")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("MapType")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("MapUid")
                         .IsRequired()
@@ -490,6 +551,8 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasIndex("AuthorId");
 
+                    b.HasIndex("CampaignId");
+
                     b.HasIndex("EnvironmentId");
 
                     b.HasIndex("GameId");
@@ -497,6 +560,8 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.HasIndex("GroupId");
 
                     b.HasIndex("IntendedGameId");
+
+                    b.HasIndex("MapUid");
 
                     b.HasIndex("ModeId");
 
@@ -749,7 +814,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
-                    b.Property<int>("WorldRecordId")
+                    b.Property<int?>("WorldRecordId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -963,6 +1028,17 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                     b.Navigation("WorldRecord");
                 });
 
+            modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.CampaignModel", b =>
+                {
+                    b.HasOne("BigBang1112.WorldRecordReportLib.Models.Db.GameModel", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+                });
+
             modelBuilder.Entity("BigBang1112.WorldRecordReportLib.Models.Db.DiscordWebhookMessageModel", b =>
                 {
                     b.HasOne("BigBang1112.WorldRecordReportLib.Models.Db.ReportModel", "Report")
@@ -1056,6 +1132,10 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("BigBang1112.WorldRecordReportLib.Models.Db.CampaignModel", "Campaign")
+                        .WithMany()
+                        .HasForeignKey("CampaignId");
+
                     b.HasOne("BigBang1112.WorldRecordReportLib.Models.Db.EnvModel", "Environment")
                         .WithMany("Maps")
                         .HasForeignKey("EnvironmentId")
@@ -1089,6 +1169,8 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
                         .HasForeignKey("TmxAuthorId");
 
                     b.Navigation("Author");
+
+                    b.Navigation("Campaign");
 
                     b.Navigation("Environment");
 
@@ -1215,9 +1297,7 @@ namespace BigBang1112.WorldRecordReportLib.Migrations
 
                     b.HasOne("BigBang1112.WorldRecordReportLib.Models.Db.WorldRecordModel", "WorldRecord")
                         .WithMany()
-                        .HasForeignKey("WorldRecordId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("WorldRecordId");
 
                     b.Navigation("RemovedWorldRecord");
 

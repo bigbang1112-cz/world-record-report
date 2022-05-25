@@ -1,4 +1,4 @@
-﻿using BigBang1112.Services;
+﻿/*using BigBang1112.Services;
 using BigBang1112.WorldRecordReportLib.Comparers;
 using BigBang1112.WorldRecordReportLib.Converters.Json;
 using BigBang1112.WorldRecordReportLib.Models;
@@ -77,7 +77,7 @@ public class RecordSetService : IRecordSetService
         return _fileHostService.GetFileInfo(subDirFileName);
     }
 
-    public async Task UpdateRecordSetAsync(string zone, string mapUid, RecordSet recordSet, Dictionary<string, string> nicknameDictionary)
+    public async Task UpdateRecordSetAsync(string zone, string mapUid, LeaderboardTM2 recordSet, Dictionary<string, string> nicknameDictionary)
     {
         GetFilePaths(zone, mapUid,
             out string path,
@@ -96,12 +96,12 @@ public class RecordSetService : IRecordSetService
             return;
         }
 
-        RecordSet recordSetPrev;
+        LeaderboardTM2 recordSetPrev;
 
         using (var stream = File.OpenRead(fullFileName))
         using (var gzip = new GZipStream(stream, CompressionMode.Decompress))
         {
-            recordSetPrev = await JsonHelper.DeserializeAsync<RecordSet>(gzip, jsonSerializerOptions);
+            recordSetPrev = await JsonHelper.DeserializeAsync<LeaderboardTM2>(gzip, jsonSerializerOptions);
         }
 
         await DownloadMissingGhostsAsync(mapUid, recordSet);
@@ -113,7 +113,7 @@ public class RecordSetService : IRecordSetService
             return;
         }
 
-        var recordSetChanges = CompareTop10(recordSet, recordSetPrev);
+        var recordSetChanges = LeaderboardComparer.Compare(recordSet.Records, recordSetPrev.Records);
         var timeChanges = CompareTimes(recordSet, recordSetPrev);
 
         if (timeChanges is not null && timeChanges.NewRecords.Count > 0)
@@ -146,7 +146,7 @@ public class RecordSetService : IRecordSetService
         _cache.Set(cacheKey, DateTime.UtcNow);
     }
 
-    private async Task DownloadMissingGhostsAsync(string mapUid, RecordSet recordSet)
+    private async Task DownloadMissingGhostsAsync(string mapUid, LeaderboardTM2 recordSet)
     {
         foreach (var record in recordSet.Records)
         {
@@ -157,13 +157,11 @@ public class RecordSetService : IRecordSetService
 
             await _ghostService.DownloadGhostAndGetTimestampAsync(mapUid, record);
 
-            _logger.LogInformation("Downloaded {time} on {mapUid} by {login}", new TimeInt32(record.Time), mapUid, record.Login);
-
             await Task.Delay(500);
         }
     }
 
-    private async Task ApplyChangesAsync(RecordSet recordSet, string fullFileName, RecordSetDetailedRecordChanges? recordSetChanges, string cacheKey, MapModel map, bool hasCount, Dictionary<string, string> nicknameDictionary)
+    private async Task ApplyChangesAsync(LeaderboardTM2 recordSet, string fullFileName, LeaderboardChanges<string>? recordSetChanges, string cacheKey, MapModel map, bool hasCount, Dictionary<string, string> nicknameDictionary)
     {
         var drivenAfter = _cache.GetOrCreate(cacheKey, entry =>
         {
@@ -191,13 +189,13 @@ public class RecordSetService : IRecordSetService
         var logins = new Dictionary<string, LoginModel>();
         var changes = new List<RecordSetDetailedChangeModel>();
 
-        var allPossibleRecordChanges = new Dictionary<RecordSetDetailedChangeType, IEnumerable<RecordSetDetailedRecord>>
+        var allPossibleRecordChanges = new Dictionary<RecordSetDetailedChangeType, IEnumerable<TM2Record>>
         {
-            { RecordSetDetailedChangeType.New, recordSetChanges.NewRecords.Select(login => new RecordSetDetailedRecord(rank: 0, login, time: 0)) },
-            { RecordSetDetailedChangeType.Improvement, recordSetChanges.ImprovedRecords },
-            { RecordSetDetailedChangeType.Removed, recordSetChanges.RemovedRecords },
-            { RecordSetDetailedChangeType.Worsen, recordSetChanges.WorsenRecords },
-            { RecordSetDetailedChangeType.PushedOff, recordSetChanges.PushedOffRecords }
+            { RecordSetDetailedChangeType.New, recordSetChanges.NewRecords.Cast<TM2Record>() },
+            { RecordSetDetailedChangeType.Improvement, recordSetChanges.ImprovedRecords.Cast<TM2Record>() },
+            { RecordSetDetailedChangeType.Removed, recordSetChanges.RemovedRecords.Cast<TM2Record>() },
+            { RecordSetDetailedChangeType.Worsen, recordSetChanges.WorsenRecords.Cast<TM2Record>() },
+            { RecordSetDetailedChangeType.PushedOff, recordSetChanges.PushedOffRecords.Cast<TM2Record>() }
         };
 
         foreach (var (changeType, recordChanges) in allPossibleRecordChanges)
@@ -331,7 +329,7 @@ public class RecordSetService : IRecordSetService
     }
 
     [Obsolete("Record set changes are no longer supported")]
-    private async Task SaveChangesToDatabaseAsync(DateTime drivenBefore, MapModel map, DateTime drivenAfter, RecordSetChanges timeChanges)
+    private async Task SaveChangesToDatabaseAsync(DateTime drivenBefore, MapModel map, DateTime drivenAfter, UniqueRecordChanges timeChanges)
     {
         var recordSetChange = new RecordSetChangeModel
         {
@@ -388,7 +386,7 @@ public class RecordSetService : IRecordSetService
         return gzip;
     }
 
-    public async Task<RecordSet?> GetFromMapAsync(string zone, string mapUid)
+    public async Task<LeaderboardTM2?> GetFromMapAsync(string zone, string mapUid)
     {
         using var stream = GetStreamFromMap(zone, mapUid);
 
@@ -397,7 +395,7 @@ public class RecordSetService : IRecordSetService
             return null;
         }
 
-        return await JsonHelper.DeserializeAsync<RecordSet>(stream, jsonSerializerOptions);
+        return await JsonHelper.DeserializeAsync<LeaderboardTM2>(stream, jsonSerializerOptions);
     }
 
     public async Task<string?> GetJsonFromMapAsync(string zone, string mapUid)
@@ -423,107 +421,8 @@ public class RecordSetService : IRecordSetService
         await JsonSerializer.SerializeAsync(gzip, obj, jsonSerializerOptions);
     }
 
-    private static RecordSetChanges? CompareTimes(RecordSet recordSet, RecordSet recordSetPrev)
-    {
-        using var newTimesEnumerator = recordSet.Times.GetEnumerator();
-        using var prevTimesEnumerator = recordSetPrev.Times.GetEnumerator();
-
-        var newTotalRecordCount = recordSet.Times.Sum(x => x.count);
-        var prevTotalRecordCount = recordSetPrev.Times.Sum(x => x.count);
-
-        var mapRecordCountDifference = newTotalRecordCount - prevTotalRecordCount;
-
-        var newRecords = new Dictionary<int, int>();
-        var removedRecords = new Dictionary<int, int>();
-
-        var somethingChanged = false;
-
-        while (newTimesEnumerator.MoveNext() && prevTimesEnumerator.MoveNext())
-        {
-            while (true)
-            {
-                var (newUniqueTime, newTimeCount) = newTimesEnumerator.Current;
-                var (prevUniqueTime, prevTimeCount) = prevTimesEnumerator.Current;
-
-                // Fresh new record/s have appeared
-                if (newUniqueTime < prevUniqueTime)
-                {
-                    somethingChanged = true;
-
-                    var amountOfNewTimes = newTimeCount;
-
-                    newRecords.Add(newUniqueTime, amountOfNewTimes);
-
-                    if (newTimesEnumerator.MoveNext())
-                        continue;
-                }
-
-                // One or more times have been removed and there's no other record with this time
-                if (newUniqueTime > prevUniqueTime)
-                {
-                    somethingChanged = true;
-
-                    var amountOfRemovedTimes = prevTimeCount;
-
-                    if (mapRecordCountDifference < 0)
-                    {
-                        // Possibly removed
-
-                        removedRecords.Add(prevUniqueTime, amountOfRemovedTimes);
-                    }
-                    else
-                    {
-                        // Possibly improvement
-                    }
-
-                    if (prevTimesEnumerator.MoveNext())
-                        continue;
-                }
-
-                // New existing time/s
-                if (newTimeCount > prevTimeCount)
-                {
-                    somethingChanged = true;
-
-                    newRecords[newUniqueTime] = newTimeCount - prevTimeCount;
-
-                    //newUniqueTime
-                }
-
-                // Removed time/s while at least one equal time still exists
-                // Or the time has been improved by the same person
-                if (newTimeCount < prevTimeCount)
-                {
-                    somethingChanged = true;
-
-                    //prevUniqueTime
-
-                    if (mapRecordCountDifference < 0)
-                    {
-                        // The record has been possibly removed
-
-                        removedRecords[prevUniqueTime] = prevTimeCount - newTimeCount;
-                    }
-                    else
-                    {
-                        // Unpredictable behaviour, better to not investigate
-                        // An improvement or removed record while someone has driven a fresh record
-                    }
-                }
-
-                break;
-            }
-        }
-
-        if (!somethingChanged)
-        {
-            return null;
-        }
-
-        return new RecordSetChanges(newRecords, removedRecords);
-    }
-
-    internal static RecordSetDetailedRecordChanges? CompareTop10(RecordSet recordSet, RecordSet recordSetPrev)
+    [Obsolete("Use LeaderboardComparer.Compare instead")]
+    internal static RecordSetDetailedRecordChanges? CompareTop10(LeaderboardTM2 recordSet, LeaderboardTM2 recordSetPrev)
     {
         return CompareTop10(recordSet.Records, recordSetPrev.Records);
     }
@@ -533,9 +432,10 @@ public class RecordSetService : IRecordSetService
     /// </summary>
     /// <param name="records">Current record set.</param>
     /// <param name="recordsPrev">Previous record set.</param>
+    [Obsolete("Use LeaderboardComparer.Compare instead")]
     internal static RecordSetDetailedRecordChanges? CompareTop10(
-        IEnumerable<RecordSetDetailedRecord> records,
-        IEnumerable<RecordSetDetailedRecord> recordsPrev)
+        IEnumerable<TM2Record> records,
+        IEnumerable<TM2Record> recordsPrev)
     {
         // Compares equality based on everything except rank
         var changesComparer = new RecordSetDetailedRecordChangesComparer();
@@ -589,3 +489,4 @@ public class RecordSetService : IRecordSetService
         return new RecordSetDetailedRecordChanges(newRecords, improvedRecords, removedRecords, worsenRecords, pushedOffRecords);
     }
 }
+*/
