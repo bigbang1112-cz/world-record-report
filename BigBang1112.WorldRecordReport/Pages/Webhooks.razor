@@ -303,7 +303,7 @@
         if (msg is null)
         {
             Logger.LogInformation("Webhook {guid}: Webhook cannot be reached.", guid);
-            
+
             await JS.InvokeVoidAsync("alert", "Ping has been processed: Fail.");
         }
         else
@@ -362,6 +362,8 @@
         {
             return;
         }
+
+        WrUnitOfWork.DiscordWebhooks.Update(Webhook);
 
         await WrAuthService.SaveAsync();
 
