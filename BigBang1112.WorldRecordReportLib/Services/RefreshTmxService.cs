@@ -154,7 +154,7 @@ public class RefreshTmxService : RefreshService
         {
             // check for leaderboard changes
             // ...
-            await ReportChangesInRecordsAsync(map, recordSet, prevRecordSet);
+            await ReportChangesInRecordsAsync(map, recordSet, prevRecordSet, subScope);
         }
 
         // create a .json.gz file from replays.Results
@@ -229,7 +229,7 @@ public class RefreshTmxService : RefreshService
         return false;
     }
 
-    private async ValueTask ReportChangesInRecordsAsync(MapModel map, IEnumerable<TmxReplay> records, IEnumerable<TmxReplay> prevRecords)
+    private async ValueTask ReportChangesInRecordsAsync(MapModel map, IEnumerable<TmxReplay> records, IEnumerable<TmxReplay> prevRecords, string subScope)
     {
         var changes = LeaderboardComparer.Compare(records.Where(x => x.Rank.HasValue), prevRecords.Where(x => x.Rank.HasValue));
 
@@ -247,7 +247,7 @@ public class RefreshTmxService : RefreshService
             return;
         }
 
-        await _reportService.ReportDifferencesAsync(rich, map, ScopeOfficialChanges, maxRank: 10);
+        await _reportService.ReportDifferencesAsync(rich, map, $"{ScopeOfficialChanges}:{subScope}", maxRank: 10);
     }
 
     private async Task<WorldRecordModel> ProcessNewWorldRecordAsync(TmxSite tmxSite,
