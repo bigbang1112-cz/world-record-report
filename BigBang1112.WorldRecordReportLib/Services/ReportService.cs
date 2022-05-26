@@ -523,7 +523,7 @@ public class ReportService
 
         foreach (var message in discordBotMessages)
         {
-            await _tmwrDiscordBotService.ModifyMessageAsync(message, embeds: webhookEmbed.Yield());
+            await _tmwrDiscordBotService.ModifyMessageAsync(message, embeds: botEmbed.Yield());
         }
     }
 
