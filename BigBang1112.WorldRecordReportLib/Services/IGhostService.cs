@@ -6,9 +6,9 @@ namespace BigBang1112.WorldRecordReportLib.Services;
 
 public interface IGhostService
 {
-    Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, MapLeaderBoardPlayer record);
-    Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, TM2Record record);
-    Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, string replayUrl, TimeInt32 time, string login);
+    Task<DateTimeOffset?> DownloadGhostAndGetTimestampAsync(string mapUid, MapLeaderBoardPlayer record);
+    Task<DateTimeOffset?> DownloadGhostAndGetTimestampAsync(string mapUid, TM2Record record);
+    Task<DateTimeOffset?> DownloadGhostAndGetTimestampAsync(string mapUid, string replayUrl, TimeInt32 time, string login);
     string GetGhostFileName(string mapUid, TimeInt32 time, string login);
     string GetGhostFullPath(string mapUid, TimeInt32 time, string login);
     string GetGhostFullPath(string mapUid, int timeInMilliseconds, string login);

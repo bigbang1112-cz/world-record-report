@@ -282,7 +282,7 @@ public class RefreshTM2Service : RefreshService
                 {
                     verified = true;
                     replayUrl = record.ReplayUrl;
-                    timestamp = await _ghostService.DownloadGhostAndGetTimestampAsync(leaderboard.MapUid, record);
+                    timestamp = (await _ghostService.DownloadGhostAndGetTimestampAsync(leaderboard.MapUid, record)) ?? unverifiedWr.PublishedOn;
                     login = record.Login;
                     nickname = record.Nickname;
 
@@ -438,7 +438,7 @@ public class RefreshTM2Service : RefreshService
 
     private async IAsyncEnumerable<TM2Record> PopulateCurrentLeaderboardWithTimestamps(
         LeaderboardTM2 currentLeaderboard,
-        Dictionary<TM2Record, DateTimeOffset> timestamps,
+        Dictionary<TM2Record, DateTimeOffset?> timestamps,
         LeaderboardTM2? previousLeaderboard = null)
     {
         foreach (var rec in currentLeaderboard.Records)
@@ -600,7 +600,7 @@ public class RefreshTM2Service : RefreshService
         };
     }
 
-    private async IAsyncEnumerable<(TM2Record, DateTimeOffset)> DownloadMissingGhostsAsync(string mapUid, IEnumerable<TM2Record> records, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    private async IAsyncEnumerable<(TM2Record, DateTimeOffset?)> DownloadMissingGhostsAsync(string mapUid, IEnumerable<TM2Record> records, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         foreach (var rec in records)
         {

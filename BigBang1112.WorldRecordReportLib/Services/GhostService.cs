@@ -34,12 +34,12 @@ public class GhostService : IGhostService
         return File.Exists(GetGhostFullPath(mapUid, record.Time, record.Login));
     }
 
-    public async Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, MapLeaderBoardPlayer record)
+    public async Task<DateTimeOffset?> DownloadGhostAndGetTimestampAsync(string mapUid, MapLeaderBoardPlayer record)
     {
         return await DownloadGhostAndGetTimestampAsync(mapUid, record.ReplayUrl, record.Time, record.Login);
     }
 
-    public async Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, TM2Record record)
+    public async Task<DateTimeOffset?> DownloadGhostAndGetTimestampAsync(string mapUid, TM2Record record)
     {
         if (record.ReplayUrl is null)
         {
@@ -49,7 +49,7 @@ public class GhostService : IGhostService
         return await DownloadGhostAndGetTimestampAsync(mapUid, record.ReplayUrl, record.Time, record.Login);
     }
 
-    public async Task<DateTimeOffset> DownloadGhostAndGetTimestampAsync(string mapUid, string replayUrl, TimeInt32 time, string login)
+    public async Task<DateTimeOffset?> DownloadGhostAndGetTimestampAsync(string mapUid, string replayUrl, TimeInt32 time, string login)
     {
         _logger.LogInformation("Downloading {time} on {mapUid} by {login}...", time, mapUid, login);
 
@@ -70,7 +70,7 @@ public class GhostService : IGhostService
 
         await ghostStream.CopyToAsync(fileStream);
 
-        return response.Content.Headers.LastModified.GetValueOrDefault(DateTimeOffset.UtcNow);
+        return response.Content.Headers.LastModified;
     }
 
     public async Task<DateTimeOffset?> DownloadGhostTimestampAsync(string replayUrl)
