@@ -43,7 +43,7 @@ public class GhostService : IGhostService
     {
         if (record.ReplayUrl is null)
         {
-            return DateTimeOffset.UtcNow;
+            return null;
         }
 
         return await DownloadGhostAndGetTimestampAsync(mapUid, record.ReplayUrl, record.Time, record.Login);
@@ -60,7 +60,7 @@ public class GhostService : IGhostService
             _logger.LogInformation("Ghost not downloaded (status code: {code}). Using current time instead.", response.StatusCode);
 
             // access denied or not found
-            return DateTimeOffset.UtcNow;
+            return null;
         }
 
         using var fileStream = File.Create(GetGhostFullPath(mapUid, time, login));
