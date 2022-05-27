@@ -259,7 +259,7 @@ public class ReportService
             }
         }
 
-        return biggestTimestamp.Day != smallestTimestamp.Day;
+        return biggestTimestamp - smallestTimestamp > TimeSpan.FromDays(1);
     }
 
     private static DateTime? GetTimestamp<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull => record switch
