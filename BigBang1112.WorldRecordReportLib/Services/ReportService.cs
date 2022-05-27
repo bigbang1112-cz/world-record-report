@@ -204,7 +204,7 @@ public class ReportService
             var timestamp = GetTimestamp(record);
             var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}:** ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
+            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}** - ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
         }
 
         foreach (var (currentRecord, previousRecord) in improvedRecords)
@@ -213,17 +213,17 @@ public class ReportService
 
             var bracket = previousRecord.Rank is null
                 ? $"` {delta} `"
-                : $"` {delta} `, from ` {previousRecord.Rank:00} `";
+                : $"` {delta} ` from ` {previousRecord.Rank:00} `";
 
             var timestamp = GetTimestamp(currentRecord);
             var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}:** ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` ({bracket}) by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
+            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}** - ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
         }
 
         foreach (var record in changes.RemovedRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}:** ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
+            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}** - ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
         }
 
         foreach (var (_, recStr) in dict)
@@ -259,7 +259,7 @@ public class ReportService
             }
         }
 
-        return biggestTimestamp.Day != smallestTimestamp.Day;
+        return biggestTimestamp - smallestTimestamp > TimeSpan.FromDays(1);
     }
 
     private static DateTime? GetTimestamp<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull => record switch
