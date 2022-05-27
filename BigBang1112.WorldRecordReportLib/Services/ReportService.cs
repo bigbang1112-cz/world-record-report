@@ -18,7 +18,7 @@ public class ReportService
     private readonly IDiscordBotUnitOfWork _discordBotUnitOfWork;
     private readonly TmwrDiscordBotService _tmwrDiscordBotService;
     private readonly ILogger<ReportService> _logger;
-    
+
     public const string LogoIconUrl = "https://bigbang1112.cz/assets/images/logo_small.png";
 
     public ReportService(IWrUnitOfWork wrUnitOfWork,
@@ -112,23 +112,22 @@ public class ReportService
         var latestChange = GetLatestChange(changes);
 
         var embedBuilder = new Discord.EmbedBuilder()
-            .WithTitle(map.GetHumanizedDeformattedName())
-            .WithUrl(map.GetInfoUrl())
             .WithDescription(string.Join('\n', lines))
-            .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
             .WithColor(new Discord.Color(
                 map.Environment.Color[0],
                 map.Environment.Color[1],
                 map.Environment.Color[2]));
 
-        if (latestChange.HasValue)
+        /*if (latestChange.HasValue)
         {
             embedBuilder.Timestamp = latestChange;
-        }
+        }*/
 
-        var embedWebhook = embedBuilder.Build();
-        var embedBot = embedBuilder.WithFooter("", UrlConsts.Favicon).Build();
-        
+        var embedBot = embedBuilder.Build();
+        var embedWebhook = embedBuilder
+            .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
+            .Build();
+
         var report = new ReportModel
         {
             Guid = Guid.NewGuid(),
@@ -198,17 +197,14 @@ public class ReportService
             .OrderBy(x => x.Item1.Time)
             .ToList();
 
-        var includeTimestamp = newRecords.Count > 1 || improvedRecords.Count > 1
-            || (newRecords.Count > 0 && improvedRecords.Count > 0);
-        
         var useLongTimestamp = UseLongTimestamp(changes);
 
         foreach (var record in newRecords)
         {
             var timestamp = GetTimestamp(record);
-            var timestampBracket = includeTimestamp && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
+            var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
+            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}:** ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
         }
 
         foreach (var (currentRecord, previousRecord) in improvedRecords)
@@ -216,18 +212,18 @@ public class ReportService
             var delta = (currentRecord.Time - previousRecord.Time).TotalSeconds.ToString(isTMUF ? "0.00" : "0.000");
 
             var bracket = previousRecord.Rank is null
-                ? $"` {delta} `, from ` {previousRecord.Time} `"
-                : $"` {delta} `, from ` {previousRecord.Rank:00} ` ` {previousRecord.Time.ToString(useHundredths: isTMUF)} `";
+                ? $"` {delta} `"
+                : $"` {delta} ` from ` {previousRecord.Rank:00} `";
 
             var timestamp = GetTimestamp(currentRecord);
-            var timestampBracket = includeTimestamp && timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
+            var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` ({bracket}) by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
+            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}:** ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
         }
 
         foreach (var record in changes.RemovedRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
+            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}:** ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
         }
 
         foreach (var (_, recStr) in dict)
@@ -263,7 +259,7 @@ public class ReportService
             }
         }
 
-        return biggestTimestamp.Day != smallestTimestamp.Day;
+        return biggestTimestamp - smallestTimestamp > TimeSpan.FromDays(1);
     }
 
     private static DateTime? GetTimestamp<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull => record switch
@@ -392,7 +388,7 @@ public class ReportService
             }
 
             var prop = scopeTypeLayer.GetProperty(scope);
-            
+
             if (prop is null)
             {
                 return false;
@@ -570,7 +566,7 @@ public class ReportService
                 return $"{nickname} ({loginIfFilteredOut})";
             }
         }
-        
+
         return nickname;
     }
 
@@ -585,7 +581,7 @@ public class ReportService
 
         var discordWebhookMessages = await _wrUnitOfWork.DiscordWebhookMessages
             .GetAllByReportAsync(report, cancellationToken);
-        
+
         foreach (var message in discordWebhookMessages)
         {
             await _discordWebhookService.DeleteMessageAsync(message, cancellationToken);

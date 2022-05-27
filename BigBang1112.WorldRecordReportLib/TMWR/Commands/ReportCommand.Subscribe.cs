@@ -44,12 +44,17 @@ public partial class ReportCommand
                     return Respond(description: "The specified channel is not a text channel.");
                 }
 
-                textChannel = slashCommand.Channel as SocketTextChannel ?? throw new Exception();
+                if (slashCommand.Channel is not SocketTextChannel guildTextChannel)
+                {
+                    return Respond(description: "You cannot report to your DMs.");
+                }
+                
+                textChannel = guildTextChannel;
             }
 
             if (slashCommand.User is not SocketGuildUser guildUser)
             {
-                return Respond(description: "You cannot report to your DMs.");
+                return Respond(description: "You're not executing the command from a server.");
             }
 
             if (!guildUser.GuildPermissions.ManageChannels)
