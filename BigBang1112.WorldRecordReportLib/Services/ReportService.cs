@@ -213,12 +213,12 @@ public class ReportService
 
             var bracket = previousRecord.Rank is null
                 ? $"` {delta} `"
-                : $"` {delta} `, from ` {previousRecord.Rank:00} `";
+                : $"` {delta} ` from ` {previousRecord.Rank:00} `";
 
             var timestamp = GetTimestamp(currentRecord);
             var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}:** ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` ({bracket}) by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
+            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}:** ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
         }
 
         foreach (var record in changes.RemovedRecords)
