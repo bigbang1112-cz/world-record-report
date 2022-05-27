@@ -46,12 +46,12 @@ public partial class ReportCommand
                     return Respond(description: "The specified channel is not a text channel.");
                 }
 
-                textChannel = slashCommand.Channel as SocketTextChannel ?? throw new Exception();
-            }
+                if (slashCommand.Channel is not SocketTextChannel guildTextChannel)
+                {
+                    return Respond(description: "You cannot report to your DMs.");
+                }
 
-            if (slashCommand.User is not SocketGuildUser)
-            {
-                return Respond(description: "You cannot report to your DMs.");
+                textChannel = guildTextChannel;
             }
             
             var reportChannel = await GetReportChannelAsync(textChannel);
