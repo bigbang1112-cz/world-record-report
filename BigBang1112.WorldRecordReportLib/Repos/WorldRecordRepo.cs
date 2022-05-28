@@ -92,14 +92,24 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
 
     public async Task<DateTime?> GetStartingDateOfHistoryTrackingByTitlePackAsync(TitlePackModel titlePack, CancellationToken cancellationToken = default)
     {
-        var startingWr = await _context.WorldRecords
+        return await _context.WorldRecords
             .Include(x => x.Map)
             .Where(x => x.Map.TitlePack == titlePack && x.PreviousWorldRecord != null && !x.Ignored)
             .OrderBy(x => x.DrivenOn)
+            .Select(x => x.DrivenOn)
             .Cacheable()
             .FirstOrDefaultAsync(cancellationToken);
+    }
 
-        return startingWr?.DrivenOn;
+    public async Task<DateTime?> GetStartingDateOfHistoryTrackingByCampaignAsync(CampaignModel campaign, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords
+            .Include(x => x.Map)
+            .Where(x => x.Map.Campaign == campaign && x.PreviousWorldRecord != null && !x.Ignored)
+            .OrderBy(x => x.DrivenOn)
+            .Select(x => x.DrivenOn)
+            .Cacheable()
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<WorldRecordModel>> GetRecentByTitlePackAsync(string titleIdPart, string titleAuthorPart, int limit, CancellationToken cancellationToken = default)
