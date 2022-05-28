@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
 
 namespace BigBang1112.WorldRecordReportLib.TMWR.Commands;
 
@@ -53,18 +54,20 @@ public partial class HistoryCommand
             if (desc.Length > EmbedBuilder.MaxDescriptionLength)
             {
                 desc = string.Join('\n', EnumerateHistoryLines(isTMUF, wrs, wrCount, isStunts, links: ForceLinks));
-                desc = desc[0..4000] + "...";
+                desc = desc[0..3950] + "...";
                 desc += "\n\n*History is too long to fit into embed description.*";
             }
-            
-            if (map.TitlePack is not null)
-            {
-                var historyStartDate = await _wrUnitOfWork.WorldRecords.GetStartingDateOfHistoryTrackingByTitlePackAsync(map.TitlePack);
 
-                if (historyStartDate.HasValue)
-                {
-                    desc += $"\n\nHistory is tracked since {historyStartDate.Value.ToTimestampTag(TimestampTagStyles.ShortDate)}.";
-                }
+            var historyStartDate = (Game)map.Game.Id switch
+            {
+                Game.TM2 => map.TitlePack is null ? null : await _wrUnitOfWork.WorldRecords.GetStartingDateOfHistoryTrackingByTitlePackAsync(map.TitlePack),
+                Game.TM2020 => map.Campaign is null ? null : await _wrUnitOfWork.WorldRecords.GetStartingDateOfHistoryTrackingByCampaignAsync(map.Campaign),
+                _ => null
+            };
+
+            if (historyStartDate.HasValue)
+            {
+                desc += $"\n\nHistory is tracked since {historyStartDate.Value.ToTimestampTag(TimestampTagStyles.ShortDate)}.";
             }
 
             builder.Description = desc;
