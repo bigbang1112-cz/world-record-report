@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using BigBang1112.WorldRecordReportLib.Enums;
 using TmEssentials;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
@@ -40,7 +41,7 @@ public class WorldRecordModel : DbModel
     public int? PreviousWorldRecordId { get; set; }
     public virtual AltReplayModel? AltReplay { get; set; }
 
-    public bool Ignored { get; set; }
+    public IgnoredMode Ignored { get; set; }
     public bool ManialinkRecord { get; set; }
     public bool Unverified { get; set; }
 

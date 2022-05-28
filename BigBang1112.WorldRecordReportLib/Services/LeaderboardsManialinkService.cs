@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Http;
 using System.Net.Http.Json;
 using TmEssentials;
 using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
+using BigBang1112.WorldRecordReportLib.Enums;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
@@ -330,7 +331,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
                 Timestamp = (int)x.DrivenOn.ToUnix()
             };
 
-            if (x.PreviousWorldRecord is not null && !x.PreviousWorldRecord.Ignored)
+            if (x.PreviousWorldRecord?.Ignored == IgnoredMode.NotIgnored)
             {
                 if (x.PreviousWorldRecord.Player is null)
                 {

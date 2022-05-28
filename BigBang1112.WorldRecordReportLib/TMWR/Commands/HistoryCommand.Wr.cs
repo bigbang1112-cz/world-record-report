@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using BigBang1112.WorldRecordReportLib.Enums;
+using Discord;
 using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
 
 namespace BigBang1112.WorldRecordReportLib.TMWR.Commands;
@@ -38,7 +39,7 @@ public partial class HistoryCommand
                 return;
             }
 
-            var wrCount = wrs.Count();
+            var wrCount = wrs.Count(x => x.Ignored != IgnoredMode.IgnoredWithoutAttention);
 
             var isStunts = map.IsStuntsMode();
 
@@ -86,6 +87,11 @@ public partial class HistoryCommand
 
             foreach (var wr in wrs)
             {
+                if (wr.Ignored == IgnoredMode.IgnoredWithoutAttention)
+                {
+                    continue;
+                }
+
                 var time = isStunts ? wr.Time.ToString() : wr.TimeInt32.ToString(useHundredths: isTMUF);
 
                 var baseStr = $"` {(wrCount - i).ToString(formatter)} ` **` {time} `**";
@@ -111,13 +117,16 @@ public partial class HistoryCommand
                     baseStr = $"{baseStr} ({wr.DrivenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})";
                 }
 
-                if (wr.Ignored)
+                switch (wr.Ignored)
                 {
-                    yield return $"~~{baseStr}~~";
-                }
-                else
-                {
-                    yield return baseStr;
+                    case IgnoredMode.NotIgnored:
+                        yield return baseStr;       
+                        break;
+                    case IgnoredMode.Ignored:
+                        yield return $"~~{baseStr}~~";
+                        break;
+                    default:
+                        continue;
                 }
 
                 i++;
