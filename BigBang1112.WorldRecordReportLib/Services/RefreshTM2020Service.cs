@@ -383,7 +383,7 @@ public class RefreshTM2020Service : RefreshService
             }
         }
         
-        if (diffForReporting is not null)
+        if (diffForReporting is not null && (mapModel.Campaign is null || DateTime.UtcNow - mapModel.Campaign.PublishedOn >= TimeSpan.FromDays(7)))
         {
             await ReportDifferencesAsync(diffForReporting,
                                          currentRecordsWithoutCheated.ToDictionary(x => x.PlayerId),
