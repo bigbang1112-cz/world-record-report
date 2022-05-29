@@ -502,14 +502,8 @@ public class RefreshTM2Service : RefreshService
         var currentWr = await _wrUnitOfWork.WorldRecords.GetCurrentByMapUidAsync(mapModel.MapUid, cancellationToken);
         var login = loginModels[wr.Login];
 
-        // manialink sync issue resolve
-        if (!isFromManialink && currentWr is not null && currentWr.Unverified && wr.Time >= currentWr.TimeInt32)
-        {
-            return null;
-        }
-
-        // refresh button issue resolve
-        if (isFromManialink && currentWr is not null && wr.Time.TotalMilliseconds >= currentWr.Time)
+        // manialink sync + refresh button issue resolve
+        if (currentWr is not null && currentWr.Unverified && wr.Time >= currentWr.TimeInt32)
         {
             return null;
         }
