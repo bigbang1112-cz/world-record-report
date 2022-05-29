@@ -387,6 +387,11 @@ public class RefreshTM2Service : RefreshService
 
         if (diff is not null || diffTimes is not null)
         {
+            if (diffTimes is not null)
+            {
+                map.LastActivityOn = DateTime.UtcNow;
+            }
+
             var timestamp = _recordStorageService.GetOfficialLeaderboardLastUpdatedOn(Game.TM2, mapUid, zone);
 
             await _recordStorageService.SaveTM2LeaderboardAsync(currentLeaderboard, mapUid, zone, cancellationToken: cancellationToken);

@@ -25,11 +25,11 @@ public class RefreshTmxService : RefreshService
     private readonly ILogger<RefreshTmxService> _logger;
 
     public RefreshTmxService(ITmxService tmxService,
-                            IWrUnitOfWork wrUnitOfWork,
-                            RecordStorageService recordStorageService,
-                            IDiscordWebhookService discordWebhookService,
-                            ReportService reportService,
-                            ILogger<RefreshTmxService> logger) : base(logger)
+                             IWrUnitOfWork wrUnitOfWork,
+                             RecordStorageService recordStorageService,
+                             IDiscordWebhookService discordWebhookService,
+                             ReportService reportService,
+                             ILogger<RefreshTmxService> logger) : base(logger)
     {
         _tmxService = tmxService;
         _wrUnitOfWork = wrUnitOfWork;
