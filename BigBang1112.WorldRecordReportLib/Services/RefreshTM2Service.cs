@@ -508,6 +508,12 @@ public class RefreshTM2Service : RefreshService
             return null;
         }
 
+        // refresh button issue resolve
+        if (isFromManialink && currentWr is not null && wr.Time.TotalMilliseconds >= currentWr.Time)
+        {
+            return null;
+        }
+
         var previousWr = currentWr;
 
         // Worse WR is a sign of a removed world record
@@ -553,7 +559,8 @@ public class RefreshTM2Service : RefreshService
     /// <returns></returns>
     private static TM2Record? GetWorldRecord(IEnumerable<TM2Record> currentRecords, IEnumerable<string> ignoredLoginNames)
     {
-        return currentRecords.OrderBy(x => x.Rank).FirstOrDefault(x => x.Time > TimeInt32.Zero && !ignoredLoginNames.Contains(x.Login));
+        return currentRecords.OrderBy(x => x.Rank)
+            .FirstOrDefault(x => x.Time > TimeInt32.Zero && !ignoredLoginNames.Contains(x.Login));
     }
 
     private async Task<WorldRecordModel> CreateWorldRecordAsync(TM2Record wr,

@@ -133,7 +133,7 @@ public class LeaderboardsManialinkService : ILeaderboardsManialinkService
             return new AccountForbidden(); // Rather BadRequest
         }
 
-        var loginModels = await _wrUnitOfWork.Logins.GetByNamesAsync(Enums.Game.TM2, lbManialinkMap.Records.Select(x => x.Login));
+        var loginModels = await _wrUnitOfWork.Logins.GetByNamesAsync(Game.TM2, lbManialinkMap.Records.Select(x => x.Login));
 
         var records = lbManialinkMap.Records.Select(x => new TM2Record(
             Rank: x.Rank,
