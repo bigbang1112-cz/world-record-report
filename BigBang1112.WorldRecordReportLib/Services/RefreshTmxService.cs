@@ -25,11 +25,11 @@ public class RefreshTmxService : RefreshService
     private readonly ILogger<RefreshTmxService> _logger;
 
     public RefreshTmxService(ITmxService tmxService,
-                            IWrUnitOfWork wrUnitOfWork,
-                            RecordStorageService recordStorageService,
-                            IDiscordWebhookService discordWebhookService,
-                            ReportService reportService,
-                            ILogger<RefreshTmxService> logger) : base(logger)
+                             IWrUnitOfWork wrUnitOfWork,
+                             RecordStorageService recordStorageService,
+                             IDiscordWebhookService discordWebhookService,
+                             ReportService reportService,
+                             ILogger<RefreshTmxService> logger) : base(logger)
     {
         _tmxService = tmxService;
         _wrUnitOfWork = wrUnitOfWork;
@@ -161,7 +161,7 @@ public class RefreshTmxService : RefreshService
         await _recordStorageService.SaveTmxLeaderboardAsync(recordSet, tmxSite, map.MapUid);
 
         var currentWr = map.WorldRecords
-            .Where(x => !x.Ignored)
+            .Where(x => x.Ignored == IgnoredMode.NotIgnored)
             .OrderByDescending(x => x.DrivenOn)
             .FirstOrDefault();
 
@@ -342,7 +342,7 @@ public class RefreshTmxService : RefreshService
             // The record was removed and there are no more records
             // or the TMX record is slower than WR in the database
 
-            wr.Ignored = true;
+            wr.Ignored = IgnoredMode.Ignored;
 
             var report = await _wrUnitOfWork.Reports.GetByWorldRecordAsync(wr);
 

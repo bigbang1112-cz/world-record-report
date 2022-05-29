@@ -197,14 +197,12 @@ public class ReportService
             .OrderBy(x => x.Item1.Time)
             .ToList();
 
-        var useLongTimestamp = UseLongTimestamp(changes);
-
         foreach (var record in newRecords)
         {
             var timestamp = GetTimestamp(record);
-            var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
+            var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(UseLongTimestamp(record) ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}:** ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
+            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
         }
 
         foreach (var (currentRecord, previousRecord) in improvedRecords)
@@ -216,14 +214,14 @@ public class ReportService
                 : $"` {delta} ` from ` {previousRecord.Rank:00} `";
 
             var timestamp = GetTimestamp(currentRecord);
-            var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
+            var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(UseLongTimestamp(currentRecord) ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}:** ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
+            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
         }
 
         foreach (var record in changes.RemovedRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}:** ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
+            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
         }
 
         foreach (var (_, recStr) in dict)
@@ -232,34 +230,9 @@ public class ReportService
         }
     }
 
-    private static bool UseLongTimestamp<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
+    private static bool UseLongTimestamp<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull
     {
-        var smallestTimestamp = DateTime.MaxValue;
-        var biggestTimestamp = DateTime.MinValue;
-
-        foreach (var record in changes.NewRecords)
-        {
-            var timestamp = GetTimestamp(record);
-
-            if (timestamp.HasValue)
-            {
-                if (timestamp > biggestTimestamp) biggestTimestamp = timestamp.Value;
-                if (timestamp < smallestTimestamp) smallestTimestamp = timestamp.Value;
-            }
-        }
-
-        foreach (var (currentRecord, previousRecord) in changes.ImprovedRecords)
-        {
-            var timestamp = GetTimestamp(currentRecord);
-
-            if (timestamp.HasValue)
-            {
-                if (timestamp > biggestTimestamp) biggestTimestamp = timestamp.Value;
-                if (timestamp < smallestTimestamp) smallestTimestamp = timestamp.Value;
-            }
-        }
-
-        return biggestTimestamp - smallestTimestamp > TimeSpan.FromDays(1);
+        return DateTime.UtcNow - GetTimestamp(record) > TimeSpan.FromDays(1);
     }
 
     private static DateTime? GetTimestamp<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull => record switch

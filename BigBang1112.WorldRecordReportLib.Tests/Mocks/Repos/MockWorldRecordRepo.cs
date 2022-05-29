@@ -66,4 +66,9 @@ public class MockWorldRecordRepo : MockRepo<WorldRecordModel>, IWorldRecordRepo
     {
         throw new NotImplementedException();
     }
+
+    public Task<DateTime?> GetStartingDateOfHistoryTrackingByCampaignAsync(CampaignModel campaign, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 }

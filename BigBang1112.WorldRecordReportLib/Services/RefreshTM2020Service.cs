@@ -349,13 +349,13 @@ public class RefreshTM2020Service : RefreshService
             // Worse WR is a sign of a removed world record
             while (previousWr is not null && wr.Time.TotalMilliseconds > previousWr.Time)
             {
-                if (previousWr.Ignored)
+                if (previousWr.Ignored != IgnoredMode.NotIgnored)
                 {
                     previousWr = previousWr.PreviousWorldRecord;
                     continue;
                 }
 
-                previousWr.Ignored = true;
+                previousWr.Ignored = IgnoredMode.Ignored;
 
                 _logger.LogInformation("Removed WR: {time} by {player}", previousWr.TimeInt32, previousWr.GetPlayerNickname());
 
@@ -383,7 +383,7 @@ public class RefreshTM2020Service : RefreshService
             }
         }
         
-        if (diffForReporting is not null)
+        if (diffForReporting is not null && (mapModel.Campaign is null || DateTime.UtcNow - mapModel.Campaign.PublishedOn >= TimeSpan.FromDays(7)))
         {
             await ReportDifferencesAsync(diffForReporting,
                                          currentRecordsWithoutCheated.ToDictionary(x => x.PlayerId),
