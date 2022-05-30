@@ -61,10 +61,7 @@ public partial class ReportCommand
                     _ => ThreadArchiveDuration.OneDay
                 };
 
-                if (reportChannel.ThreadOptions is null || reportChannel.ThreadOptions.ArchiveDuration != archiveDuration)
-                {
-                    reportChannel.ThreadOptions = new AutoThreadOptions(archiveDuration);
-                }
+                reportChannel.ThreadOptions = new AutoThreadOptions(archiveDuration);
 
                 await _discordBotUnitOfWork.SaveAsync();
 
