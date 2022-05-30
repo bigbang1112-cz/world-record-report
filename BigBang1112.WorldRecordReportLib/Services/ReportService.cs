@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using BigBang1112.DiscordBot;
 using BigBang1112.DiscordBot.Data;
+using BigBang1112.DiscordBot.Models;
 using BigBang1112.DiscordBot.Models.Db;
 using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
@@ -197,14 +198,12 @@ public class ReportService
             .OrderBy(x => x.Item1.Time)
             .ToList();
 
-        var useLongTimestamp = UseLongTimestamp(changes);
-
         foreach (var record in newRecords)
         {
             var timestamp = GetTimestamp(record);
-            var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
+            var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(UseLongTimestamp(record) ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}** - ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
+            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
         }
 
         foreach (var (currentRecord, previousRecord) in improvedRecords)
@@ -216,14 +215,14 @@ public class ReportService
                 : $"` {delta} ` from ` {previousRecord.Rank:00} `";
 
             var timestamp = GetTimestamp(currentRecord);
-            var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(useLongTimestamp ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
+            var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(UseLongTimestamp(currentRecord) ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}** - ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
+            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
         }
 
         foreach (var record in changes.RemovedRecords)
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}** - ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
+            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
         }
 
         foreach (var (_, recStr) in dict)
@@ -232,34 +231,9 @@ public class ReportService
         }
     }
 
-    private static bool UseLongTimestamp<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
+    private static bool UseLongTimestamp<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull
     {
-        var smallestTimestamp = DateTime.MaxValue;
-        var biggestTimestamp = DateTime.MinValue;
-
-        foreach (var record in changes.NewRecords)
-        {
-            var timestamp = GetTimestamp(record);
-
-            if (timestamp.HasValue)
-            {
-                if (timestamp > biggestTimestamp) biggestTimestamp = timestamp.Value;
-                if (timestamp < smallestTimestamp) smallestTimestamp = timestamp.Value;
-            }
-        }
-
-        foreach (var (currentRecord, previousRecord) in changes.ImprovedRecords)
-        {
-            var timestamp = GetTimestamp(currentRecord);
-
-            if (timestamp.HasValue)
-            {
-                if (timestamp > biggestTimestamp) biggestTimestamp = timestamp.Value;
-                if (timestamp < smallestTimestamp) smallestTimestamp = timestamp.Value;
-            }
-        }
-
-        return biggestTimestamp - smallestTimestamp > TimeSpan.FromDays(1);
+        return DateTime.UtcNow - GetTimestamp(record) > TimeSpan.FromDays(1);
     }
 
     private static DateTime? GetTimestamp<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull => record switch
@@ -277,11 +251,45 @@ public class ReportService
             : record.GetDisplayNameMdLink();
     }
 
-    private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report, IEnumerable<Discord.Embed> embeds, Discord.MessageComponent? components, string scope, CancellationToken cancellationToken)
+    private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report,
+                                                         IEnumerable<Discord.Embed> embeds,
+                                                         Discord.MessageComponent? components,
+                                                         string scope,
+                                                         CancellationToken cancellationToken)
+    {
+        await ReportToAllScopedDiscordBotsAsync(report, embeds, components, scope, new Discord.RequestOptions { CancelToken = default });
+    }
+
+    private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report,
+                                                         IEnumerable<Discord.Embed> embeds,
+                                                         Discord.MessageComponent? components,
+                                                         string scope,
+                                                         Discord.RequestOptions requestOptions)
     {
         var scopePath = scope.Split(':');
 
-        foreach (var reportChannel in await _discordBotUnitOfWork.ReportChannels.GetAllAsync(cancellationToken))
+        var wr = report.WorldRecord;
+        var threadName = default(string);
+
+        if (wr is not null)
+        {
+            var map = wr.Map;
+            var mapName = map.GetHumanizedDeformattedName();
+            var timeStr = map.IsStuntsMode()
+                ? wr.Time.ToString()
+                : wr.TimeInt32.ToString(useHundredths: map.Game.IsTMUF());
+            var delta = "";
+            var player = wr.GetPlayerNicknameDeformatted();
+
+            if (wr.PreviousWorldRecord is not null)
+            {
+                delta = $" ({(map.IsStuntsMode() ? $"+{wr.Time - wr.PreviousWorldRecord.Time}" : (wr.TimeInt32 - wr.PreviousWorldRecord.TimeInt32).TotalSeconds)})";
+            }
+
+            threadName = $"{mapName}: {timeStr}{delta} by {player}";
+        }
+
+        foreach (var reportChannel in await _discordBotUnitOfWork.ReportChannels.GetAllAsync(requestOptions.CancelToken))
         {
             if (!string.Equals(reportChannel.JoinedGuild.Bot.Guid.ToString(), "e7593b6b-d8f1-4caa-b950-01a8437662d0")
               || string.IsNullOrWhiteSpace(reportChannel.Scope))
@@ -296,6 +304,9 @@ public class ReportService
                 continue;
             }
 
+            var autoThread = reportChannel.ThreadOptions is null || threadName is null
+                ? null : new AutoThread(threadName, reportChannel.ThreadOptions);
+
             try
             {
                 await _tmwrDiscordBotService.SendMessageAsync(_discordBotUnitOfWork, reportChannel, snowflake => new ReportChannelMessageModel
@@ -305,7 +316,7 @@ public class ReportService
                     SentOn = DateTime.UtcNow,
                     ModifiedOn = DateTime.UtcNow,
                     Channel = reportChannel
-                }, embeds: embeds, components: components, cancellationToken: cancellationToken);
+                }, embeds: embeds, components: components, autoThread: autoThread, requestOptions: requestOptions);
             }
             catch (Discord.Net.HttpException ex)
             {
@@ -317,7 +328,7 @@ public class ReportService
             }
         }
 
-        await _discordBotUnitOfWork.SaveAsync(cancellationToken);
+        await _discordBotUnitOfWork.SaveAsync(requestOptions.CancelToken);
     }
 
     private async Task ReportToAllScopedDiscordWebhooksAsync(ReportModel report, IEnumerable<Discord.Embed> embeds, string scope, CancellationToken cancellationToken)

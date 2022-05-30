@@ -70,7 +70,7 @@ public class Top10Command : MapRelatedWithUidCommand
             if (recordSet is not null)
             {
                 var logins = await FetchLoginModelsAsync(recordSet);
-                miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, logins);
+                miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, logins, escape: false);
             }
         }
 
@@ -215,7 +215,7 @@ public class Top10Command : MapRelatedWithUidCommand
         }
 
         var loginDictionary = await FetchLoginModelsAsync(recordSet);
-        var miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, loginDictionary);
+        var miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, loginDictionary, escape: true);
         var miniRecordStrings = ConvertMiniRecordsToStrings(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
 
         builder.Description = string.Join('\n', miniRecordStrings);
@@ -240,18 +240,20 @@ public class Top10Command : MapRelatedWithUidCommand
         }
     }
 
-    private static IEnumerable<MiniRecord> GetMiniRecordsFromRecordSet(IEnumerable<TM2Record> records, IDictionary<string, LoginModel> loginDictionary)
+    private static IEnumerable<MiniRecord> GetMiniRecordsFromRecordSet(IEnumerable<TM2Record> records, IDictionary<string, LoginModel> loginDictionary, bool escape)
     {
         foreach (var record in records)
         {
-            var displayName = record.Login;
+            var displayName = record.DisplayName is null
+                ? record.Login
+                : TextFormatter.Deformat(record.DisplayName);
 
-            if (loginDictionary.TryGetValue(displayName, out LoginModel? loginModel))
+            if (record.DisplayName is null && loginDictionary.TryGetValue(displayName, out LoginModel? loginModel))
             {
-                displayName = loginModel.GetDeformattedNickname().EscapeDiscord();
+                displayName = loginModel.GetDeformattedNickname();
             }
 
-            yield return new MiniRecord(record.Rank, record.Time.TotalMilliseconds, displayName, record.Timestamp?.UtcDateTime);
+            yield return new MiniRecord(record.Rank, record.Time.TotalMilliseconds, escape ? displayName.EscapeDiscord() : displayName, record.Timestamp?.UtcDateTime);
         }
     }
 

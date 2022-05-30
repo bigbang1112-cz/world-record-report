@@ -12,7 +12,7 @@ using BigBang1112.DiscordBot.Models.Db;
 
 namespace BigBang1112.WorldRecordReportLib.TMWR;
 
-[DiscordBot("e7593b6b-d8f1-4caa-b950-01a8437662d0", name: "TMWR", version: "2.0.1.0",
+[DiscordBot("e7593b6b-d8f1-4caa-b950-01a8437662d0", name: "TMWR", version: "2.0.2.0",
     Punchline = "The Ultimate Trackmania World Record Discord Bot",
     Description = "With this bot, you can quickly check any world records, history of world records, graphs, or replay parameters in the future.",
     GitRepoUrl = "https://github.com/bigbang1112-cz/world-record-report")]

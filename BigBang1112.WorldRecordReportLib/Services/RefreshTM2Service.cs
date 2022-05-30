@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Game = BigBang1112.WorldRecordReportLib.Enums.Game;
 using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 using System.Runtime.CompilerServices;
+using BigBang1112.WorldRecordReportLib.Enums;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
@@ -386,6 +387,11 @@ public class RefreshTM2Service : RefreshService
 
         if (diff is not null || diffTimes is not null)
         {
+            if (diffTimes is not null)
+            {
+                map.LastActivityOn = DateTime.UtcNow;
+            }
+
             var timestamp = _recordStorageService.GetOfficialLeaderboardLastUpdatedOn(Game.TM2, mapUid, zone);
 
             await _recordStorageService.SaveTM2LeaderboardAsync(currentLeaderboard, mapUid, zone, cancellationToken: cancellationToken);
@@ -496,8 +502,8 @@ public class RefreshTM2Service : RefreshService
         var currentWr = await _wrUnitOfWork.WorldRecords.GetCurrentByMapUidAsync(mapModel.MapUid, cancellationToken);
         var login = loginModels[wr.Login];
 
-        // manialink sync issue resolve
-        if (!isFromManialink && currentWr is not null && currentWr.Unverified && wr.Time >= currentWr.TimeInt32)
+        // manialink sync + refresh button issue resolve
+        if (currentWr is not null && currentWr.Unverified && wr.Time >= currentWr.TimeInt32)
         {
             return null;
         }
@@ -507,13 +513,13 @@ public class RefreshTM2Service : RefreshService
         // Worse WR is a sign of a removed world record
         while (previousWr is not null && !isFromManialink && !previousWr.Unverified && wr.Time.TotalMilliseconds > previousWr.Time)
         {
-            if (previousWr.Ignored)
+            if (previousWr.Ignored != IgnoredMode.NotIgnored)
             {
                 previousWr = previousWr.PreviousWorldRecord;
                 continue;
             }
 
-            previousWr.Ignored = true;
+            previousWr.Ignored = IgnoredMode.Ignored;
 
             _logger.LogInformation("Removed WR: {time} by {player}", previousWr.TimeInt32, previousWr.GetPlayerNickname());
 
@@ -547,7 +553,8 @@ public class RefreshTM2Service : RefreshService
     /// <returns></returns>
     private static TM2Record? GetWorldRecord(IEnumerable<TM2Record> currentRecords, IEnumerable<string> ignoredLoginNames)
     {
-        return currentRecords.OrderBy(x => x.Rank).FirstOrDefault(x => x.Time > TimeInt32.Zero && !ignoredLoginNames.Contains(x.Login));
+        return currentRecords.OrderBy(x => x.Rank)
+            .FirstOrDefault(x => x.Time > TimeInt32.Zero && !ignoredLoginNames.Contains(x.Login));
     }
 
     private async Task<WorldRecordModel> CreateWorldRecordAsync(TM2Record wr,

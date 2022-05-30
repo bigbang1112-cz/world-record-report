@@ -26,20 +26,20 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
     {
         return await _context.WorldRecords
             .OrderByDescending(x => x.PublishedOn)
-            .FirstOrDefaultAsync(x => x.Map.MapUid == mapUid && !x.Ignored, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Map.MapUid == mapUid && x.Ignored == IgnoredMode.NotIgnored, cancellationToken);
     }
 
     public async Task<WorldRecordModel?> GetCurrentByMapAsync(MapModel map, CancellationToken cancellationToken = default)
     {
         return await _context.WorldRecords
             .OrderByDescending(x => x.PublishedOn)
-            .FirstOrDefaultAsync(x => x.Map == map && !x.Ignored, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Map == map && x.Ignored == IgnoredMode.NotIgnored, cancellationToken);
     }
 
     public async Task<IEnumerable<WorldRecordModel>> GetLatestByGameAsync(Game game, int count, CancellationToken cancellationToken = default)
     {
         return await _context.WorldRecords
-            .Where(x => !x.Ignored && x.Map.Game.Id == (int)game)
+            .Where(x => x.Ignored == IgnoredMode.NotIgnored && x.Map.Game.Id == (int)game)
             .OrderByDescending(x => x.DrivenOn)
             .Take(count)
             .Include(x => x.Map)
@@ -92,14 +92,24 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
 
     public async Task<DateTime?> GetStartingDateOfHistoryTrackingByTitlePackAsync(TitlePackModel titlePack, CancellationToken cancellationToken = default)
     {
-        var startingWr = await _context.WorldRecords
+        return await _context.WorldRecords
             .Include(x => x.Map)
-            .Where(x => x.Map.TitlePack == titlePack && x.PreviousWorldRecord != null && !x.Ignored)
+            .Where(x => x.Map.TitlePack == titlePack && x.PreviousWorldRecord != null && x.Ignored == IgnoredMode.NotIgnored)
             .OrderBy(x => x.DrivenOn)
+            .Select(x => x.DrivenOn)
             .Cacheable()
             .FirstOrDefaultAsync(cancellationToken);
+    }
 
-        return startingWr?.DrivenOn;
+    public async Task<DateTime?> GetStartingDateOfHistoryTrackingByCampaignAsync(CampaignModel campaign, CancellationToken cancellationToken = default)
+    {
+        return await _context.WorldRecords
+            .Include(x => x.Map)
+            .Where(x => x.Map.Campaign == campaign && x.PreviousWorldRecord != null && x.Ignored == IgnoredMode.NotIgnored)
+            .OrderBy(x => x.DrivenOn)
+            .Select(x => x.DrivenOn)
+            .Cacheable()
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<WorldRecordModel>> GetRecentByTitlePackAsync(string titleIdPart, string titleAuthorPart, int limit, CancellationToken cancellationToken = default)
@@ -111,7 +121,7 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
             .Include(x => x.Player)
             .Include(x => x.PreviousWorldRecord)
                 .ThenInclude(x => x!.Player)
-            .Where(x => !x.Ignored
+            .Where(x => x.Ignored == IgnoredMode.NotIgnored
                 && x.Map.TitlePack != null
                 && x.Map.TitlePack.Name == titleIdPart
                 && x.Map.TitlePack.Author.Name == titleAuthorPart)
