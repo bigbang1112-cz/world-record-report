@@ -45,6 +45,16 @@ public partial class ReportCommand
                     textChannel = guildTextChannel;
                 }
 
+                if (slashCommand.User is not SocketGuildUser guildUser)
+                {
+                    return Respond(description: "You're not executing the command from a server.");
+                }
+
+                if (!guildUser.GuildPermissions.ManageChannels)
+                {
+                    return Respond(description: $"You don't have permissions to enable report auto-threading in {textChannel.Mention}.");
+                }
+
                 var reportChannel = await GetReportChannelAsync(textChannel);
 
                 if (reportChannel is null)
