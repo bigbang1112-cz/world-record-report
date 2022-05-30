@@ -570,7 +570,7 @@ public class RefreshTM2Service : RefreshService
         {
             try
             {
-                using var response = await _http.HeadAsync(wr.ReplayUrl);
+                using var response = await _http.HeadAsync(wr.ReplayUrl, cancellationToken);
 
                 if (response.IsSuccessStatusCode)
                 {
