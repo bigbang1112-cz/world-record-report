@@ -110,7 +110,7 @@ public class ReportService
             return;
         }
 
-        var latestChange = GetLatestChange(changes);
+        //var latestChange = GetLatestChange(changes);
 
         var embedBuilder = new Discord.EmbedBuilder()
             .WithDescription(string.Join('\n', lines))
@@ -140,43 +140,6 @@ public class ReportService
 
         await ReportToAllScopedDiscordWebhooksAsync(report, embedWebhook.Yield(), scope, cancellationToken);
         await ReportToAllScopedDiscordBotsAsync(report, embedBot.Yield(), null, scope, cancellationToken);
-    }
-
-    private static DateTime? GetLatestChange<TPlayerId>(LeaderboardChangesRich<TPlayerId> changes) where TPlayerId : notnull
-    {
-        var dateTime = DateTime.MinValue;
-
-        foreach (var record in changes.NewRecords)
-        {
-            switch (record)
-            {
-                case TmxReplay tmxReplay: if (tmxReplay.ReplayAt > dateTime) dateTime = tmxReplay.ReplayAt; break;
-                case TM2Record tm2Record: if (tm2Record.Timestamp.HasValue && tm2Record.Timestamp.Value.UtcDateTime > dateTime) dateTime = tm2Record.Timestamp.Value.UtcDateTime; break;
-                case TM2020Record tm2020Record: if (tm2020Record.Timestamp > dateTime) dateTime = tm2020Record.Timestamp; break;
-            }
-        }
-
-        foreach (var (newRecord, _) in changes.ImprovedRecords)
-        {
-            switch (newRecord)
-            {
-                case TmxReplay tmxReplay: if (tmxReplay.ReplayAt > dateTime) dateTime = tmxReplay.ReplayAt; break;
-                case TM2Record tm2Record: if (tm2Record.Timestamp.HasValue && tm2Record.Timestamp.Value.UtcDateTime > dateTime) dateTime = tm2Record.Timestamp.Value.UtcDateTime; break;
-                case TM2020Record tm2020Record: if (tm2020Record.Timestamp > dateTime) dateTime = tm2020Record.Timestamp; break;
-            }
-        }
-
-        foreach (var record in changes.RemovedRecords)
-        {
-            switch (record)
-            {
-                case TmxReplay tmxReplay: if (tmxReplay.ReplayAt > dateTime) dateTime = tmxReplay.ReplayAt; break;
-                case TM2Record tm2Record: if (tm2Record.Timestamp.HasValue && tm2Record.Timestamp.Value.UtcDateTime > dateTime) dateTime = tm2Record.Timestamp.Value.UtcDateTime; break;
-                case TM2020Record tm2020Record: if (tm2020Record.Timestamp > dateTime) dateTime = tm2020Record.Timestamp; break;
-            }
-        }
-
-        return dateTime == DateTime.MinValue ? null : dateTime;
     }
 
     private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(
@@ -257,7 +220,7 @@ public class ReportService
                                                          string scope,
                                                          CancellationToken cancellationToken)
     {
-        await ReportToAllScopedDiscordBotsAsync(report, embeds, components, scope, new Discord.RequestOptions { CancelToken = default });
+        await ReportToAllScopedDiscordBotsAsync(report, embeds, components, scope, new Discord.RequestOptions { CancelToken = cancellationToken });
     }
 
     private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report,
