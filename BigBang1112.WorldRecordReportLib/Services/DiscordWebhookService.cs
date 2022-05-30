@@ -1,8 +1,4 @@
-﻿using BigBang1112.WorldRecordReportLib.Models;
-using Discord.Webhook;
-using System.Globalization;
-using TmEssentials;
-using BigBang1112.WorldRecordReportLib.Repos;
+﻿using Discord.Webhook;
 using Microsoft.Extensions.Logging;
 using Discord;
 
@@ -42,7 +38,7 @@ public class DiscordWebhookService : IDiscordWebhookService
         }
 
         var msg = message.Invoke(msgId);
-
+        
         await _wrUnitOfWork.DiscordWebhookMessages.AddAsync(msg, cancellationToken);
 
         return msg;
