@@ -277,7 +277,7 @@ public class ReportService
             var mapName = map.GetHumanizedDeformattedName();
             var timeStr = map.IsStuntsMode()
                 ? wr.Time.ToString()
-                : wr.TimeInt32.ToString(useHundredths: map.Game.IsTMUF());
+                : wr.TimeInt32.ToString(useHundredths: map.Game.IsTMUF(), useApostrophe: true);
             var delta = "";
             var player = wr.GetPlayerNicknameDeformatted();
 
