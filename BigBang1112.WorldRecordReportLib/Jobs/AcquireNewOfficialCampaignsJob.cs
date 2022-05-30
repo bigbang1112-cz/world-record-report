@@ -179,7 +179,7 @@ public class AcquireNewOfficialCampaignsJob : IJob
             return await ProcessMapDataAsync(map, mapModel, cancellationToken);
         }
         
-        using var headResponse = await _http.HeadAsync(map.FileUrl);
+        using var headResponse = await _http.HeadAsync(map.FileUrl, cancellationToken);
 
         if (!headResponse.IsSuccessStatusCode)
         {

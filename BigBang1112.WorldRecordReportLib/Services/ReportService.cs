@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using BigBang1112.DiscordBot;
 using BigBang1112.DiscordBot.Data;
+using BigBang1112.DiscordBot.Models;
 using BigBang1112.DiscordBot.Models.Db;
 using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
@@ -250,11 +251,45 @@ public class ReportService
             : record.GetDisplayNameMdLink();
     }
 
-    private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report, IEnumerable<Discord.Embed> embeds, Discord.MessageComponent? components, string scope, CancellationToken cancellationToken)
+    private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report,
+                                                         IEnumerable<Discord.Embed> embeds,
+                                                         Discord.MessageComponent? components,
+                                                         string scope,
+                                                         CancellationToken cancellationToken)
+    {
+        await ReportToAllScopedDiscordBotsAsync(report, embeds, components, scope, new Discord.RequestOptions { CancelToken = default });
+    }
+
+    private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report,
+                                                         IEnumerable<Discord.Embed> embeds,
+                                                         Discord.MessageComponent? components,
+                                                         string scope,
+                                                         Discord.RequestOptions requestOptions)
     {
         var scopePath = scope.Split(':');
 
-        foreach (var reportChannel in await _discordBotUnitOfWork.ReportChannels.GetAllAsync(cancellationToken))
+        var wr = report.WorldRecord;
+        var threadName = default(string);
+
+        if (wr is not null)
+        {
+            var map = wr.Map;
+            var mapName = map.GetHumanizedDeformattedName();
+            var timeStr = map.IsStuntsMode()
+                ? wr.Time.ToString()
+                : wr.TimeInt32.ToString(useHundredths: map.Game.IsTMUF(), useApostrophe: true);
+            var delta = "";
+            var player = wr.GetPlayerNicknameDeformatted();
+
+            if (wr.PreviousWorldRecord is not null)
+            {
+                delta = $" ({(map.IsStuntsMode() ? $"+{wr.Time - wr.PreviousWorldRecord.Time}" : (wr.TimeInt32 - wr.PreviousWorldRecord.TimeInt32).TotalSeconds)})";
+            }
+
+            threadName = $"{mapName}: {timeStr}{delta} by {player}";
+        }
+
+        foreach (var reportChannel in await _discordBotUnitOfWork.ReportChannels.GetAllAsync(requestOptions.CancelToken))
         {
             if (!string.Equals(reportChannel.JoinedGuild.Bot.Guid.ToString(), "e7593b6b-d8f1-4caa-b950-01a8437662d0")
               || string.IsNullOrWhiteSpace(reportChannel.Scope))
@@ -269,6 +304,9 @@ public class ReportService
                 continue;
             }
 
+            var autoThread = reportChannel.ThreadOptions is null || threadName is null
+                ? null : new AutoThread(threadName, reportChannel.ThreadOptions);
+
             try
             {
                 await _tmwrDiscordBotService.SendMessageAsync(_discordBotUnitOfWork, reportChannel, snowflake => new ReportChannelMessageModel
@@ -278,7 +316,7 @@ public class ReportService
                     SentOn = DateTime.UtcNow,
                     ModifiedOn = DateTime.UtcNow,
                     Channel = reportChannel
-                }, embeds: embeds, components: components, cancellationToken: cancellationToken);
+                }, embeds: embeds, components: components, autoThread: autoThread, requestOptions: requestOptions);
             }
             catch (Discord.Net.HttpException ex)
             {
@@ -290,7 +328,7 @@ public class ReportService
             }
         }
 
-        await _discordBotUnitOfWork.SaveAsync(cancellationToken);
+        await _discordBotUnitOfWork.SaveAsync(requestOptions.CancelToken);
     }
 
     private async Task ReportToAllScopedDiscordWebhooksAsync(ReportModel report, IEnumerable<Discord.Embed> embeds, string scope, CancellationToken cancellationToken)
