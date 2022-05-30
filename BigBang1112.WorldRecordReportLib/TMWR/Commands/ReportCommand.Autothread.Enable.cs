@@ -65,7 +65,7 @@ public partial class ReportCommand
 
                 await _discordBotUnitOfWork.SaveAsync();
 
-                return Respond(description: $"Enabled automatic creation of threads in {textChannel.Mention}, automatically archived after `{archiveDuration}`.");
+                return Respond(description: $"Enabled automatic creation of threads in {textChannel.Mention}, automatically archived after `{archiveDuration}`.", ephemeral: false);
             }
 
             private async Task<ReportChannelModel?> GetReportChannelAsync(SocketTextChannel textChannel)

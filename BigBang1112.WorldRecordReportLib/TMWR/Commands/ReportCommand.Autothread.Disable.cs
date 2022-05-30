@@ -52,7 +52,7 @@ public partial class ReportCommand
 
                 await _discordBotUnitOfWork.SaveAsync();
 
-                return Respond(description: $"Disabled automatic creation of threads in {textChannel.Mention}.");
+                return Respond(description: $"Disabled automatic creation of threads in {textChannel.Mention}.", ephemeral: false);
             }
 
             private async Task<ReportChannelModel?> GetReportChannelAsync(SocketTextChannel textChannel)
