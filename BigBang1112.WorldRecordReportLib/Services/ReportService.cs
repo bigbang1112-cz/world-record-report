@@ -237,16 +237,22 @@ public class ReportService
         if (wr is not null)
         {
             var map = wr.Map;
+            var isTMUF = map.Game.IsTMUF();
             var mapName = map.GetHumanizedDeformattedName();
             var timeStr = map.IsStuntsMode()
                 ? wr.Time.ToString()
-                : wr.TimeInt32.ToString(useHundredths: map.Game.IsTMUF(), useApostrophe: true);
+                : wr.TimeInt32.ToString(useHundredths: isTMUF, useApostrophe: true);
             var delta = "";
             var player = wr.GetPlayerNicknameDeformatted();
 
             if (wr.PreviousWorldRecord is not null)
             {
-                delta = $" ({(map.IsStuntsMode() ? $"+{wr.Time - wr.PreviousWorldRecord.Time}" : (wr.TimeInt32 - wr.PreviousWorldRecord.TimeInt32).TotalSeconds)})";
+                var bracket = map.IsStuntsMode()
+                    ? $"+{wr.Time - wr.PreviousWorldRecord.Time}"
+                    : (wr.TimeInt32 - wr.PreviousWorldRecord.TimeInt32).TotalSeconds
+                        .ToString(isTMUF ? "0.00" : "0.000", CultureInfo.InvariantCulture);
+                
+                delta = $" ({bracket})";
             }
 
             threadName = $"{mapName}: {timeStr}{delta} by {player}";
