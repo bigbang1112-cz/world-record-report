@@ -196,9 +196,7 @@
             Scope = ScopeSet
         };
 
-        using var client = DiscordWebhookService.CreateWebhookClient(webhook.Url, out bool isDeleted);
-
-        if (client is null)
+        if (!DiscordWebhookService.TestWebhook(webhook.Url))
         {
             return;
         }
@@ -289,7 +287,7 @@
 
         var embed = new Discord.EmbedBuilder()
             .WithTitle("Successfully pinged!")
-            .WithFooter("Powered by wr.bigbang1112.cz", BigBang1112.WorldRecordReportLib.Services.DiscordWebhookService.LogoIconUrl)
+            .WithFooter("Powered by wr.bigbang1112.cz", "https://bigbang1112.cz/assets/images/logo_small.png")
             .Build();
 
         var msg = await DiscordWebhookService.SendMessageAsync(webhook, snowflake => new DiscordWebhookMessageModel
@@ -356,9 +354,7 @@
             return;
         }
 
-        using var client = DiscordWebhookService.CreateWebhookClient(Webhook.Url, out bool isDeleted);
-
-        if (client is null)
+        if (!DiscordWebhookService.TestWebhook(Webhook.Url))
         {
             return;
         }

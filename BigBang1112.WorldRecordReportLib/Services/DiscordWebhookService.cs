@@ -98,7 +98,7 @@ public class DiscordWebhookService : IDiscordWebhookService
         return webhookClient;
     }
 
-    public DiscordWebhookClient? CreateWebhookClient(string webhookUrl, out bool isDeleted)
+    private DiscordWebhookClient? CreateWebhookClient(string webhookUrl, out bool isDeleted)
     {
         isDeleted = false;
 
@@ -151,5 +151,11 @@ public class DiscordWebhookService : IDiscordWebhookService
                 msg.RemovedByUser = true;
             }
         }
+    }
+
+    public bool TestWebhook(string webhookUrl)
+    {
+        using var client = CreateWebhookClient(webhookUrl, out _);
+        return client is not null;
     }
 }
