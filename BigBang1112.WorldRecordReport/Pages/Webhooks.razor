@@ -196,7 +196,7 @@
             Scope = ScopeSet
         };
 
-        if (!DiscordWebhookService.TestWebhook(webhook.Url))
+        if (!DiscordWebhookService.ValidateWebhook(webhook.Url))
         {
             return;
         }
@@ -354,7 +354,7 @@
             return;
         }
 
-        if (!DiscordWebhookService.TestWebhook(Webhook.Url))
+        if (!DiscordWebhookService.ValidateWebhook(Webhook.Url))
         {
             return;
         }

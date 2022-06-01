@@ -153,7 +153,7 @@ public class DiscordWebhookService : IDiscordWebhookService
         }
     }
 
-    public bool TestWebhook(string webhookUrl)
+    public bool ValidateWebhook(string webhookUrl)
     {
         using var client = CreateWebhookClient(webhookUrl, out _);
         return client is not null;
