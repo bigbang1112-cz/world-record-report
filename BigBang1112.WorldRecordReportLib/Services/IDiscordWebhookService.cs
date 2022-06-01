@@ -10,5 +10,5 @@ public interface IDiscordWebhookService
     Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook, Func<ulong, DiscordWebhookMessageModel>? message = null, string? text = null, IEnumerable<Embed>? embeds = null, CancellationToken cancellationToken = default);
     DiscordWebhookClient? CreateWebhookClient(string webhookUrl, out bool isDeleted);
     Task DeleteMessageAsync(DiscordWebhookMessageModel msg, CancellationToken cancellationToken = default);
-    Task ModifyMessageAsync(DiscordWebhookMessageModel msg, string? text = null, IEnumerable<Embed>? embeds = null, CancellationToken cancellationToken = default);
+    Task ModifyMessageAsync(DiscordWebhookMessageModel msg, string? text = null, IEnumerable<Embed>? embeds = null, bool ignoreDisabledState = false, CancellationToken cancellationToken = default);
 }

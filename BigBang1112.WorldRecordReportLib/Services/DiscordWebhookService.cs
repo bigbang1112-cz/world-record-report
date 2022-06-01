@@ -1,20 +1,19 @@
 ﻿using Discord.Webhook;
 using Microsoft.Extensions.Logging;
 using Discord;
+using BigBang1112.WorldRecordReportLib.Repos;
 
 namespace BigBang1112.WorldRecordReportLib.Services;
 
 public class DiscordWebhookService : IDiscordWebhookService
 {
     private readonly ILogger<DiscordWebhookService> _logger;
-    private readonly IWrUnitOfWork _wrUnitOfWork;
+    private readonly IDiscordWebhookMessageRepo _messageRepo;
 
-    public const string LogoIconUrl = "https://bigbang1112.cz/assets/images/logo_small.png";
-
-    public DiscordWebhookService(ILogger<DiscordWebhookService> logger, IWrUnitOfWork wrUnitOfWork)
+    public DiscordWebhookService(ILogger<DiscordWebhookService> logger, IDiscordWebhookMessageRepo messageRepo)
     {
         _logger = logger;
-        _wrUnitOfWork = wrUnitOfWork;
+        _messageRepo = messageRepo;
     }
 
     public async Task<DiscordWebhookMessageModel?> SendMessageAsync(DiscordWebhookModel webhook,
@@ -39,7 +38,7 @@ public class DiscordWebhookService : IDiscordWebhookService
 
         var msg = message.Invoke(msgId);
         
-        await _wrUnitOfWork.DiscordWebhookMessages.AddAsync(msg, cancellationToken);
+        await _messageRepo.AddAsync(msg, cancellationToken);
 
         return msg;
     }
@@ -47,10 +46,11 @@ public class DiscordWebhookService : IDiscordWebhookService
     public async Task ModifyMessageAsync(DiscordWebhookMessageModel msg,
                                          string? text = null,
                                          IEnumerable<Embed>? embeds = null,
+                                         bool ignoreDisabledState = false,
                                          CancellationToken cancellationToken = default)
     {
-        var webhookClient = CreateWebhookClientOrDisable(msg.Webhook);
-
+        var webhookClient = CreateWebhookClientOrDisable(msg.Webhook, ignoreDisabledState);
+        
         if (webhookClient is null)
         {
             return;
@@ -79,9 +79,9 @@ public class DiscordWebhookService : IDiscordWebhookService
         }
     }
 
-    private DiscordWebhookClient? CreateWebhookClientOrDisable(DiscordWebhookModel webhook)
+    private DiscordWebhookClient? CreateWebhookClientOrDisable(DiscordWebhookModel webhook, bool ignoreDisabledState = false)
     {
-        if (webhook.Disabled)
+        if (!ignoreDisabledState && webhook.Disabled)
         {
             return null;
         }
@@ -106,17 +106,18 @@ public class DiscordWebhookService : IDiscordWebhookService
         {
             return new DiscordWebhookClient(webhookUrl);
         }
-        catch (ArgumentException)
+        catch (ArgumentException ex)
         {
-
+            _logger.LogWarning(ex, "ArgumentException");
         }
-        catch (Discord.Net.HttpException)
+        catch (Discord.Net.HttpException ex)
         {
-
+            _logger.LogWarning(ex, "HttpException");
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
             // Could not find a webhook with the supplied credentials.
+            _logger.LogWarning(ex, "Could not find a webhook with the supplied credentials. Disabling the webhook automatically.");
 
             isDeleted = true;
         }
@@ -126,54 +127,6 @@ public class DiscordWebhookService : IDiscordWebhookService
         }
 
         return null;
-    }
-
-    private static Discord.EmbedBuilder AddThumbnailAndUrl(Discord.EmbedBuilder builder, MapModel map)
-    {
-        if (map.TmxAuthor is null)
-        {
-            // Currently TM2 maps on MX, should be adjusted in the further time
-
-            builder.WithUrl("https://tm.mania.exchange/s/tr/" + map.MxId)
-                .WithThumbnailUrl("https://tm.mania-exchange.com/tracks/thumbnail/" + map.MxId);
-        }
-        else
-        {
-            var uri = new Uri(map.TmxAuthor.Site.Url);
-
-            switch (map.TmxAuthor.Site.ShortName)
-            {
-                case NameConsts.TMXSiteUnited:
-                case NameConsts.TMXSiteTMNF:
-                    builder.WithUrl(new Uri(uri, $"trackshow/{map.MxId}").ToString())
-                        .WithThumbnailUrl(new Uri(uri, $"trackshow/{map.MxId}/image/0").ToString());
-                    break;
-                case NameConsts.TMXSiteNations:
-                    builder.WithUrl(new Uri(uri, "main.aspx?action=trackshow&id=" + map.MxId).ToString())
-                        .WithThumbnailUrl(new Uri(uri, "getclean.aspx?action=trackscreen&id=" + map.MxId).ToString());
-                    break;
-                default:
-                    throw new Exception();
-            }
-        }
-
-        return builder;
-    }
-
-    private static string FilterOutNickname(string nickname, string loginIfFilteredOut)
-    {
-        var nicks = new string[]
-        {
-            "riolu",
-            "r¡olu",
-            "techno",
-            "hylis"
-        };
-
-        foreach (var nick in nicks)
-            if (nickname.Contains(nick, StringComparison.OrdinalIgnoreCase))
-                return $"{nickname} ({loginIfFilteredOut})";
-        return nickname;
     }
 
     public async Task DeleteMessageAsync(DiscordWebhookMessageModel msg, CancellationToken cancellationToken = default)

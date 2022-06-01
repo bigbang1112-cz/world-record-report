@@ -485,7 +485,10 @@ public class ReportService
 
         foreach (var msg in report.DiscordWebhookMessages)
         {
-            await _discordWebhookService.ModifyMessageAsync(msg, embeds: webhookEmbed.Yield(), cancellationToken: cancellationToken);
+            await _discordWebhookService.ModifyMessageAsync(msg,
+                embeds: webhookEmbed.Yield(),
+                ignoreDisabledState: true,
+                cancellationToken: cancellationToken);
         }
 
         var discordBotMessages = await _discordBotUnitOfWork.ReportChannelMessages
