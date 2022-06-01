@@ -70,7 +70,7 @@ public class ReportService
             .WithButton("Map info", DiscordBotService.CreateCustomId($"mapinfo-{wr.Map.MapUid}"), Discord.ButtonStyle.Secondary)
             .Build();
 
-        await ReportToAllScopedDiscordBotsAsync(report, botEmbeds, components, scope, cancellationToken);
+        await ReportToAllScopedDiscordReportChannelsAsync(report, botEmbeds, components, scope, cancellationToken);
         await ReportToAllScopedDiscordWebhooksAsync(report, webhookEmbeds, scope, cancellationToken);
     }
 
@@ -92,7 +92,7 @@ public class ReportService
 
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
-        await ReportToAllScopedDiscordBotsAsync(report, botEmbed.Yield(), components: null, scope, cancellationToken);
+        await ReportToAllScopedDiscordReportChannelsAsync(report, botEmbed.Yield(), components: null, scope, cancellationToken);
         await ReportToAllScopedDiscordWebhooksAsync(report, webhookEmbed.Yield(), scope, cancellationToken);
 
     }
@@ -139,7 +139,7 @@ public class ReportService
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
         await ReportToAllScopedDiscordWebhooksAsync(report, embedWebhook.Yield(), scope, cancellationToken);
-        await ReportToAllScopedDiscordBotsAsync(report, embedBot.Yield(), null, scope, cancellationToken);
+        await ReportToAllScopedDiscordReportChannelsAsync(report, embedBot.Yield(), null, scope, cancellationToken);
     }
 
     private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(
@@ -214,20 +214,20 @@ public class ReportService
             : record.GetDisplayNameMdLink();
     }
 
-    private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report,
+    private async Task ReportToAllScopedDiscordReportChannelsAsync(ReportModel report,
                                                          IEnumerable<Discord.Embed> embeds,
                                                          Discord.MessageComponent? components,
                                                          string scope,
                                                          CancellationToken cancellationToken)
     {
-        await ReportToAllScopedDiscordBotsAsync(report, embeds, components, scope, new Discord.RequestOptions { CancelToken = cancellationToken });
+        await ReportToAllScopedDiscordReportChannelsAsync(report, embeds, components, scope, new Discord.RequestOptions { CancelToken = cancellationToken });
     }
 
-    private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report,
-                                                         IEnumerable<Discord.Embed> embeds,
-                                                         Discord.MessageComponent? components,
-                                                         string scope,
-                                                         Discord.RequestOptions requestOptions)
+    private async Task ReportToAllScopedDiscordReportChannelsAsync(ReportModel report,
+                                                                   IEnumerable<Discord.Embed> embeds,
+                                                                   Discord.MessageComponent? components,
+                                                                   string scope,
+                                                                   Discord.RequestOptions requestOptions)
     {
         var scopePath = scope.Split(':');
 
