@@ -1,24 +1,39 @@
 ﻿@inject IHttpContextAccessor _httpContextAccessor
+@inject NavigationManager NavManager
 
-<div style="margin: 1rem">
-    <h1 style="font-size: 5rem; margin-top: -1.5rem; margin-bottom: -1rem;">@Value</h1>
-    <p>@Message</p>
-</div>
+@if (NoRedirect)
+{
+    <div style="margin: 1rem">
+        <h1 style="font-size: 5rem; margin-top: -1.5rem; margin-bottom: -1rem;">@Value</h1>
+        <p>@Message</p>
+    </div>
+}
 
 @code {
     [Parameter]
     public int Value { get; set; }
-    
+
     [Parameter]
     public string? Message { get; set; }
 
+    private bool NoRedirect { get; set; }
+
     protected override void OnInitialized()
     {
+        if (Value == 401)
+        {
+            NavManager.NavigateTo("login", new NavigationOptions { ReplaceHistoryEntry = true });
+            return;
+        }
+
+        NoRedirect = true;
+
         var context = _httpContextAccessor.HttpContext;
 
         if (context is not null && !context.Response.HasStarted)
         {
             context.Response.StatusCode = Value;
         }
+
     }
 }
