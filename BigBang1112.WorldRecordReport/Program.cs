@@ -48,6 +48,7 @@ builder.Services.AddDbContext2<WrContext>(options.Config, "WrDb");
 builder.Services.AddDbContext2<DiscordBotContext>(options.Config, "DiscordBotDb");
 
 builder.Services.AddScoped<IWrUnitOfWork, WrUnitOfWork>();
+builder.Services.AddScoped<IDiscordWebhookMessageRepo, DiscordWebhookMessageRepo>();
 
 builder.Services.AddScoped<IDiscordBotUnitOfWork, DiscordBotUnitOfWork>();
 builder.Services.AddScoped<ICampaignRepo, CampaignRepo>();
