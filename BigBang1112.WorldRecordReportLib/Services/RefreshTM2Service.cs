@@ -154,12 +154,21 @@ public class RefreshTM2Service : RefreshService
         {
             if (change.WorldRecordChange is not null)
             {
-                foreach (var removedWr in change.WorldRecordChange.RemovedWorldRecords)
+                if (change.WorldRecordChange.WorldRecord is null)
                 {
-                    await _reportService.RemoveWorldRecordReportAsync(removedWr);
+                    foreach (var removedWr in change.WorldRecordChange.RemovedWorldRecords)
+                    {
+                        await _reportService.RemoveWorldRecordReportAsync(removedWr);
+                    }
                 }
-
-                if (change.WorldRecordChange.WorldRecord is not null)
+                else if (change.WorldRecordChange.RemovedWorldRecords.Count > 0)
+                {
+                    await _reportService.ReportRemovedWorldRecordsAsync(
+                        change.WorldRecordChange.WorldRecord,
+                        change.WorldRecordChange.RemovedWorldRecords,
+                        $"{ScopeOfficialWR}:{titlePackId}");
+                }
+                else
                 {
                     await _reportService.ReportWorldRecordAsync(change.WorldRecordChange.WorldRecord, $"{ScopeOfficialWR}:{titlePackId}");
                 }
