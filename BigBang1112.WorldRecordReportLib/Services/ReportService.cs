@@ -164,6 +164,12 @@ public class ReportService
         foreach (var record in newRecords)
         {
             var timestamp = GetTimestamp(record);
+
+            if (timestamp.HasValue && DateTime.UtcNow - timestamp.Value > TimeSpan.FromDays(30))
+            {
+                continue;
+            }
+
             var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(UseLongTimestamp(record) ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
             dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
