@@ -165,10 +165,10 @@ public class ReportService
         {
             var timestamp = GetTimestamp(record);
 
-            if (timestamp.HasValue && DateTime.UtcNow - timestamp.Value > TimeSpan.FromDays(30))
+            /*if (timestamp.HasValue && DateTime.UtcNow - timestamp.Value > TimeSpan.FromDays(30))
             {
                 continue;
-            }
+            }*/
 
             var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(UseLongTimestamp(record) ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
