@@ -10,14 +10,16 @@ namespace BigBang1112.WorldRecordReport.Controllers;
 public class LeaderboardsManialinkController : ControllerBase
 {
     private readonly ILeaderboardsManialinkService _lbManialinkService;
+    private readonly ILogger<LeaderboardsManialinkController> _logger;
 
     private string RedirectUri => $"https://{Request.Host.Host}/manialink/leaderboards/auth";
 
     private static readonly JsonSerializerOptions jsonSerializerOptions = new();
 
-    public LeaderboardsManialinkController(ILeaderboardsManialinkService lbManialinkService)
+    public LeaderboardsManialinkController(ILeaderboardsManialinkService lbManialinkService, ILogger<LeaderboardsManialinkController> logger)
     {
         _lbManialinkService = lbManialinkService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -57,6 +59,8 @@ public class LeaderboardsManialinkController : ControllerBase
         }
         catch (HttpRequestException e)
         {
+            _logger.LogWarning("Exception during authorization", e);
+
             switch (e.StatusCode)
             {
                 case System.Net.HttpStatusCode.BadRequest:
