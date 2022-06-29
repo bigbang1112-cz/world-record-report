@@ -189,7 +189,7 @@ public class ReportService
             dict.Add(currentRecord.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
         }
 
-        foreach (var record in changes.RemovedRecords)
+        foreach (var record in changes.RemovedRecords.Where(x => x.Rank <= 10))
         {
             dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
         }
