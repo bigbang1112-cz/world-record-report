@@ -499,7 +499,7 @@ public class RefreshTM2Service : RefreshService
         CancellationToken cancellationToken)
     {
         // Do not use the overload, as the cheated records have been already filtered
-        var wr = GetWorldRecord(currentRecords, Enumerable.Empty<string>());
+        var wr = GetWorldRecord(currentRecords, ignoredLoginNames: Enumerable.Empty<string>());
 
         if (wr is null)
         {
