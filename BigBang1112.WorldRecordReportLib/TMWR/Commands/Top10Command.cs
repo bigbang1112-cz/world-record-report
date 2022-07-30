@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Text;
 using System.Text.RegularExpressions;
 using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
@@ -172,9 +173,7 @@ public class Top10Command : MapRelatedWithUidCommand
         var top10records = leaderboard.Where(x => !x.Ignored).Take(10)
             .Select((x, i) => new MiniRecord(Rank: i + 1, x.Time.TotalMilliseconds, Nickname: $"[{x.DisplayName ?? x.PlayerId.ToString()}](https://trackmania.io/#/player/{x.PlayerId})", x.Timestamp));
         
-        var miniRecordStrings = ConvertMiniRecordsToStrings(top10records, isTMUF: false, isStunts: false);
-
-        builder.Description = string.Join('\n', miniRecordStrings);
+        builder.Description = ConvertMiniRecordsToString(top10records, isTMUF: false, isStunts: false);
     }
 
     private async Task<bool> CreateTop10EmbedContentFromTmxAsync(MapModel map, EmbedBuilder builder)
@@ -193,9 +192,8 @@ public class Top10Command : MapRelatedWithUidCommand
 
         var top10records = GetTop10(recordSetTmx);
         var miniRecords = GetMiniRecordsFromTmxReplays(top10records, map, formattable: true);
-        var miniRecordStrings = ConvertMiniRecordsToStrings(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
-
-        builder.Description = string.Join('\n', miniRecordStrings);
+        
+        builder.Description = ConvertMiniRecordsToString(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
 
         return true;
     }
@@ -216,9 +214,8 @@ public class Top10Command : MapRelatedWithUidCommand
 
         var loginDictionary = await FetchLoginModelsAsync(recordSet);
         var miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, loginDictionary, escape: true);
-        var miniRecordStrings = ConvertMiniRecordsToStrings(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
 
-        builder.Description = string.Join('\n', miniRecordStrings);
+        builder.Description = ConvertMiniRecordsToString(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
 
         return true;
     }
@@ -253,16 +250,40 @@ public class Top10Command : MapRelatedWithUidCommand
                 displayName = loginModel.GetDeformattedNickname();
             }
 
+            if (string.IsNullOrEmpty(displayName))
+            {
+                displayName = record.Login;
+            }
+
             yield return new MiniRecord(record.Rank, record.Time.TotalMilliseconds, escape ? displayName.EscapeDiscord() : displayName, record.Timestamp?.UtcDateTime);
         }
     }
 
-    private IEnumerable<string> ConvertMiniRecordsToStrings(IEnumerable<MiniRecord> records, bool isTMUF, bool isStunts)
+    private string ConvertMiniRecordsToString(IEnumerable<MiniRecord> records, bool isTMUF, bool isStunts)
     {
+        var builder = new StringBuilder();
+
         foreach (var record in records)
         {
-            yield return $"` {record.Rank:00} ` **` {(isStunts ? record.TimeOrScore : new TimeInt32(record.TimeOrScore).ToString(useHundredths: isTMUF))} `** by **{record.Nickname}**{(ShowTimestamps && record.Timestamp.HasValue ? $" ({record.Timestamp.Value.ToTimestampTag(TimestampTagStyles.ShortDate)})" : "")}";
+            builder.Append("` ");
+            builder.Append(record.Rank.ToString("00"));
+            builder.Append(" ` **` ");
+            builder.Append(isStunts ? record.TimeOrScore : new TimeInt32(record.TimeOrScore).ToString(useHundredths: isTMUF));
+            builder.Append(" `** by **");
+            builder.Append(record.Nickname);
+            builder.Append("**");
+            
+            if (ShowTimestamps && record.Timestamp.HasValue)
+            {
+                builder.Append(" (");
+                builder.Append(record.Timestamp.Value.ToTimestampTag(TimestampTagStyles.ShortDate));
+                builder.Append(')');
+            }
+
+            builder.AppendLine();
         }
+
+        return builder.ToString();
     }
 
     private async Task<Dictionary<string, LoginModel>> FetchLoginModelsAsync(LeaderboardTM2 recordSet)
