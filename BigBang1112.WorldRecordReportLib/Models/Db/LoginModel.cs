@@ -36,7 +36,19 @@ public class LoginModel : DbModel
 
     public string GetDeformattedNickname()
     {
-        return string.IsNullOrWhiteSpace(Nickname) ? Name : TextFormatter.Deformat(Nickname).Trim();
+        if (Nickname is null)
+        {
+            return Name;
+        }
+        
+        var nickname = TextFormatter.Deformat(Nickname).Trim();
+
+        if (string.IsNullOrWhiteSpace(nickname))
+        {
+            return Name;
+        }
+
+        return nickname;
     }
 
     public string GetMdLink()
