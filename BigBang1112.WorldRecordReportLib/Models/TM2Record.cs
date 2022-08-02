@@ -23,9 +23,17 @@ public record TM2Record(int Rank,
 
     public string GetDisplayNameMdLink()
     {
-        var name = DisplayName is null
-            ? Login
-            : TextFormatter.Deformat(DisplayName);
+        if (DisplayName is null)
+        {
+            return Login;
+        }
+
+        var name = TextFormatter.Deformat(DisplayName);
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return Login;
+        }
 
         return name.EscapeDiscord();
     }
