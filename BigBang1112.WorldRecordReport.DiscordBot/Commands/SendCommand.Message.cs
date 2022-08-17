@@ -20,6 +20,9 @@ public partial class SendCommand
         [DiscordBotCommandOption("message", ApplicationCommandOptionType.String, "Message.", IsRequired = true)]
         public string? Msg { get; set; }
 
+        [DiscordBotCommandOption("respondto", ApplicationCommandOptionType.String, "Message ID to respond to.")]
+        public string? RespondTo { get; set; }
+
         public Message(DiscordBotService discordBotService, TmwrDiscordBotService tmwr) : base(discordBotService)
         {
             _tmwr = tmwr;
@@ -44,7 +47,19 @@ public partial class SendCommand
                 return new DiscordBotMessage("Not a text channel.", ephemeral: true);
             }
 
-            await textChannel.SendMessageAsync(Msg);
+            var reference = default(MessageReference);
+
+            if (ulong.TryParse(RespondTo, out ulong messageId))
+            {
+                var msgRespondTo = await textChannel.GetMessageAsync(messageId);
+
+                if (msgRespondTo is not null)
+                {
+                    reference = new MessageReference(msgRespondTo.Id);
+                }
+            }
+            
+            await textChannel.SendMessageAsync(Msg, messageReference: reference);
 
             return new DiscordBotMessage("Message sent.", ephemeral: true);
         }
