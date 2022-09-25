@@ -504,9 +504,18 @@ public class RefreshTM2020Service : RefreshService
 
         _logger.LogInformation("{map}: Leaderboard saved.", mapModel.DeformattedName);
 
+        var firstPlayer = tm2020Records.Count == 0 ? null : tm2020Records[0];
+
         // Download ghosts from recordDetails to the Ghosts folder in this part of the code
         foreach (var rec in recordDetails)
         {
+            // If its not WR and it's been less than 7 days, skip downloading the ghost
+            if (firstPlayer is not null && firstPlayer.PlayerId != rec.AccountId && mapModel.Campaign is not null
+                && DateTime.UtcNow - mapModel.Campaign.PublishedOn < TimeSpan.FromDays(7))
+            {
+                continue;
+            }
+
             if (rec.Url is null || _ghostService.GhostExists(mapModel.MapUid, rec.RecordScore.Time, rec.AccountId.ToString()))
             {
                 continue;
@@ -521,6 +530,12 @@ public class RefreshTM2020Service : RefreshService
 
     private async Task DownloadMissingGhostsAsync(MapModel map, IEnumerable<TM2020Record> records, CancellationToken cancellationToken)
     {
+        // Don't allow missing ghost download in the first 7 days
+        if (map.Campaign is not null && DateTime.UtcNow - map.Campaign.PublishedOn < TimeSpan.FromDays(7))
+        {
+            return;
+        }
+
         foreach (var rec in records)
         {
             var playerIdStr = rec.PlayerId.ToString();
