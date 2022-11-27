@@ -292,7 +292,7 @@ public class RefreshTmxService : RefreshService
 
         await _wrUnitOfWork.WorldRecords.AddAsync(wrModel);
 
-        if (!freshUpdate)
+        if (!freshUpdate && DateTime.UtcNow - replayAt < TimeSpan.FromDays(14))
         {
             await _reportService.ReportWorldRecordAsync(wrModel, $"{ScopeOfficialWR}:{subScope}");
         }
