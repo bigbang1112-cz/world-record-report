@@ -429,6 +429,8 @@ public class ReportService
         var nickname = FilterOutNickname(
             nickname: wr.GetPlayerNicknameMdLink(),
             loginIfFilteredOut: wr.GetPlayerLogin());
+        
+        nickname = AddLoginInCase(wr, map, $"**{nickname}**");
 
         return new Discord.EmbedBuilder()
             .WithTitle("New world record!")
@@ -441,7 +443,7 @@ public class ReportService
             .WithThumbnailUrl(map.GetThumbnailUrl())
             .AddField("Map", map.GetMdLink(), true)
             .AddField(isStunts ? "Score" : "Time", score, true)
-            .AddField("By", $"**{nickname}**", true);
+            .AddField("By", nickname, true);
     }
 
     public static Discord.EmbedBuilder GetDefaultEmbedBuilder_RemovedWorldRecord(WorldRecordModel? currentWr, IEnumerable<WorldRecordModel> removedWrs)
@@ -455,6 +457,8 @@ public class ReportService
         var map = previousWr.Map;
         var time = $"` {previousWr.TimeInt32} `";
 
+        var nickname = AddLoginInCase(previousWr, map, $"**{previousWr.GetPlayerNicknameMdLink()}**");
+
         var builder = new Discord.EmbedBuilder()
             .WithTitle("Removed world record")
             .WithFooter("Powered by wr.bigbang1112.cz", LogoIconUrl)
@@ -465,12 +469,14 @@ public class ReportService
             .WithThumbnailUrl(map.GetThumbnailUrl())
             .AddField("Map", $"[{map.DeformattedName}]({map.GetInfoUrl()})", true)
             .AddField("Time", time, true)
-            .AddField("By", $"**{previousWr.GetPlayerNicknameMdLink()}**", true);
+            .AddField("By", nickname, true);
 
         if (currentWr is not null)
         {
             var prevTime = $"` {currentWr.TimeInt32} `";
             var prevNickname = $"**{currentWr.GetPlayerNicknameMdLink()}**";
+
+            prevNickname = AddLoginInCase(currentWr, map, prevNickname);
 
             builder = builder
                 .AddField("New time", prevTime, true)
@@ -478,6 +484,23 @@ public class ReportService
         }
 
         return builder;
+    }
+
+    private static string AddLoginInCase(WorldRecordModel wr, MapModel map, string nickname)
+    {
+        if (map.Game.Id != (int)Game.TM2)
+        {
+            return nickname;
+        }
+
+        var login = wr.GetPlayerLogin();
+
+        if (string.Equals(wr.GetPlayerNicknameDeformatted(), login, StringComparison.OrdinalIgnoreCase))
+        {
+            return nickname;
+        }
+
+        return nickname + $" ({login})";
     }
 
     public async Task UpdateWorldRecordReportAsync(ReportModel report, CancellationToken cancellationToken = default)
