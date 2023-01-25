@@ -491,7 +491,7 @@ public class ReportService
 
         var login = wr.GetPlayerLogin();
 
-        if (string.Equals(wr.GetPlayerNicknameDeformatted(), login, StringComparison.OrdinalIgnoreCase))
+        if (wr.GetPlayerNicknameDeformatted().Contains(login, StringComparison.OrdinalIgnoreCase))
         {
             return nickname;
         }
