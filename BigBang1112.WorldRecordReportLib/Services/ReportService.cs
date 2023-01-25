@@ -425,12 +425,8 @@ public class ReportService
                 score += $" ` {delta} `";
             }
         }
-
-        var nickname = FilterOutNickname(
-            nickname: wr.GetPlayerNicknameMdLink(),
-            loginIfFilteredOut: wr.GetPlayerLogin());
         
-        nickname = AddLoginInCase(wr, map, $"**{nickname}**");
+        var nickname = AddLoginInCase(wr, map, $"**{wr.GetPlayerNicknameMdLink()}**");
 
         return new Discord.EmbedBuilder()
             .WithTitle("New world record!")
@@ -550,27 +546,6 @@ public class ReportService
         }
 
         botEmbed = embedBuilder.Build();
-    }
-
-    private static string FilterOutNickname(string nickname, string loginIfFilteredOut)
-    {
-        var nicks = new string[]
-        {
-            "riolu",
-            "r¡olu",
-            "techno",
-            "hylis"
-        };
-
-        foreach (var nick in nicks)
-        {
-            if (nickname.Contains(nick, StringComparison.OrdinalIgnoreCase))
-            {
-                return $"{nickname} ({loginIfFilteredOut})";
-            }
-        }
-
-        return nickname;
     }
 
     public async Task RemoveWorldRecordReportAsync(WorldRecordModel wr, CancellationToken cancellationToken = default)
