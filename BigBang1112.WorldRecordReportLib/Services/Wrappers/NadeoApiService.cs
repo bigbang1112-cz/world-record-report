@@ -75,4 +75,11 @@ public class NadeoApiService : IHostedService, INadeoServices, INadeoLiveService
         
         return await _nadeoLiveServices.GetTopLeaderboardAsync(mapUid, length, offset, onlyWorld, cancellationToken);
     }
+
+    public async Task<TopLeaderboardCollection> GetTopLeaderboardAsync(string mapUid, string groupId, int length = 10, int offset = 0, bool onlyWorld = true, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("HTTP request: TopLeaderboard (mapUid={mapUid}; groupId={groupId}, length={length}; offset={offset}; onlyWorld={onlyWorld})", mapUid, groupId, length, offset, onlyWorld);
+
+        return await _nadeoLiveServices.GetTopLeaderboardAsync(mapUid, groupId, length, offset, onlyWorld, cancellationToken);
+    }
 }
