@@ -156,7 +156,7 @@
 						<quad z-index="0" size="60 10" halign="center" style="Bgs1InRace" substyle="BgCard" scriptevents="1" modulatecolor="048" valign="center" hidden="1"/>
 						<label z-index="1" size="55 5" text="Settings" halign="center" valign="center2" textfont="RajdhaniMono" textsize="2" pos="-1 -.35" translate="1" textprefix="🔧  " style="TextTitle3"/>
 					</frame>
-					<label z-index="2" size="55 5" text="VERSION $o$fd02021-09-17a" halign="center" valign="center2" textfont="Oswald" pos="0 -7.9" scriptevents="1" style="TextCardRaceRank" textsize="3" id="LABEL_VERSION"/>
+					<label z-index="2" size="55 5" text="VERSION $o$fd02023-05-17a" halign="center" valign="center2" textfont="Oswald" pos="0 -7.9" scriptevents="1" style="TextCardRaceRank" textsize="3" id="LABEL_VERSION"/>
 				</frame>
 			</frame>
 			<frame pos="-80">
