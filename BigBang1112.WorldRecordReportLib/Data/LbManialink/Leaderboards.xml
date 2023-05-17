@@ -1,12 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <manialink version="3">
 	<!--
-		LEADERBOARDS 2021-09-17a
-		- Manialink is now hosted from a different server, requiring you to authorize with BigBang1112.cz
-		- Added Refresh button to every leaderboard, available to IWRUP members only
-		- Record timestamps are now retrievable from all records
-		- Added tooltips of members with their visitor count and dates
-		- Replaced Contribute with Contact Me
+		LEADERBOARDS 2023-05-17a
+		- #FreeMebe
 	-->
 	<frame pos="0 -2.5">
 		<quad scriptevents="1" id="CANCEL"/>
@@ -51,6 +47,7 @@
 			</frame>
 		</frame>
 		<frame id="FRAME_MENU" pos="320 250">
+            <label pos="0 -20" z-index="-0.5" size="160 5" text="#FreeMebe" halign="center" textsize="24" textprefix="$o$n" opacity="0.5"/>
 			<frame pos="-116.333">
 				<frame pos="0 80">
 					<quad pos="0 0" z-index="0" size="67.5 9.5" style="Bgs1" substyle="BgCardList" valign="top" halign="center"/>
@@ -636,7 +633,8 @@
 		<quad pos="0 0" z-index="-1" size="43.5 6" style="Bgs1" substyle="BgCardOnline" colorize="000" id="QUAD_TOOLTIP"/>
 		<label pos="2 -3.1" z-index="0" size="43.5 6" text="Random text" valign="center2" textsize="1.5" textfont="BiryaniDemiBold" id="LABEL_TEXT" translate="1"/>
 	</frame>
-	<script><![CDATA[		
+	<script>
+                <![CDATA[		
 		#Include "TextLib" as TextLib
 		#Include "MathLib" as MathLib
 		#Include "TimeLib" as TimeLib
@@ -5108,7 +5106,7 @@
 			declare Frame_Webhooks = (Page.GetFirstChild("FRAME_WEBHOOKS") as CMlFrame);
 			declare Frame_Webhook_List = (Page.GetFirstChild("FRAME_WEBHOOK_LIST") as CMlFrame);
 
-			(Page.GetFirstChild("LABEL_CHANGELOG_CONTENT") as CMlLabel).Value = "LEADERBOARDS 2021-09-17a\n- Manialink is now hosted from a different server, requiring you to authorize with BigBang1112.cz\n- Added Refresh button to every leaderboard, available to IWRUP members only\n- Record timestamps are now retrievable from all records\n- Added tooltips of members with their visitor count and dates\n- Replaced Contribute with Contact Me";
+			(Page.GetFirstChild("LABEL_CHANGELOG_CONTENT") as CMlLabel).Value = "LEADERBOARDS 2023-05-17a\n- #FreeMebe";
 
 			for(I, 1, 10) {
 				declare SWebhook W;
