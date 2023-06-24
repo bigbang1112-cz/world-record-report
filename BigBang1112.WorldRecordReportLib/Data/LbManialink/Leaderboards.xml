@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <manialink version="3">
 	<!--
-		LEADERBOARDS 2023-06-05a
-		- #FreeMebed
+		LEADERBOARDS 2023-06-24a
+		- Removed request to bigbang1112.eu
 	-->
 	<frame pos="0 -2.5">
 		<quad scriptevents="1" id="CANCEL"/>
@@ -155,7 +155,7 @@
 						<quad z-index="0" size="60 10" halign="center" style="Bgs1InRace" substyle="BgCard" scriptevents="1" modulatecolor="048" valign="center" hidden="1"/>
 						<label z-index="1" size="55 5" text="Settings" halign="center" valign="center2" textfont="RajdhaniMono" textsize="2" pos="-1 -.35" translate="1" textprefix="🔧  " style="TextTitle3"/>
 					</frame>
-					<label z-index="2" size="55 5" text="VERSION $o$fd02023-06-05a" halign="center" valign="center2" textfont="Oswald" pos="0 -7.9" scriptevents="1" style="TextCardRaceRank" textsize="3" id="LABEL_VERSION"/>
+					<label z-index="2" size="55 5" text="VERSION $o$fd02023-06-24a" halign="center" valign="center2" textfont="Oswald" pos="0 -7.9" scriptevents="1" style="TextCardRaceRank" textsize="3" id="LABEL_VERSION"/>
 				</frame>
 			</frame>
 			<frame pos="-80">
@@ -5040,7 +5040,7 @@
 				Request.Login = LocalUser.Login;
 				Request.SecretKey = Leaderboards_SecretKey;
 
-				RequestExistingWebhooks = Http.CreatePost("https://bigbang1112.eu/projects/leaderboards/webhooks.php", Request.tojson());
+				//RequestExistingWebhooks = Http.CreatePost("https://bigbang1112.eu/projects/leaderboards/webhooks.php", Request.tojson());
 			}
 
 			LeaderboardType = "WR";
@@ -5105,7 +5105,7 @@
 			declare Frame_Webhooks = (Page.GetFirstChild("FRAME_WEBHOOKS") as CMlFrame);
 			declare Frame_Webhook_List = (Page.GetFirstChild("FRAME_WEBHOOK_LIST") as CMlFrame);
 
-			(Page.GetFirstChild("LABEL_CHANGELOG_CONTENT") as CMlLabel).Value = "LEADERBOARDS 2023-06-05a\n- #FreeMebed";
+			(Page.GetFirstChild("LABEL_CHANGELOG_CONTENT") as CMlLabel).Value = "LEADERBOARDS 2023-06-24a\n- Removed request to bigbang1112.eu";
 
 			for(I, 1, 10) {
 				declare SWebhook W;
