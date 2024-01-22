@@ -96,7 +96,7 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
             .Include(x => x.Map)
             .Where(x => x.Map.TitlePack == titlePack && x.PreviousWorldRecord != null && x.Ignored == IgnoredMode.NotIgnored)
             .OrderBy(x => x.DrivenOn)
-            .Select(x => x.DrivenOn)
+            .Select(x => x.DrivenOn as DateTime?)
             .Cacheable()
             .FirstOrDefaultAsync(cancellationToken);
     }
@@ -107,7 +107,7 @@ public class WorldRecordRepo : Repo<WorldRecordModel>, IWorldRecordRepo
             .Include(x => x.Map)
             .Where(x => x.Map.Campaign == campaign && x.PreviousWorldRecord != null && x.Ignored == IgnoredMode.NotIgnored)
             .OrderBy(x => x.DrivenOn)
-            .Select(x => x.DrivenOn)
+            .Select(x => x.DrivenOn as DateTime?)
             .Cacheable()
             .FirstOrDefaultAsync(cancellationToken);
     }

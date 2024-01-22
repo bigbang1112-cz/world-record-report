@@ -70,7 +70,7 @@ public class ReportService
             .WithButton("Map info", DiscordBotService.CreateCustomId($"mapinfo-{wr.Map.MapUid}"), Discord.ButtonStyle.Secondary)
             .Build();
 
-        await ReportToAllScopedDiscordBotsAsync(report, botEmbeds, components, scope, cancellationToken);
+        await ReportToAllScopedDiscordReportChannelsAsync(report, botEmbeds, components, scope, cancellationToken);
         await ReportToAllScopedDiscordWebhooksAsync(report, webhookEmbeds, scope, cancellationToken);
     }
 
@@ -92,7 +92,7 @@ public class ReportService
 
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
-        await ReportToAllScopedDiscordBotsAsync(report, botEmbed.Yield(), components: null, scope, cancellationToken);
+        await ReportToAllScopedDiscordReportChannelsAsync(report, botEmbed.Yield(), components: null, scope, cancellationToken);
         await ReportToAllScopedDiscordWebhooksAsync(report, webhookEmbed.Yield(), scope, cancellationToken);
 
     }
@@ -139,7 +139,7 @@ public class ReportService
         await _wrUnitOfWork.Reports.AddAsync(report, cancellationToken);
 
         await ReportToAllScopedDiscordWebhooksAsync(report, embedWebhook.Yield(), scope, cancellationToken);
-        await ReportToAllScopedDiscordBotsAsync(report, embedBot.Yield(), null, scope, cancellationToken);
+        await ReportToAllScopedDiscordReportChannelsAsync(report, embedBot.Yield(), null, scope, cancellationToken);
     }
 
     private static IEnumerable<string> CreateLeaderboardChangesStringsForDiscord<TPlayerId>(
@@ -220,20 +220,20 @@ public class ReportService
             : record.GetDisplayNameMdLink();
     }
 
-    private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report,
+    private async Task ReportToAllScopedDiscordReportChannelsAsync(ReportModel report,
                                                          IEnumerable<Discord.Embed> embeds,
                                                          Discord.MessageComponent? components,
                                                          string scope,
                                                          CancellationToken cancellationToken)
     {
-        await ReportToAllScopedDiscordBotsAsync(report, embeds, components, scope, new Discord.RequestOptions { CancelToken = cancellationToken });
+        await ReportToAllScopedDiscordReportChannelsAsync(report, embeds, components, scope, new Discord.RequestOptions { CancelToken = cancellationToken });
     }
 
-    private async Task ReportToAllScopedDiscordBotsAsync(ReportModel report,
-                                                         IEnumerable<Discord.Embed> embeds,
-                                                         Discord.MessageComponent? components,
-                                                         string scope,
-                                                         Discord.RequestOptions requestOptions)
+    private async Task ReportToAllScopedDiscordReportChannelsAsync(ReportModel report,
+                                                                   IEnumerable<Discord.Embed> embeds,
+                                                                   Discord.MessageComponent? components,
+                                                                   string scope,
+                                                                   Discord.RequestOptions requestOptions)
     {
         var scopePath = scope.Split(':');
 
@@ -243,16 +243,22 @@ public class ReportService
         if (wr is not null)
         {
             var map = wr.Map;
+            var isTMUF = map.Game.IsTMUF();
             var mapName = map.GetHumanizedDeformattedName();
             var timeStr = map.IsStuntsMode()
                 ? wr.Time.ToString()
-                : wr.TimeInt32.ToString(useHundredths: map.Game.IsTMUF(), useApostrophe: true);
+                : wr.TimeInt32.ToString(useHundredths: isTMUF, useApostrophe: true);
             var delta = "";
             var player = wr.GetPlayerNicknameDeformatted();
 
             if (wr.PreviousWorldRecord is not null)
             {
-                delta = $" ({(map.IsStuntsMode() ? $"+{wr.Time - wr.PreviousWorldRecord.Time}" : (wr.TimeInt32 - wr.PreviousWorldRecord.TimeInt32).TotalSeconds)})";
+                var bracket = map.IsStuntsMode()
+                    ? $"+{wr.Time - wr.PreviousWorldRecord.Time}"
+                    : (wr.TimeInt32 - wr.PreviousWorldRecord.TimeInt32).TotalSeconds
+                        .ToString(isTMUF ? "0.00" : "0.000", CultureInfo.InvariantCulture);
+                
+                delta = $" ({bracket})";
             }
 
             threadName = $"{mapName}: {timeStr}{delta} by {player}";
@@ -510,7 +516,10 @@ public class ReportService
 
         foreach (var msg in report.DiscordWebhookMessages)
         {
-            await _discordWebhookService.ModifyMessageAsync(msg, embeds: webhookEmbed.Yield(), cancellationToken: cancellationToken);
+            await _discordWebhookService.ModifyMessageAsync(msg,
+                embeds: webhookEmbed.Yield(),
+                ignoreDisabledState: true,
+                cancellationToken: cancellationToken);
         }
 
         var discordBotMessages = await _discordBotUnitOfWork.ReportChannelMessages
