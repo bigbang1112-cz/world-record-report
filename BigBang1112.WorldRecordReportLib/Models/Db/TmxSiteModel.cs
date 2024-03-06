@@ -1,6 +1,4 @@
-﻿using BigBang1112.Models.Db;
-using BigBang1112.WorldRecordReportLib.Data;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using ManiaAPI.TMX;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
@@ -19,6 +17,7 @@ public class TmxSiteModel : DbModel
     {
         NameConsts.TMXSiteTMNF => TmxSite.TMNForever,
         NameConsts.TMXSiteUnited => TmxSite.United,
+        NameConsts.TMXSiteNations => TmxSite.Nations,
         _ => throw new Exception(),
     };
 }
