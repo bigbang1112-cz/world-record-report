@@ -6,7 +6,7 @@ using Discord.WebSocket;
 
 namespace BigBang1112.WorldRecordReportLib.TMWR.Commands;
 
-[DiscordBotCommand("identify")]
+[DiscordBotCommand("identify", "Identify a user from their login or nickname.")]
 public class IdentifyCommand : IdentifyBaseCommand
 {
     private readonly IWrUnitOfWork _wrUnitOfWork;
