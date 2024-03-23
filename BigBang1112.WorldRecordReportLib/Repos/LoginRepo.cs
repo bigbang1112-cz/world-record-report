@@ -42,6 +42,65 @@ public class LoginRepo : Repo<LoginModel>, ILoginRepo
         return await _context.Logins.SingleOrDefaultAsync(x => x.Game.Id == (int)game && string.Equals(x.Name, name), cancellationToken);
     }
 
+    public async Task<Dictionary<Game, LoginModel>> GetByNameAsync(string name, CancellationToken cancellationToken = default)
+    {
+        var models = await _context.Logins
+            .Where(x => string.Equals(x.Name, name))
+            .ToListAsync(cancellationToken);
+
+        var dict = new Dictionary<Game, LoginModel>();
+
+        foreach (var model in models)
+        {
+            dict[(Game)model.Game.Id] = model;
+        }
+
+        return dict;
+    }
+
+    public async Task<Dictionary<Game, List<LoginModel>>> GetByNicknameAsync(string nickname, CancellationToken cancellationToken = default)
+    {
+        var tm2Models = await _context.Logins
+            .Where(x => x.Game.Id == (int)Game.TM2)
+            .ToListAsync(cancellationToken);
+
+        var tm2Model = default(LoginModel);
+
+        foreach (var model in tm2Models)
+        {
+            if (model.GetDeformattedNickname() == nickname)
+            {
+                tm2Model = model;
+                break;
+            }
+        }
+
+        var models = await _context.Logins
+            .Where(x => string.Equals(x.Nickname, nickname))
+            .ToListAsync(cancellationToken);
+
+        if (tm2Model is not null && !models.Any(x => x.Game.Id == (int)Game.TM2 && string.Equals(x.Nickname, nickname)))
+        {
+            models.Add(tm2Model);
+        }
+
+        var dict = new Dictionary<Game, List<LoginModel>>();
+
+        foreach (var model in models)
+        {
+            if (dict.TryGetValue((Game)model.Game.Id, out var list))
+            {
+                list.Add(model);
+            }
+            else
+            {
+                dict[(Game)model.Game.Id] = new() { model };
+            }
+        }
+
+        return dict;
+    }
+
     public async Task<LoginModel> GetOrAddAsync(GameModel game, string name, string nickname, CancellationToken cancellationToken = default)
     {
         var loginModel = await GetOrAddAsync(x => x.Game == game && x.Name == name, () => new LoginModel
