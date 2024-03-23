@@ -1,5 +1,4 @@
 ﻿using BigBang1112.WorldRecordReportLib.Attributes;
-using BigBang1112.WorldRecordReportLib.Data;
 
 namespace BigBang1112.WorldRecordReportLib.Enums;
 
