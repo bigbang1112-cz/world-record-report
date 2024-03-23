@@ -55,7 +55,7 @@ public partial class HistoryCommand
 
             var history = await _wrUnitOfWork.NicknameChanges.GetHistoryAsync(login);
 
-            var sb = new StringBuilder($"*Note: Because of a bug found on {new DateTime(2024, 3, 23, 17, 0, 0).ToTimestampTag(TimestampTagStyles.ShortDate)}, timestamps could sometimes be innacurate.*\n\n");
+            var sb = new StringBuilder($"*Note: Because of a bug found on {new DateTime(2024, 3, 23, 17, 0, 0).ToTimestampTag(TimestampTagStyles.ShortDate)}, timestamps could sometimes be innacurate before this date.*\n\n");
 
             var nickname = login.GetDeformattedNickname();
 
