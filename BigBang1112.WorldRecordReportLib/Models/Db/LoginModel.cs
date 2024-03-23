@@ -53,7 +53,7 @@ public class LoginModel : DbModel
 
     public string GetMdLink()
     {
-        var escapedNickname = GetDeformattedNickname().EscapeDiscord();
+        var escapedNickname = GetDeformattedNickname();
 
         var infoUrl = GetInfoUrl();
 
