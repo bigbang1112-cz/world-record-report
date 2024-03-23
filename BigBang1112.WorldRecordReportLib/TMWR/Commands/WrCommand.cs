@@ -87,8 +87,7 @@ public class WrCommand : MapRelatedWithUidCommand
         builder = builder
             .WithButton("Previous", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-prev"), ButtonStyle.Secondary)
             .WithButton("Compare with previous", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-compareprev"), ButtonStyle.Secondary)
-            .WithButton("Checkpoints", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-checkpoints"), ButtonStyle.Secondary, disabled: true)
-            .WithButton("Inputs", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-inputs"), ButtonStyle.Secondary, disabled: true);
+            .WithButton("Nickname history", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-nicknames"), ButtonStyle.Secondary, disabled: true);
 
         return builder;
     }
@@ -179,6 +178,7 @@ public class WrCommand : MapRelatedWithUidCommand
         {
             "prev" => await ExecutePrevAsync(messageComponent, deferer, wr),
             "compareprev" => await ExecuteComparePrevAsync(messageComponent, deferer, wr),
+            "nicknames" => await ExecuteNicknameHistoryAsync(messageComponent, deferer, wr),
             _ => null
         };
     }
@@ -226,6 +226,22 @@ public class WrCommand : MapRelatedWithUidCommand
         compareWrsCommand.Guid2 = wr.PreviousWorldRecord.Guid.ToString();
 
         var message = await compareWrsCommand.ExecuteAsync(messageComponent, deferer);
+
+        return message with { AlwaysPostAsNewMessage = true, Ephemeral = true };
+    }
+
+    internal async Task<DiscordBotMessage> ExecuteNicknameHistoryAsync(SocketMessageComponent messageComponent, Deferer deferer, WorldRecordModel wr)
+    {
+        using var scope = _tmwrDiscordBotService.CreateCommand(out HistoryCommand.Nickname? nicknameHistoryCommand);
+
+        if (nicknameHistoryCommand is null)
+        {
+            throw new Exception();
+        }
+
+        nicknameHistoryCommand.User = wr.GetPlayerLogin();
+
+        var message = await nicknameHistoryCommand.ExecuteAsync(messageComponent, deferer);
 
         return message with { AlwaysPostAsNewMessage = true, Ephemeral = true };
     }

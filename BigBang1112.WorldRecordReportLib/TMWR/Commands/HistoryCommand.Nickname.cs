@@ -9,7 +9,7 @@ namespace BigBang1112.WorldRecordReportLib.TMWR.Commands;
 
 public partial class HistoryCommand
 {
-    [DiscordBotSubCommand("nickname")]
+    [DiscordBotSubCommand("nickname", "Show nickname history of a user.")]
     public class Nickname : IdentifyBaseCommand
     {
         private readonly IWrUnitOfWork _wrUnitOfWork;
@@ -47,19 +47,33 @@ public partial class HistoryCommand
 
             if (login is null)
             {
-                return new DiscordBotMessage { Message = $"Login not found." };
+                return new DiscordBotMessage(new EmbedBuilder()
+                    .WithDescription("User not found.")
+                    .WithBotFooter("Nickname history")
+                    .Build());
             }
 
             var history = await _wrUnitOfWork.NicknameChanges.GetHistoryAsync(login);
 
-            var sb = new StringBuilder();
+            var sb = new StringBuilder($"*Note: Because of a bug found on {new DateTime(2024, 3, 23, 17, 0, 0).ToTimestampTag(TimestampTagStyles.ShortDate)}, timestamps could sometimes be innacurate.*\n\n");
 
-            sb.Append($"**{login.GetDeformattedNickname()}**");
+            var nickname = login.GetDeformattedNickname();
+
+            sb.Append(string.IsNullOrWhiteSpace(nickname) ? "*(empty)*" : $"**{nickname}**");
 
             foreach (var change in history)
             {
+                var anotherNickname = TextFormatter.Deformat(change.Previous);
+
+                if (nickname == anotherNickname)
+                {
+                    continue;
+                }
+
+                nickname = anotherNickname;
+
                 sb.AppendLine($" ({change.PreviousLastSeenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})");
-                sb.Append($"**{TextFormatter.Deformat(change.Previous)}**");
+                sb.Append(string.IsNullOrWhiteSpace(nickname) ? "*(empty)*" : $"**{nickname}**");
             }
 
             var embed = new EmbedBuilder()
