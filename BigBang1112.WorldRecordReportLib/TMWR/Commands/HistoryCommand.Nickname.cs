@@ -54,11 +54,12 @@ public partial class HistoryCommand
 
             var sb = new StringBuilder();
 
-            sb.AppendLine(login.GetDeformattedNickname());
+            sb.Append($"**{login.GetDeformattedNickname()}**");
 
             foreach (var change in history)
             {
-                sb.AppendLine($"{TextFormatter.Deformat(change.Previous)} ({change.PreviousLastSeenOn.ToShortDateString()})");
+                sb.AppendLine($" ({change.PreviousLastSeenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})");
+                sb.Append($"**{TextFormatter.Deformat(change.Previous)}**");
             }
 
             var embed = new EmbedBuilder()
