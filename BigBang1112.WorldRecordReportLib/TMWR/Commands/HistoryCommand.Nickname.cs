@@ -57,15 +57,22 @@ public partial class HistoryCommand
 
             var sb = new StringBuilder($"*Note: Because of a bug found on {new DateTime(2024, 3, 23, 17, 0, 0).ToTimestampTag(TimestampTagStyles.ShortDate)}, timestamps could sometimes be innacurate.*\n\n");
 
-            var latestNickname = login.GetDeformattedNickname();
+            var nickname = login.GetDeformattedNickname();
 
-            sb.Append(string.IsNullOrWhiteSpace(latestNickname) ? "*(empty)*" : $"**{latestNickname}**");
+            sb.Append(string.IsNullOrWhiteSpace(nickname) ? "*(empty)*" : $"**{nickname}**");
 
             foreach (var change in history)
             {
-                sb.AppendLine($" ({change.PreviousLastSeenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})");
+                var anotherNickname = TextFormatter.Deformat(change.Previous);
 
-                var nickname = TextFormatter.Deformat(change.Previous);
+                if (nickname == anotherNickname)
+                {
+                    continue;
+                }
+
+                nickname = anotherNickname;
+
+                sb.AppendLine($" ({change.PreviousLastSeenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})");
                 sb.Append(string.IsNullOrWhiteSpace(nickname) ? "*(empty)*" : $"**{nickname}**");
             }
 
