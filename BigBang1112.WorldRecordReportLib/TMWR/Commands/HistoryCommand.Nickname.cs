@@ -47,19 +47,26 @@ public partial class HistoryCommand
 
             if (login is null)
             {
-                return new DiscordBotMessage { Message = $"Login not found." };
+                return new DiscordBotMessage(new EmbedBuilder()
+                    .WithDescription("User not found.")
+                    .WithBotFooter("Nickname history")
+                    .Build());
             }
 
             var history = await _wrUnitOfWork.NicknameChanges.GetHistoryAsync(login);
 
-            var sb = new StringBuilder();
+            var sb = new StringBuilder($"*Note: Because of a bug found on {new DateTime(2024, 3, 23, 17, 0, 0).ToTimestampTag(TimestampTagStyles.ShortDate)}, timestamps could sometimes be innacurate.*\n\n");
 
-            sb.Append($"**{login.GetDeformattedNickname()}**");
+            var latestNickname = login.GetDeformattedNickname();
+
+            sb.Append(string.IsNullOrWhiteSpace(latestNickname) ? "*(empty)*" : $"**{latestNickname}**");
 
             foreach (var change in history)
             {
                 sb.AppendLine($" ({change.PreviousLastSeenOn.ToTimestampTag(TimestampTagStyles.ShortDate)})");
-                sb.Append($"**{TextFormatter.Deformat(change.Previous)}**");
+
+                var nickname = TextFormatter.Deformat(change.Previous);
+                sb.Append(string.IsNullOrWhiteSpace(nickname) ? "*(empty)*" : $"**{nickname}**");
             }
 
             var embed = new EmbedBuilder()
