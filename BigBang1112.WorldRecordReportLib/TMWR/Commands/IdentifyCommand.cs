@@ -44,13 +44,20 @@ public class IdentifyCommand : IdentifyBaseCommand
 
         var sb = new StringBuilder();
 
-        foreach (var (game, list) in nicknames)
+        if (nicknames.Count == 0)
         {
-            sb.AppendLine($"**{game}**");
-
-            foreach (var login in list)
+            sb.Append("No user found with this login/nickname.");
+        }
+        else
+        {
+            foreach (var (game, list) in nicknames)
             {
-                sb.AppendLine($"- {login.GetDeformattedNickname()} (**{login.Name}**)");
+                sb.AppendLine($"**{game}**");
+
+                foreach (var login in list)
+                {
+                    sb.AppendLine($"- {login.GetDeformattedNickname()} (**{login.Name}**)");
+                }
             }
         }
 
