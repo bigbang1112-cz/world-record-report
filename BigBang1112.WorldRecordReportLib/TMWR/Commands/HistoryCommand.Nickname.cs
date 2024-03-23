@@ -9,7 +9,7 @@ namespace BigBang1112.WorldRecordReportLib.TMWR.Commands;
 
 public partial class HistoryCommand
 {
-    [DiscordBotSubCommand("nickname")]
+    [DiscordBotSubCommand("nickname", "Show nickname history of a user.")]
     public class Nickname : IdentifyBaseCommand
     {
         private readonly IWrUnitOfWork _wrUnitOfWork;
