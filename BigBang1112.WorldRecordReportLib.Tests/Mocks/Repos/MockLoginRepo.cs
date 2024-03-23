@@ -108,4 +108,14 @@ public class MockLoginRepo : MockRepo<LoginModel>, ILoginRepo
     {
         throw new NotImplementedException();
     }
+
+    public Task<LoginModel?> GetByNicknameAsync(GameModel game, string nickname, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<LoginModel?> GetByNicknameAsync(Game game, string nickname, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -58,6 +58,50 @@ public class LoginRepo : Repo<LoginModel>, ILoginRepo
         return dict;
     }
 
+    public async Task<LoginModel?> GetByNicknameAsync(GameModel game, string nickname, CancellationToken cancellationToken = default)
+    {
+        if (game.Id != (int)Game.TM2)
+        {
+            return await _context.Logins.SingleOrDefaultAsync(x => x.Game == game && string.Equals(x.Nickname, nickname), cancellationToken);
+        }
+
+        var tm2Models = await _context.Logins
+            .Where(x => x.Game.Id == (int)Game.TM2)
+            .ToListAsync(cancellationToken);
+
+        foreach (var model in tm2Models)
+        {
+            if (model.GetDeformattedNickname() == nickname)
+            {
+                return model;
+            }
+        }
+
+        return null;
+    }
+
+    public async Task<LoginModel?> GetByNicknameAsync(Game game, string nickname, CancellationToken cancellationToken = default)
+    {
+        if (game != Game.TM2)
+        {
+            return await _context.Logins.SingleOrDefaultAsync(x => x.Game.Id == (int)game && string.Equals(x.Nickname, nickname), cancellationToken);
+        }
+
+        var tm2Models = await _context.Logins
+            .Where(x => x.Game.Id == (int)Game.TM2)
+            .ToListAsync(cancellationToken);
+
+        foreach (var model in tm2Models)
+        {
+            if (model.GetDeformattedNickname() == nickname)
+            {
+                return model;
+            }
+        }
+
+        return null;
+    }
+
     public async Task<Dictionary<Game, List<LoginModel>>> GetByNicknameAsync(string nickname, CancellationToken cancellationToken = default)
     {
         var tm2Models = await _context.Logins

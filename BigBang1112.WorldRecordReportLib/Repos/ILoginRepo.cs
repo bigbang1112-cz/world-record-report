@@ -8,6 +8,8 @@ public interface ILoginRepo : IRepo<LoginModel>
     Task<LoginModel?> GetByNameAsync(GameModel game, string name, CancellationToken cancellationToken = default);
     Task<LoginModel?> GetByNameAsync(Game game, string name, CancellationToken cancellationToken = default);
     Task<Dictionary<Game, LoginModel>> GetByNameAsync(string name, CancellationToken cancellationToken = default);
+    Task<LoginModel?> GetByNicknameAsync(GameModel game, string nickname, CancellationToken cancellationToken = default);
+    Task<LoginModel?> GetByNicknameAsync(Game game, string nickname, CancellationToken cancellationToken = default);
     Task<Dictionary<Game, List<LoginModel>>> GetByNicknameAsync(string nickname, CancellationToken cancellationToken = default);
     Task<LoginModel> GetOrAddAsync(GameModel game, string name, string nickname, CancellationToken cancellationToken = default);
     Task<LoginModel> GetOrAddAsync(Game game, string name, string nickname, CancellationToken cancellationToken = default);
