@@ -231,7 +231,7 @@ public class Top10Command : MapRelatedWithUidCommand
 
             var displayNameFormatted = !formattable || tmxUrl is null
                 ? displayName
-                : $"[{displayName.EscapeDiscord()}]({tmxUrl}usershow/{userId})";
+                : $"[{displayName}]({tmxUrl}usershow/{userId})";
 
             yield return new MiniRecord(record.Rank.GetValueOrDefault(), map.IsStuntsMode() ? record.ReplayScore : record.ReplayTime.TotalMilliseconds, displayNameFormatted, record.ReplayAt);
         }
