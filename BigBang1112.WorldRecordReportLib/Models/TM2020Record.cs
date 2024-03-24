@@ -20,7 +20,7 @@ public record TM2020Record : IRecord<Guid>
 
     public string GetDisplayNameMdLink()
     {
-        return $"[{DisplayName?.EscapeDiscord() ?? PlayerId.ToString()}](https://trackmania.io/#/player/{PlayerId})";
+        return $"[{DisplayName ?? PlayerId.ToString()}](https://trackmania.io/#/player/{PlayerId})";
     }
 
     public string GetPlayerId()

@@ -22,7 +22,7 @@ public class TmxLoginModel : DbModel
 
     public string GetMdLink()
     {
-        return $"[{Nickname?.EscapeDiscord() ?? UserId.ToString()}]({GetInfoUrl()})";
+        return $"[{Nickname ?? UserId.ToString()}]({GetInfoUrl()})";
     }
 
     public string GetInfoUrl()
