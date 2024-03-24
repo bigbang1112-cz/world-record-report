@@ -87,7 +87,7 @@ public class WrCommand : MapRelatedWithUidCommand
         builder = builder
             .WithButton("Previous", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-prev"), ButtonStyle.Secondary)
             .WithButton("Compare with previous", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-compareprev"), ButtonStyle.Secondary)
-            .WithButton("Nickname history", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-nicknames"), ButtonStyle.Secondary, disabled: true);
+            .WithButton("Nickname history", CreateCustomId($"{wr.Guid.ToString().Replace('-', '_')}-nicknames"), ButtonStyle.Secondary);
 
         return builder;
     }

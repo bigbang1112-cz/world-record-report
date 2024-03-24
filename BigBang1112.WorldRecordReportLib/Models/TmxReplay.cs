@@ -55,7 +55,7 @@ public class TmxReplay : IRecord<int>
             return GetDisplayNameMdLink();
         }
 
-        return $"[{GetDisplayNameMdLink()}](https://{site}.tm-exchange.com/usershow/{UserId})";
+        return $"[{UserName ?? UserId.ToString()}](https://{site}.tm-exchange.com/usershow/{UserId})";
     }
 
     public string GetPlayerId()
