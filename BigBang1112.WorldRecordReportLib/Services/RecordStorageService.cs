@@ -193,6 +193,7 @@ public class RecordStorageService
         Game.TM2 => "tm2",
         Game.TMUF => "tmuf",
         Game.TM2020 => "tm2020",
+        Game.TMN => "tmneswc",
         _ => throw new NotSupportedException(),
     };
 
@@ -200,6 +201,7 @@ public class RecordStorageService
     {
         TmxSite.United => "tmx-united",
         TmxSite.TMNF => "tmx-tmnf",
+        TmxSite.Nations => "tmx-tmneswc",
         _ => throw new NotSupportedException(),
     };
 }
