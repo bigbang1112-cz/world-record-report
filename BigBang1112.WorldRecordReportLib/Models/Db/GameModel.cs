@@ -40,4 +40,9 @@ public class GameModel : DbModel
     {
         return Is(Game.TM2020);
     }
+
+    public bool IsTMN()
+    {
+        return Is(Game.TMN);
+    }
 }
