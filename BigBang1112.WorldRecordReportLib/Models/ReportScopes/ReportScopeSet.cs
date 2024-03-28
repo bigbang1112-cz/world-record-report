@@ -23,6 +23,9 @@ public sealed record ReportScopeSet : ReportScope
     [ReportScopeExplanation("Reports every tracked event in TMUF")]
     public ReportScopeTMUF? TMUF { get; init; }
 
+    [ReportScopeExplanation("Reports every tracked event in TMNESWC")]
+    public ReportScopeTMNESWC? TMNESWC { get; init; }
+
     [ReportScopeExplanation("Reports every tracked event in TM2")]
     public ReportScopeTM2? TM2 { get; init; }
     

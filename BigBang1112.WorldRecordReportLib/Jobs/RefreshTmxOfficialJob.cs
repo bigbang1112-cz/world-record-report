@@ -24,6 +24,6 @@ public class RefreshTmxOfficialJob : IJob
         await _tmx.UpdateWorldRecordsAsync(TmxSite.TMNF, LeaderboardType.Nadeo, "NadeoTMNF");
         //await _tmx.UpdateWorldRecordsAsync(TmxSite.United, LeaderboardType.Classic, "ClassicTMUF");
         //await _tmx.UpdateWorldRecordsAsync(TmxSite.TMNF, LeaderboardType.Classic, "ClassicTMNF");
-        //await _tmx.UpdateWorldRecordsAsync(TmxSite.Nations, LeaderboardType.Nadeo, "NadeoTMNESWC");
+        await _tmx.UpdateWorldRecordsAsync(TmxSite.Nations, LeaderboardType.Nadeo, "Nadeo");
     }
 }

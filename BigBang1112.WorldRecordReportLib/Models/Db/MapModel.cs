@@ -122,7 +122,7 @@ public class MapModel : DbModel
             return null;
         }
 
-        if (Game.IsTMUF())
+        if (Game.IsTMUF() || Game.IsTMN())
         {
             if (TmxAuthor is null)
             {
@@ -131,7 +131,7 @@ public class MapModel : DbModel
 
             return (TmxSite)TmxAuthor.Site.Id switch
             {
-                TmxSite.United or TmxSite.TMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}/image/0",
+                TmxSite.United or TmxSite.TMNF or TmxSite.Nations => $"{TmxAuthor.Site.Url}trackshow/{MxId}/image/0",
                 _ => null,
             };
         }
@@ -151,7 +151,7 @@ public class MapModel : DbModel
             return null;
         }
 
-        if (Game.IsTMUF())
+        if (Game.IsTMUF() || Game.IsTMN())
         {
             if (TmxAuthor is null)
             {
@@ -160,7 +160,7 @@ public class MapModel : DbModel
 
             return (TmxSite)TmxAuthor.Site.Id switch
             {
-                TmxSite.United or TmxSite.TMNF => $"{TmxAuthor.Site.Url}trackshow/{MxId}",
+                TmxSite.United or TmxSite.TMNF or TmxSite.Nations => $"{TmxAuthor.Site.Url}trackshow/{MxId}",
                 _ => null,
             };
         }
