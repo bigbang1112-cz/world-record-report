@@ -108,17 +108,17 @@ public partial class MapCommand
             {
                 await AddLastTop10ActivityAsync(map, builder, lastTop10Change, records);
             }
-            else if (game == Game.TMUF)
+            else if (game is Game.TMUF or Game.TMN)
             {
                 AddLastTop10ActivityTmx(map, builder, records);
             }
 
             if (recordCount.HasValue)
             {
-                builder.AddField("Record count", recordCount.Value.ToString("N0"), inline: game == Game.TMUF);
+                builder.AddField("Record count", recordCount.Value.ToString("N0"), inline: game is Game.TMUF or Game.TMN);
             }
 
-            if (records is not null && game == Game.TMUF)
+            if (records is not null && game is Game.TMUF or Game.TMN)
             {
                 builder.AddField("Record count (TMX)", records.Count().ToString("N0"), inline: true);
             }

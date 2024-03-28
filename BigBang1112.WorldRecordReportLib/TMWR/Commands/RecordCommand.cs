@@ -69,7 +69,7 @@ public class RecordCommand : MapRelatedWithUidCommand
         {
             Game.TM2 => recordSet?.Records.ElementAtOrDefault((int)Rank - 1),
             Game.TM2020 => tm2020Leaderboard?.Where(x => !x.Ignored).ElementAtOrDefault((int)Rank - 1),
-            Game.TMUF => recordSetTmx?.Where(x => x.Rank is not null).ElementAtOrDefault((int)Rank - 1),
+            Game.TMUF or Game.TMN => recordSetTmx?.Where(x => x.Rank is not null).ElementAtOrDefault((int)Rank - 1),
             _ => null
         };
 
@@ -116,7 +116,7 @@ public class RecordCommand : MapRelatedWithUidCommand
         var rec = (Game)map.Game.Id switch
         {
             Game.TM2 => await FindDetailedRecordFromTM2Async(map),
-            Game.TMUF => await FindDetailedRecordFromTMUFAsync(map),
+            Game.TMUF or Game.TMN => await FindDetailedRecordFromTMUFAsync(map),
             Game.TM2020 => await FindDetailedRecordFromTM2020Async(map),
             _ => null
         };
@@ -138,7 +138,7 @@ public class RecordCommand : MapRelatedWithUidCommand
         var idType = (Game)map.Game.Id switch
         {
             Game.TM2 => "Login",
-            Game.TMUF => "User ID",
+            Game.TMUF or Game.TMN => "User ID",
             Game.TM2020 => "Account ID",
             _ => "Login"
         };
