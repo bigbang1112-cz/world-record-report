@@ -75,7 +75,7 @@ public class Top10Command : MapRelatedWithUidCommand
             }
         }
 
-        var isTMUF = map.Game.IsTMUF();
+        var isTMUF = map.Game.IsTMUF() || map.Game.IsTMN();
 
         if (isTMUF)
         {
@@ -136,6 +136,7 @@ public class Top10Command : MapRelatedWithUidCommand
                 }
                 break;
             case Game.TMUF:
+            case Game.TMN:
                 if (!await CreateTop10EmbedContentFromTmxAsync(map, builder))
                 {
                     return false;
@@ -193,7 +194,7 @@ public class Top10Command : MapRelatedWithUidCommand
         var top10records = GetTop10(recordSetTmx);
         var miniRecords = GetMiniRecordsFromTmxReplays(top10records, map, formattable: true);
         
-        builder.Description = ConvertMiniRecordsToString(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
+        builder.Description = ConvertMiniRecordsToString(miniRecords, map.Game.IsTMUF() || map.Game.IsTMN(), map.IsStuntsMode());
 
         return true;
     }
@@ -215,7 +216,7 @@ public class Top10Command : MapRelatedWithUidCommand
         var loginDictionary = await FetchLoginModelsAsync(recordSet);
         var miniRecords = GetMiniRecordsFromRecordSet(recordSet.Records, loginDictionary, escape: true);
 
-        builder.Description = ConvertMiniRecordsToString(miniRecords, map.Game.IsTMUF(), map.IsStuntsMode());
+        builder.Description = ConvertMiniRecordsToString(miniRecords, map.Game.IsTMUF() || map.Game.IsTMN(), map.IsStuntsMode());
 
         return true;
     }
