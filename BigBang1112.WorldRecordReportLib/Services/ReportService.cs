@@ -172,7 +172,7 @@ public class ReportService
 
             var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(UseLongTimestamp(record) ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}");
+            dict[record.Rank.GetValueOrDefault()] = $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}";
         }
 
         foreach (var (currentRecord, previousRecord) in improvedRecords)
@@ -186,12 +186,12 @@ public class ReportService
             var timestamp = GetTimestamp(currentRecord);
             var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(UseLongTimestamp(currentRecord) ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict.Add(currentRecord.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}");
+            dict[currentRecord.Rank.GetValueOrDefault()] = $"**{map.GetMdLinkHumanized()}**: ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}";
         }
 
         foreach (var record in changes.RemovedRecords.Where(x => x.Rank <= 10))
         {
-            dict.Add(record.Rank.GetValueOrDefault(), $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**");
+            dict[record.Rank.GetValueOrDefault()] = $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**";
         }
 
         foreach (var (_, recStr) in dict)
