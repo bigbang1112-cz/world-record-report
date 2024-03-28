@@ -75,7 +75,7 @@ public class WrCommand : MapRelatedWithUidCommand
                 url: downloadUrl,
                 disabled: downloadUrl is null);
         }
-        else if (map.Game.IsTMUF())
+        else if (map.Game.IsTMUF() || map.Game.IsTMN())
         {
             builder = builder.WithButton("Download replay",
                 customId: wr.ReplayId is null ? "download-disabled" : null,
