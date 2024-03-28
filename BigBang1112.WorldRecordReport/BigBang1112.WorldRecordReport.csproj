@@ -13,22 +13,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Content Remove="appsettings.Development.json" />
-		<Content Remove="appsettings.json" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Content Remove="wwwroot\api\**\*" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<InternalsVisibleTo Include="BigBang1112.WorldRecordReport.Tests" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Include="appsettings.Development.json" />
-	  <None Include="wwwroot\favicon\safari-pinned-tab.svg" />
-	  <None Include="wwwroot\favicon\site.webmanifest" />
 	</ItemGroup>
 
 	<ItemGroup>
