@@ -238,9 +238,15 @@ public class RefreshTmxService : RefreshService
             return;
         }
 
-        var rich = CreateLeaderboardChangesRich(changes,
-            records.Where(x => x.Rank.HasValue).ToDictionary(x => x.UserId, x => x as IRecord<int>),
-            prevRecords.Where(x => x.Rank.HasValue).ToDictionary(x => x.UserId, x => x as IRecord<int>));
+        var currentRecords = new Dictionary<int, IRecord<int>>();
+        foreach (var rec in records.Where(x => x.Rank.HasValue))
+            currentRecords[rec.UserId] = rec;
+
+        var previousRecords = new Dictionary<int, IRecord<int>>();
+        foreach (var rec in prevRecords.Where(x => x.Rank.HasValue))
+            previousRecords[rec.UserId] = rec;
+
+        var rich = CreateLeaderboardChangesRich(changes, currentRecords, previousRecords);
 
         if (rich is null)
         {
