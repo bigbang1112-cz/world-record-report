@@ -31,7 +31,7 @@ public class TmwrDiscordBotService : DiscordBotService
 
         var wrrlibversion = typeof(TmwrDiscordBotService).Assembly.GetName().Version;
 
-        await Client.SetGameAsync($"{GetVersion() ?? "unknown version"} (WrrLib: {wrrlibversion?.ToString() ?? "unknown version"})");
+        await Client.SetCustomStatusAsync($"{GetVersion() ?? "unknown version"} (WrrLib: {wrrlibversion?.ToString() ?? "unknown version"})");
     }
 
     protected override async Task SlashCommandExecutedAsync(SocketSlashCommand slashCommand)

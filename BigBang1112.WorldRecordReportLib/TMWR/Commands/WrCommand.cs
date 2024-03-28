@@ -124,7 +124,7 @@ public class WrCommand : MapRelatedWithUidCommand
         var idType = (Game)map.Game.Id switch
         {
             Game.TM2 => "Login",
-            Game.TMUF => "User ID",
+            Game.TMUF or Game.TMN => "User ID",
             Game.TM2020 => "Account ID",
             _ => "Login"
         };

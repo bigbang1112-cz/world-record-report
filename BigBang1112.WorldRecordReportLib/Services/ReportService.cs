@@ -406,7 +406,7 @@ public class ReportService
     {
         var map = wr.Map;
 
-        var isTMUF = map.Game.Id == (int)Game.TMUF;
+        var isTMUF = map.Game.Id == (int)Game.TMUF || map.Game.Id == (int)Game.TMN;
         var isStunts = map.IsStuntsMode();
 
         var score = $"` {(isStunts ? wr.Time.ToString() : wr.TimeInt32.ToString(useHundredths: isTMUF))} `";

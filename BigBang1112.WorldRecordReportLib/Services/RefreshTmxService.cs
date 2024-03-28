@@ -45,6 +45,9 @@ public class RefreshTmxService : RefreshService
     {
         var lastTmxWrs = await _wrUnitOfWork.WorldRecords.GetLatestByGameAsync(Game.TMUF, count: 5);
         await CleanupWorldRecordsAsync(lastTmxWrs, false);
+
+        var lastTmxTMNESWCWrs = await _wrUnitOfWork.WorldRecords.GetLatestByGameAsync(Game.TMN, count: 5);
+        await CleanupWorldRecordsAsync(lastTmxTMNESWCWrs, false);
     }
 
     public async Task UpdateWorldRecordsAsync(TmxSite tmxSite, LeaderboardType leaderboardType, string subScope)
