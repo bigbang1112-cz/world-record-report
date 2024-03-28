@@ -16,6 +16,8 @@ public class RefreshTmxService : RefreshService
 {
     private const string ScopeOfficialWR = $"{nameof(ReportScopeSet.TMUF)}:{nameof(ReportScopeTMUF.TMX)}:{nameof(ReportScopeTmx.Official)}:{nameof(ReportScopeTmxOfficial.WR)}";
     private const string ScopeOfficialChanges = $"{nameof(ReportScopeSet.TMUF)}:{nameof(ReportScopeTMUF.TMX)}:{nameof(ReportScopeTmx.Official)}:{nameof(ReportScopeTmxOfficial.Changes)}";
+    private const string ScopeTMNESWCOfficialWR = $"{nameof(ReportScopeSet.TMNESWC)}:{nameof(ReportScopeTMNESWC.TMX)}:{nameof(ReportScopeTmxTMNESWC.Official)}:{nameof(ReportScopeTmxTMNESWCOfficial.WR)}";
+    private const string ScopeTMNESWCOfficialChanges = $"{nameof(ReportScopeSet.TMNESWC)}:{nameof(ReportScopeTMNESWC.TMX)}:{nameof(ReportScopeTmxTMNESWC.Official)}:{nameof(ReportScopeTmxTMNESWCOfficial.Changes)}";
 
     private readonly ITmxService _tmxService;
     private readonly IWrUnitOfWork _wrUnitOfWork;
@@ -154,7 +156,7 @@ public class RefreshTmxService : RefreshService
         {
             // check for leaderboard changes
             // ...
-            await ReportChangesInRecordsAsync(map, recordSet, prevRecordSet, subScope);
+            await ReportChangesInRecordsAsync(map, recordSet, prevRecordSet, subScope, tmxSite);
         }
 
         // create a .json.gz file from replays.Results
@@ -229,7 +231,7 @@ public class RefreshTmxService : RefreshService
         return false;
     }
 
-    private async ValueTask ReportChangesInRecordsAsync(MapModel map, IEnumerable<TmxReplay> records, IEnumerable<TmxReplay> prevRecords, string subScope)
+    private async ValueTask ReportChangesInRecordsAsync(MapModel map, IEnumerable<TmxReplay> records, IEnumerable<TmxReplay> prevRecords, string subScope, TmxSite tmxSite)
     {
         var changes = LeaderboardComparer.Compare(records.Where(x => x.Rank.HasValue), prevRecords.Where(x => x.Rank.HasValue));
 
@@ -253,7 +255,7 @@ public class RefreshTmxService : RefreshService
             return;
         }
 
-        await _reportService.ReportDifferencesAsync(rich, map, $"{ScopeOfficialChanges}:{subScope}", maxRank: 10);
+        await _reportService.ReportDifferencesAsync(rich, map, $"{(tmxSite == TmxSite.Nations ? ScopeTMNESWCOfficialChanges : ScopeOfficialChanges)}:{subScope}", maxRank: 10);
     }
 
     private async Task<WorldRecordModel> ProcessNewWorldRecordAsync(TmxSite tmxSite,
@@ -300,7 +302,7 @@ public class RefreshTmxService : RefreshService
 
         if (!freshUpdate && DateTime.UtcNow - replayAt < TimeSpan.FromDays(14))
         {
-            await _reportService.ReportWorldRecordAsync(wrModel, $"{ScopeOfficialWR}:{subScope}");
+            await _reportService.ReportWorldRecordAsync(wrModel, $"{(tmxSite == TmxSite.Nations ? ScopeTMNESWCOfficialWR : ScopeOfficialWR)}:{subScope}");
         }
 
         await _wrUnitOfWork.SaveAsync();
