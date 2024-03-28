@@ -85,6 +85,7 @@ public class RefreshTmxService : RefreshService
     {
         TmxSite.United => ManiaAPI.TMX.TmxSite.United,
         TmxSite.TMNF => ManiaAPI.TMX.TmxSite.TMNForever,
+        TmxSite.Nations => ManiaAPI.TMX.TmxSite.Nations,
         _ => throw new NotImplementedException(),
     };
 
