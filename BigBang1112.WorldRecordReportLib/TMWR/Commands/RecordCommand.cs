@@ -96,7 +96,7 @@ public class RecordCommand : MapRelatedWithUidCommand
             return;
         }
         
-        if (map.Game.IsTMUF())
+        if (map.Game.IsTMUF() || map.Game.IsTMN())
         {
             builder = builder.WithButton("Download replay",
                 customId: map.TmxAuthor is null ? "download-disabled" : null,

@@ -147,7 +147,7 @@ public class ReportService
         LeaderboardChangesRich<TPlayerId> changes,
         int maxRank) where TPlayerId : notnull
     {
-        var isTMUF = map.Game.IsTMUF();
+        var isTMUF = map.Game.IsTMUF() || map.Game.IsTMN();
 
         var dict = new SortedDictionary<int, string>();
 
