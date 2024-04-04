@@ -100,6 +100,6 @@ public class WorldRecordModel : DbModel
             return Time.ToString();
         }
 
-        return TimeInt32.ToString(useHundredths: Map.Game.IsTMUF());
+        return TimeInt32.ToString(useHundredths: Map.Game.IsTMUF() || Map.Game.IsTMN());
     }
 }
