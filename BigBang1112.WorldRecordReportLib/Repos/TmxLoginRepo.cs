@@ -23,7 +23,7 @@ public class TmxLoginRepo : Repo<TmxLoginModel>, ITmxLoginRepo
 
     public async Task<TmxLoginModel> GetOrAddAsync(int userId, TmxSite tmxSite, CancellationToken cancellationToken = default)
     {
-        var loginModel = await _context.TmxLogins.SingleOrDefaultAsync(x => x.UserId == userId && x.Site.Id == (int)tmxSite, cancellationToken);
+        var loginModel = await _context.TmxLogins.FirstOrDefaultAsync(x => x.UserId == userId && x.Site.Id == (int)tmxSite, cancellationToken);
 
         if (loginModel is null)
         {
