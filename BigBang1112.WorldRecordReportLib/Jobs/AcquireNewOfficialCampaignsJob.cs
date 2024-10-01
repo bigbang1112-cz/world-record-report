@@ -137,6 +137,27 @@ public class AcquireNewOfficialCampaignsJob : IJob
                 _logger.LogInformation("Login model of '{nickname}' ({name}) received.", loginModel.Nickname, loginModel.Name);
             }
 
+            var thumbnailGuid = default(Guid);
+            var downloadGuid = default(Guid);
+
+            foreach (var segment in new Uri(map.ThumbnailUrl).Segments.Reverse())
+            {
+                if (Guid.TryParse(segment.Length > 36 ? segment[..36] : segment, out var guid))
+                {
+                    thumbnailGuid = guid;
+                    break;
+                }
+            }
+
+            foreach (var segment in new Uri(map.FileUrl).Segments.Reverse())
+            {
+                if (Guid.TryParse(segment.Length > 36 ? segment[..36] : segment, out var guid))
+                {
+                    downloadGuid = guid;
+                    break;
+                }
+            }
+
             var mapModel = await _wrUnitOfWork.Maps.GetOrAddAsync(x => string.Equals(x.MapUid, map.MapUid), () => new MapModel
             {
                 MapUid = map.MapUid,
@@ -149,8 +170,8 @@ public class AcquireNewOfficialCampaignsJob : IJob
                 Mode = mode,
                 MapType = map.MapType,
                 MapStyle = map.MapStyle,
-                ThumbnailGuid = new Guid(new Uri(map.ThumbnailUrl).Segments.Last()[..36]),
-                DownloadGuid = new Guid(new Uri(map.FileUrl).Segments.Last()),
+                ThumbnailGuid = thumbnailGuid,
+                DownloadGuid = downloadGuid,
                 Campaign = campaignModel,
                 AddedOn = DateTime.UtcNow,
                 UpdatedOn = DateTime.UtcNow,

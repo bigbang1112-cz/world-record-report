@@ -114,7 +114,7 @@ public class MapModel : DbModel
     {
         if (Game.IsTM2020() && ThumbnailGuid.HasValue)
         {
-            return $"https://prod.trackmania.core.nadeo.online/storageObjects/{ThumbnailGuid.Value}.jpg";
+            return $"https://core.trackmania.nadeo.live/maps/{ThumbnailGuid.Value}/thumbnail.jpg";
         }
 
         if (MxId is null)
