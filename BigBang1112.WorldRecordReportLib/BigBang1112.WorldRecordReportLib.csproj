@@ -30,7 +30,7 @@
     <PackageReference Include="ManiaAPI.NadeoAPI" Version="1.0.11" />
     <PackageReference Include="ManiaAPI.TMX" Version="1.0.10" />
     <PackageReference Include="ManiaAPI.TrackmaniaAPI" Version="1.0.9" />
-    <PackageReference Include="ManiaAPI.TrackmaniaIO" Version="1.0.9" />
+    <PackageReference Include="ManiaAPI.TrackmaniaIO" Version="1.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.3">
       <PrivateAssets>all</PrivateAssets>

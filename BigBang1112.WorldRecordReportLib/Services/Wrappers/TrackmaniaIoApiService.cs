@@ -16,7 +16,7 @@ public class TrackmaniaIoApiService : ITrackmaniaIoApiService
     {
         _logger.LogInformation("HTTP request: Campaigns (page={page})", page);
 
-        return await TrackmaniaIO.GetCampaignsAsync(page, cancellationToken);
+        return await TrackmaniaIO.GetSeasonalCampaignsAsync(page, cancellationToken);
     }
 
     public async Task<Campaign> GetCustomCampaignAsync(int clubId, int campaignId, CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ public class TrackmaniaIoApiService : ITrackmaniaIoApiService
     {
         _logger.LogInformation("HTTP request: OfficialCampaign (campaignId={campaignId})", campaignId);
 
-        return await TrackmaniaIO.GetOfficialCampaignAsync(campaignId, cancellationToken);
+        return await TrackmaniaIO.GetSeasonalCampaignAsync(campaignId, cancellationToken);
     }
 
     public async Task<Leaderboard> GetLeaderboardAsync(string leaderboardUid, string mapUid, CancellationToken cancellationToken = default)
