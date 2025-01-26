@@ -272,7 +272,14 @@ public class RefreshTM2020Service : RefreshService
             }
             else
             {
-                return;
+                // This is a terrible resilience solution to the WR not being updated when it fails to download the ghost
+                // It is based off the SaveLeaderboardAsync behaviour without actually saving the leaderboard
+                var recordDetails = await _nadeoApiService.GetMapRecordsAsync(
+                    records.Select(x => x.AccountId), 
+                    (map.MapId ?? throw new Exception("MapId not found")).Yield(), cancellationToken);
+                var recordDict = recordDetails.ToDictionary(x => x.AccountId);
+                var prevRecordsDict = previousRecordsWithCheated.ToDictionary(x => x.PlayerId);
+                currentRecordsWithCheated = RecordsToTM2020Records(records, ignoredLoginNames, loginModels, recordDict, prevRecordsDict).ToList();
             }
         }
         else
