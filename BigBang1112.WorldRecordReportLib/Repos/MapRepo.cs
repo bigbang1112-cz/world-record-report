@@ -18,7 +18,7 @@ public class MapRepo : Repo<MapModel>, IMapRepo
         return await _context.Maps.Where(x => x.Campaign == campaign).ToListAsync(cancellationToken);
     }
 
-    public async Task<MapModel?> GetByMxIdAsync(int trackId, TmxSite tmxSite, CancellationToken cancellationToken = default)
+    public async Task<MapModel?> GetByMxIdAsync(long trackId, TmxSite tmxSite, CancellationToken cancellationToken = default)
     {
         return await _context.Maps.SingleOrDefaultAsync(x => x.TmxAuthor != null && x.TmxAuthor.Site.Id == (int)tmxSite && x.MxId == trackId, cancellationToken);
     }

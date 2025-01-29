@@ -67,9 +67,12 @@ builder.Services.AddScoped<RefreshTmxService>();
 builder.Services.AddScoped<IGhostService, GhostService>();
 builder.Services.AddScoped<ReportService>();
 
-builder.Services.AddSingleton<NadeoServices>();
-builder.Services.AddSingleton<NadeoLiveServices>();
-builder.Services.AddSingleton<TrackmaniaAPI>();
+builder.Services.AddSingleton(provider => 
+    new NadeoServices(provider.GetRequiredService<IHttpClientFactory>().CreateClient("resilient")));
+builder.Services.AddSingleton(provider =>
+    new NadeoLiveServices(provider.GetRequiredService<IHttpClientFactory>().CreateClient("resilient")));
+builder.Services.AddSingleton(provider =>
+    new TrackmaniaAPI(provider.GetRequiredService<IHttpClientFactory>().CreateClient("resilient")));
 builder.Services.AddSingleton<INadeoApiService, NadeoApiService>();
 builder.Services.AddHostedService(x => x.GetRequiredService<INadeoApiService>());
 builder.Services.AddSingleton<ITrackmaniaApiService, TrackmaniaApiService>();
@@ -105,7 +108,8 @@ builder.Services.AddQuartzServer(options =>
     options.WaitForJobsToComplete = true;
 });
 
-builder.Services.AddHttpClient().AddStandardResilienceHandler();
+builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("resilient").AddStandardResilienceHandler();
 
 var app = builder.Build();
 

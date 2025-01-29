@@ -27,7 +27,7 @@ public class RefreshTM2Service : RefreshService
     private readonly RecordStorageService _recordStorageService;
     private readonly SnapshotStorageService _snapshotStorageService;
     private readonly IGhostService _ghostService;
-    private readonly HttpClient _http;
+    private readonly IHttpClientFactory _httpFactory;
     private readonly ReportService _reportService;
 
     public RefreshTM2Service(
@@ -37,7 +37,7 @@ public class RefreshTM2Service : RefreshService
         RecordStorageService recordStorageService,
         SnapshotStorageService snapshotStorageService,
         IGhostService ghostService,
-        HttpClient http,
+        IHttpClientFactory httpFactory,
         ReportService reportService) : base(logger)
     {
         _logger = logger;
@@ -46,7 +46,7 @@ public class RefreshTM2Service : RefreshService
         _recordStorageService = recordStorageService;
         _snapshotStorageService = snapshotStorageService;
         _ghostService = ghostService;
-        _http = http;
+        _httpFactory = httpFactory;
         _reportService = reportService;
     }
 
@@ -579,7 +579,8 @@ public class RefreshTM2Service : RefreshService
         {
             try
             {
-                using var response = await _http.HeadAsync(wr.ReplayUrl, cancellationToken);
+                var http = _httpFactory.CreateClient("resilient");
+                using var response = await http.HeadAsync(wr.ReplayUrl, cancellationToken);
 
                 if (response.IsSuccessStatusCode)
                 {

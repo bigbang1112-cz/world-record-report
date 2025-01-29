@@ -14,19 +14,19 @@ public class AcquireNewOfficialCampaignsJob : IJob
 {
     private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly ITrackmaniaIoApiService _tmIo;
-    private readonly HttpClient _http;
+    private readonly IHttpClientFactory _httpFactory;
     private readonly RefreshScheduleService _refreshScheduleService;
     private readonly ILogger<AcquireNewOfficialCampaignsJob> _logger;
 
     public AcquireNewOfficialCampaignsJob(IWrUnitOfWork wrUnitOfWork,
                                           ITrackmaniaIoApiService tmIo,
-                                          HttpClient http,
+                                          IHttpClientFactory httpFactory,
                                           RefreshScheduleService refreshScheduleService,
                                           ILogger<AcquireNewOfficialCampaignsJob> logger)
     {
         _wrUnitOfWork = wrUnitOfWork;
         _tmIo = tmIo;
-        _http = http;
+        _httpFactory = httpFactory;
         _refreshScheduleService = refreshScheduleService;
         _logger = logger;
     }
@@ -200,7 +200,8 @@ public class AcquireNewOfficialCampaignsJob : IJob
             return await ProcessMapDataAsync(map, mapModel, cancellationToken);
         }
         
-        using var headResponse = await _http.HeadAsync(map.FileUrl, cancellationToken);
+        var http = _httpFactory.CreateClient("resilient");
+        using var headResponse = await http.HeadAsync(map.FileUrl, cancellationToken);
 
         if (!headResponse.IsSuccessStatusCode)
         {
@@ -225,7 +226,8 @@ public class AcquireNewOfficialCampaignsJob : IJob
 
     internal async Task<bool> ProcessMapDataAsync(Map map, MapModel mapModel, CancellationToken cancellationToken)
     {
-        using var response = await _http.GetAsync(map.FileUrl, cancellationToken);
+        var http = _httpFactory.CreateClient("resilient");
+        using var response = await http.GetAsync(map.FileUrl, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {

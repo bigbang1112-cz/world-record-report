@@ -4,10 +4,18 @@ namespace BigBang1112.WorldRecordReportLib.Services;
 
 public class TmxService : ITmxService
 {
-    public async Task<ItemCollection<ReplayItem>> GetReplaysAsync(TmxSite site, int tmxId, CancellationToken cancellationToken = default)
+    private readonly IHttpClientFactory _httpFactory;
+
+    public TmxService(IHttpClientFactory httpFactory)
     {
-        var tmx = new TMX(site);
-        return await tmx.GetReplaysAsync(tmxId, cancellationToken);
+        _httpFactory = httpFactory;
+    }
+
+    public async Task<ItemCollection<ReplayItem>> GetReplaysAsync(TmxSite site, long tmxId, CancellationToken cancellationToken = default)
+    {
+        var http = _httpFactory.CreateClient("resilient");
+        var tmx = new TMX(http, site);
+        return await tmx.GetReplaysAsync(new() { TrackId = tmxId }, cancellationToken);
     }
 
     public IEnumerable<ReplayItem> GetWrHistory(ItemCollection<ReplayItem> replays, bool isStunts = false)
@@ -36,9 +44,10 @@ public class TmxService : ITmxService
         }
     }
 
-    public async Task<ItemCollection<TrackSearchItem>> SearchAsync(TmxSite site, TrackSearchFilters trackSearchFilters, CancellationToken cancellationToken = default)
+    public async Task<ItemCollection<TrackItem>> SearchAsync(TmxSite site, TMX.SearchTracksParameters trackSearchFilters, CancellationToken cancellationToken = default)
     {
-        var tmx = new TMX(site);
-        return await tmx.SearchAsync(trackSearchFilters, cancellationToken);
+        var http = _httpFactory.CreateClient("resilient");
+        var tmx = new TMX(http, site);
+        return await tmx.SearchTracksAsync(trackSearchFilters, cancellationToken);
     }
 }

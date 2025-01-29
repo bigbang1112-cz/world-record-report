@@ -15,8 +15,8 @@ public class TmxSiteModel : DbModel
 
     public TmxSite GetSiteEnum() => ShortName switch
     {
-        NameConsts.TMXSiteTMNF => TmxSite.TMNForever,
-        NameConsts.TMXSiteUnited => TmxSite.United,
+        NameConsts.TMXSiteTMNF => TmxSite.TMNF,
+        NameConsts.TMXSiteUnited => TmxSite.TMUF,
         NameConsts.TMXSiteNations => TmxSite.Nations,
         _ => throw new Exception(),
     };

@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using BigBang1112.WorldRecordReportLib.Enums;
 using BigBang1112.WorldRecordReportLib.Models;
 using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
@@ -182,7 +183,7 @@ public class RefreshTM2020Service : RefreshService
     // This method has a major issue: it creates double WR in the database when the leaderboard files are deleted
     // Solution: use the RefreshTM2Service way
     private async Task CreateLeaderboardAsync(MapModel mapModel,
-                                              Record[] records,
+                                              ImmutableArray<Record> records,
                                               Dictionary<Guid, LoginModel> loginModels,
                                               IEnumerable<string> ignoredLoginNames,
                                               IEnumerable<Guid> accountIds,
@@ -226,7 +227,7 @@ public class RefreshTM2020Service : RefreshService
     }
 
     private async Task CompareLeaderboardAsync(MapModel map,
-                                               Record[] records,
+                                               ImmutableArray<Record> records,
                                                Dictionary<Guid, LoginModel> loginModels,
                                                IEnumerable<string> ignoredLoginNames,
                                                bool forceUpdate,
@@ -485,7 +486,7 @@ public class RefreshTM2020Service : RefreshService
     }
 
     private async Task<List<TM2020Record>> SaveLeaderboardAsync(MapModel mapModel,
-                                                                Record[] records,
+                                                                ImmutableArray<Record> records,
                                                                 IEnumerable<Guid> accountIds,
                                                                 Dictionary<Guid, LoginModel> loginModels,
                                                                 IEnumerable<string> ignoredLoginNames,
@@ -560,7 +561,7 @@ public class RefreshTM2020Service : RefreshService
         }
     }
 
-    private static IEnumerable<TM2020Record> RecordsToTM2020Records(Record[] records,
+    private static IEnumerable<TM2020Record> RecordsToTM2020Records(ImmutableArray<Record> records,
                                                                     IEnumerable<string> ignoredLoginNames,
                                                                     Dictionary<Guid, LoginModel> loginModels,
                                                                     Dictionary<Guid, MapRecord> recordDetails,

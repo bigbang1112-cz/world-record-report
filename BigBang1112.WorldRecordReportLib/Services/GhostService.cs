@@ -9,13 +9,13 @@ namespace BigBang1112.WorldRecordReportLib.Services;
 public class GhostService : IGhostService
 {
     private readonly IFileHostService _fileHostService;
-    private readonly HttpClient _http;
+    private readonly IHttpClientFactory _httpFactory;
     private readonly ILogger<GhostService> _logger;
 
-    public GhostService(IFileHostService fileHostService, HttpClient http, ILogger<GhostService> logger)
+    public GhostService(IFileHostService fileHostService, IHttpClientFactory httpFactory, ILogger<GhostService> logger)
     {
         _fileHostService = fileHostService;
-        _http = http;
+        _httpFactory = httpFactory;
         _logger = logger;
     }
 
@@ -53,7 +53,8 @@ public class GhostService : IGhostService
     {
         _logger.LogInformation("Downloading {time} on {mapUid} by {login}...", time, mapUid, login);
 
-        using var response = await _http.GetAsync(replayUrl);
+        var http = _httpFactory.CreateClient("resilient");
+        using var response = await http.GetAsync(replayUrl);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -77,7 +78,8 @@ public class GhostService : IGhostService
     {
         _logger.LogInformation("Downloading timestamp of {replayUrl}...", replayUrl);
 
-        using var response = await _http.HeadAsync(replayUrl);
+        var http = _httpFactory.CreateClient("resilient");
+        using var response = await http.HeadAsync(replayUrl);
 
         if (!response.IsSuccessStatusCode)
         {

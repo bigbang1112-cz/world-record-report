@@ -56,17 +56,17 @@ public class RefreshTmxService : RefreshService
 
         var endOfNewActivities = false;
 
-        var recentTracks = default(ItemCollection<TrackSearchItem>);
+        var recentTracks = default(ItemCollection<TrackItem>);
 
         do
         {
             _logger.LogInformation("Searching Nadeo United maps, most recent activity...");
 
-            recentTracks = await _tmxService.SearchAsync(maniaApiTmxSite, new TrackSearchFilters
+            recentTracks = await _tmxService.SearchAsync(maniaApiTmxSite, new TMX.SearchTracksParameters
             {
-                PrimaryOrder = TrackOrder.ActivityMostRecent,
-                LeaderboardType = leaderboardType,
-                AfterTrackId = recentTracks?.Results.LastOrDefault()?.TrackId
+                Order1 = TrackOrder.ActivityMostRecent,
+                LbType = leaderboardType,
+                After = recentTracks?.Results.LastOrDefault()?.TrackId
             });
 
             _logger.LogInformation("{count} maps found.", recentTracks.Results.Length);
@@ -81,13 +81,13 @@ public class RefreshTmxService : RefreshService
                 }
             }
         }
-        while (!endOfNewActivities && recentTracks.HasMorePages);
+        while (!endOfNewActivities && recentTracks.HasMoreItems);
     }
 
     private static ManiaAPI.TMX.TmxSite TmxSiteToManiaApiTmxSite(TmxSite site) => site switch
     {
-        TmxSite.United => ManiaAPI.TMX.TmxSite.United,
-        TmxSite.TMNF => ManiaAPI.TMX.TmxSite.TMNForever,
+        TmxSite.United => ManiaAPI.TMX.TmxSite.TMUF,
+        TmxSite.TMNF => ManiaAPI.TMX.TmxSite.TMNF,
         TmxSite.Nations => ManiaAPI.TMX.TmxSite.Nations,
         _ => throw new NotImplementedException(),
     };
@@ -99,7 +99,7 @@ public class RefreshTmxService : RefreshService
     /// <param name="tmxTrack"></param>
     /// <param name="leaderboardType"></param>
     /// <returns>True if the end of activities was reached.</returns>
-    private async Task<bool> CheckTrackForNewRecordsAsync(TmxSite tmxSite, TrackSearchItem tmxTrack, string subScope)
+    private async Task<bool> CheckTrackForNewRecordsAsync(TmxSite tmxSite, TrackItem tmxTrack, string subScope)
     {
         var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
         
@@ -140,7 +140,7 @@ public class RefreshTmxService : RefreshService
             freshUpdate = true;
         }
 
-        map.LastActivityOn = tmxTrack.ActivityAt;
+        map.LastActivityOn = tmxTrack.ActivityAt.UtcDateTime;
 
         await _wrUnitOfWork.SaveAsync();
 
@@ -224,7 +224,7 @@ public class RefreshTmxService : RefreshService
                 previousWr,
                 newTimeOrScore,
                 newWr.User,
-                newWr.ReplayAt,
+                newWr.ReplayAt.UtcDateTime,
                 newWr.ReplayId,
                 freshUpdate,
                 subScope);

@@ -1,11 +1,12 @@
-﻿using ManiaAPI.TrackmaniaAPI;
+﻿using System.Collections.Immutable;
+using ManiaAPI.TrackmaniaAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace BigBang1112.WorldRecordReportLib.Services.Wrappers;
 
-public class TrackmaniaApiService : IHostedService, ITrackmaniaAPI, ITrackmaniaApiService
+public class TrackmaniaApiService : IHostedService, ITrackmaniaApiService
 {
     private readonly IConfiguration _config;
     private readonly TrackmaniaAPI _trackmaniaApi;
@@ -35,7 +36,7 @@ public class TrackmaniaApiService : IHostedService, ITrackmaniaAPI, ITrackmaniaA
         return Task.CompletedTask;
     }
 
-    public async ValueTask<Dictionary<Guid, string>> GetDisplayNamesAsync(IEnumerable<Guid> accountIds, CancellationToken cancellationToken = default)
+    public async Task<ImmutableDictionary<Guid, string>> GetDisplayNamesAsync(IEnumerable<Guid> accountIds, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("HTTP request: DisplayNames (accountIds={accountIds})", string.Join(',', accountIds));
 

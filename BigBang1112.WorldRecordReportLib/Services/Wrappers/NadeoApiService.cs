@@ -1,11 +1,12 @@
-﻿using ManiaAPI.NadeoAPI;
+﻿using System.Collections.Immutable;
+using ManiaAPI.NadeoAPI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace BigBang1112.WorldRecordReportLib.Services.Wrappers;
 
-public class NadeoApiService : IHostedService, INadeoServices, INadeoLiveServices, INadeoApiService
+public class NadeoApiService : IHostedService, INadeoApiService
 {
     private readonly IConfiguration _config;
     private readonly NadeoServices _nadeoServices;
@@ -30,11 +31,11 @@ public class NadeoApiService : IHostedService, INadeoServices, INadeoLiveService
 
         _logger.LogInformation("Authorizing with NadeoServices...");
 
-        await _nadeoServices.AuthorizeAsync(login, password, cancellationToken);
+        await _nadeoServices.AuthorizeAsync(login, password, AuthorizationMethod.DedicatedServer, cancellationToken);
 
         _logger.LogInformation("Authorized with NadeoServices. Authorizing with NadeoLiveServices...");
 
-        await _nadeoLiveServices.AuthorizeAsync(login, password, cancellationToken);
+        await _nadeoLiveServices.AuthorizeAsync(login, password, AuthorizationMethod.DedicatedServer, cancellationToken);
 
         _logger.LogInformation("Authorized with NadeoLiveServices.");
     }
@@ -44,16 +45,16 @@ public class NadeoApiService : IHostedService, INadeoServices, INadeoLiveService
         return Task.CompletedTask;
     }
 
-    public async Task<string> GetAccountDisplayNamesAsync(IEnumerable<Guid> accountIds, CancellationToken cancellationToken = default)
+    /*public async Task<string> GetAccountDisplayNamesAsync(IEnumerable<Guid> accountIds, CancellationToken cancellationToken = default)
     {
         return await _nadeoServices.GetAccountDisplayNamesAsync(accountIds, cancellationToken);
-    }
+    }*/
 
-    public async Task<MapRecord[]> GetMapRecordsAsync(IEnumerable<Guid> accountIds, IEnumerable<Guid> mapIds, CancellationToken cancellationToken = default)
+    public async Task<ImmutableArray<MapRecord>> GetMapRecordsAsync(IEnumerable<Guid> accountIds, IEnumerable<Guid> mapIds, CancellationToken cancellationToken = default)
     {
         if (!accountIds.Any() || !mapIds.Any())
         {
-            return Array.Empty<MapRecord>();
+            return ImmutableArray<MapRecord>.Empty;
         }
 
         _logger.LogInformation("HTTP request: MapRecords (accountIds={accountIds}; mapIds={mapIds})", string.Join(',', accountIds), string.Join(',', mapIds));
@@ -61,11 +62,11 @@ public class NadeoApiService : IHostedService, INadeoServices, INadeoLiveService
         return await _nadeoServices.GetMapRecordsAsync(accountIds, mapIds, cancellationToken);
     }
 
-    public async Task<MapRecord[]> GetMapRecordsAsync(IEnumerable<Guid> accountIds, Guid mapId, CancellationToken cancellationToken = default)
+    public async Task<ImmutableArray<MapRecord>> GetMapRecordsAsync(IEnumerable<Guid> accountIds, Guid mapId, CancellationToken cancellationToken = default)
     {
         if (!accountIds.Any())
         {
-            return Array.Empty<MapRecord>();
+            return ImmutableArray<MapRecord>.Empty;
         }
 
         _logger.LogInformation("HTTP request: MapRecords (accountIds={accountIds}; mapId={mapId})", string.Join(',', accountIds), mapId);
