@@ -120,7 +120,10 @@ public class AcquireNewOfficialCampaignsJobTests
 
         var logger = Mock.Of<ILogger<AcquireNewOfficialCampaignsJob>>();
 
-        var job = new AcquireNewOfficialCampaignsJob(mockUnitOfWork, mockTmIo.Object, http, refreshSchedule, logger);
+        var mockHttpFactory = new Mock<IHttpClientFactory>();
+        mockHttpFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(http);
+
+        var job = new AcquireNewOfficialCampaignsJob(mockUnitOfWork, mockTmIo.Object, mockHttpFactory.Object, refreshSchedule, logger);
 
         // Act
         await job.AcquireNewOfficialCampaignsAsync(0);

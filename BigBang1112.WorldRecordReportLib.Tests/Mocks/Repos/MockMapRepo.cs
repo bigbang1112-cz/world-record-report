@@ -47,7 +47,7 @@ public class MockMapRepo : MockRepo<MapModel>, IMapRepo
         throw new NotImplementedException();
     }
 
-    public Task<MapModel?> GetByMxIdAsync(int trackId, TmxSite tmxSite, CancellationToken cancellationToken = default)
+    public Task<MapModel?> GetByMxIdAsync(long trackId, TmxSite tmxSite, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
