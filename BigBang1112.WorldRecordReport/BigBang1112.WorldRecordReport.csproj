@@ -7,7 +7,7 @@
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<NoWarn>1591</NoWarn>
 		<IsTransformWebConfigDisabled>false</IsTransformWebConfigDisabled>
-		<Version>2.2.2</Version>
+		<Version>2.2.3</Version>
 		<UserSecretsId>d2ea3169-c218-41ae-bd69-d38de3cdf3aa</UserSecretsId>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
@@ -27,6 +27,7 @@
 	<ItemGroup>
 		<PackageReference Include="LibSassBuilder" Version="2.0.2" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>

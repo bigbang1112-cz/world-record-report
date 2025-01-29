@@ -105,6 +105,8 @@ builder.Services.AddQuartzServer(options =>
     options.WaitForJobsToComplete = true;
 });
 
+builder.Services.AddHttpClient().AddStandardResilienceHandler();
+
 var app = builder.Build();
 
 app.UseEssentials(options);
