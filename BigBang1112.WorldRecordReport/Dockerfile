@@ -1,9 +1,9 @@
-FROM mcr.microsoft.com/dotnet/aspnet:6.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 WORKDIR /src
 COPY ["BigBang1112.WorldRecordReport/BigBang1112.WorldRecordReport.csproj", "BigBang1112.WorldRecordReport/"]
 COPY ["BigBang1112.Essentials/BigBang1112.Essentials.Razor/BigBang1112.Essentials.Razor.csproj", "BigBang1112.Essentials/BigBang1112.Essentials.Razor/"]
@@ -19,7 +19,7 @@ RUN dotnet build "BigBang1112.WorldRecordReport.csproj" -c Release -o /app/build
 FROM build AS publish
 RUN dotnet publish "BigBang1112.WorldRecordReport.csproj" -c Release -o /app/publish -r linux-musl-x64 -p:PublishReadyToRun=true --self-contained
 
-FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-alpine
+FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine
 RUN apk add --no-cache icu-libs
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 WORKDIR /app
