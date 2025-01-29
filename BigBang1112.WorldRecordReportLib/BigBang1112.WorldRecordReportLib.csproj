@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>2.5.5.3</Version>
+    <Version>2.5.6</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,12 +31,15 @@
     <PackageReference Include="ManiaAPI.TMX" Version="2.0.0-beta3" />
     <PackageReference Include="ManiaAPI.TrackmaniaAPI" Version="2.0.0-beta3" />
     <PackageReference Include="ManiaAPI.TrackmaniaIO" Version="1.0.12" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.3" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.3">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.12">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Quartz.AspNetCore" Version="3.4.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.12">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Quartz.AspNetCore" Version="3.13.1" />
     <PackageReference Include="TmXmlRpc" Version="1.1.0" />
   </ItemGroup>
   
