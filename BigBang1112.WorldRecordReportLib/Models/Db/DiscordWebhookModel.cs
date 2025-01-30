@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
+using SoftFluent.ComponentModel.DataAnnotations;
 
 namespace BigBang1112.WorldRecordReportLib.Models.Db;
 
