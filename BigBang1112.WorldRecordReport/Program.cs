@@ -15,6 +15,7 @@ using ManiaAPI.TrackmaniaAPI;
 using BigBang1112.WorldRecordReport.DiscordBot;
 using BigBang1112.Services;
 using BigBang1112.WorldRecordReportLib.Converters.Json;
+using Quartz.AspNetCore;
 
 var cultureInfo = (CultureInfo)CultureInfo.InvariantCulture.Clone();
 cultureInfo.NumberFormat.NumberGroupSeparator = " ";
