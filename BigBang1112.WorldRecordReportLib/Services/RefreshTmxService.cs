@@ -173,7 +173,7 @@ public class RefreshTmxService : RefreshService
 
         var isStunts = map.IsStuntsMode();
 
-        var wrsOnTmx = _tmxService.GetWrHistory(replays, isStunts).ToArray();
+        var wrsOnTmx = _tmxService.GetWrHistory(tmxTrack.UpdatedAt, replays, isStunts).ToArray();
 
         var wrOnTmx = wrsOnTmx[^1];
 
@@ -343,7 +343,7 @@ public class RefreshTmxService : RefreshService
                 continue;
             }
 
-            var tmxWrs = _tmxService.GetWrHistory(replays).Reverse();
+            var tmxWrs = _tmxService.GetWrHistory(map.UpdatedOn, replays).Reverse();
             var tmxWr = tmxWrs.FirstOrDefault();
 
             if (tmxWr is not null && tmxWr.ReplayTime.TotalMilliseconds <= wr.Time)

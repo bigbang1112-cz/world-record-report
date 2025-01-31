@@ -18,11 +18,11 @@ public class TmxService : ITmxService
         return await tmx.GetReplaysAsync(new() { TrackId = tmxId }, cancellationToken);
     }
 
-    public IEnumerable<ReplayItem> GetWrHistory(ItemCollection<ReplayItem> replays, bool isStunts = false)
+    public IEnumerable<ReplayItem> GetWrHistory(DateTimeOffset trackAt, ItemCollection<ReplayItem> replays, bool isStunts = false)
     {
         var tempTime = default(int?);
 
-        foreach (var replay in replays.Results.OrderBy(x => x.ReplayAt))
+        foreach (var replay in replays.Results.OrderBy(x => x.ReplayAt).Where(x => x.TrackAt == trackAt))
         {
             if (tempTime is null)
             {
