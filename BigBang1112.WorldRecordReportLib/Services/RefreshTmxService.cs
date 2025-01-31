@@ -360,7 +360,7 @@ public class RefreshTmxService : RefreshService
 
             if (report is null)
             {
-                throw new Exception();
+                continue;
             }
 
             foreach (var msg in report.DiscordWebhookMessages)
