@@ -22,7 +22,7 @@ public class TmxService : ITmxService
     {
         var tempTime = default(int?);
 
-        foreach (var replay in replays.Results.OrderBy(x => x.ReplayAt).Where(x => x.TrackAt.Ticks == trackAt.Ticks))
+        foreach (var replay in replays.Results.OrderBy(x => x.ReplayAt))
         {
             if (tempTime is null)
             {
