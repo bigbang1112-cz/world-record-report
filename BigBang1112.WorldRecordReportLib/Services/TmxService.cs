@@ -15,7 +15,7 @@ public class TmxService : ITmxService
     {
         var http = _httpFactory.CreateClient("resilient");
         var tmx = new TMX(http, site);
-        return await tmx.GetReplaysAsync(new() { TrackId = tmxId }, cancellationToken);
+        return await tmx.GetReplaysAsync(new() { TrackId = tmxId, Best = true }, cancellationToken);
     }
 
     public IEnumerable<ReplayItem> GetWrHistory(DateTimeOffset trackAt, ItemCollection<ReplayItem> replays, bool isStunts = false)
