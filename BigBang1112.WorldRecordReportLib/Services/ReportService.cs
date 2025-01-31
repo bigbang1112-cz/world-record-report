@@ -184,6 +184,12 @@ public class ReportService
                 : $"` {delta} ` from ` {previousRecord.Rank:00} `";
 
             var timestamp = GetTimestamp(currentRecord);
+
+            if (timestamp.HasValue && DateTime.UtcNow - timestamp.Value > TimeSpan.FromDays(2))
+            {
+                continue;
+            }
+
             var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(UseLongTimestamp(currentRecord) ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
             dict[currentRecord.Rank.GetValueOrDefault()] = $"**{map.GetMdLinkHumanized()}**: ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}";
