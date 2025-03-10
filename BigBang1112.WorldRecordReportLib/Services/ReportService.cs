@@ -63,7 +63,7 @@ public class ReportService
         }
 
         var components = new Discord.ComponentBuilder()
-            .WithButton("Details", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Primary)
+            .WithButton("Details", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Secondary)
             .WithButton("Previous", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}-prev"), Discord.ButtonStyle.Secondary)
             .WithButton("Compare with previous", DiscordBotService.CreateCustomId($"comparewrs-{wr.Guid.ToString().Replace('-', '_')}-prev"), Discord.ButtonStyle.Secondary)
             .WithButton("History", DiscordBotService.CreateCustomId($"historywr-{wr.Map.MapUid}"), Discord.ButtonStyle.Secondary)
