@@ -43,10 +43,10 @@ public class RefreshTmxService : RefreshService
 
     public async Task CleanupRemovedWorldRecordsAsync()
     {
-        var lastTmxWrs = await _wrUnitOfWork.WorldRecords.GetLatestByGameAsync(Game.TMUF, count: 5);
+        var lastTmxWrs = await _wrUnitOfWork.WorldRecords.GetLatestByGameAsync(Game.TMUF, count: 25);
         await CleanupWorldRecordsAsync(lastTmxWrs, false);
 
-        var lastTmxTMNESWCWrs = await _wrUnitOfWork.WorldRecords.GetLatestByGameAsync(Game.TMN, count: 5);
+        var lastTmxTMNESWCWrs = await _wrUnitOfWork.WorldRecords.GetLatestByGameAsync(Game.TMN, count: 25);
         await CleanupWorldRecordsAsync(lastTmxTMNESWCWrs, false);
     }
 
@@ -134,11 +134,11 @@ public class RefreshTmxService : RefreshService
 
         var freshUpdate = false;
 
-        if (map.LastActivityOn is null)
+        /*if (map.LastActivityOn is null)
         {
             _logger.LogInformation("Fresh activity, world records are not going to be reported. {mapname}", map.DeformattedName);
             freshUpdate = true;
-        }
+        }*/
 
         map.LastActivityOn = tmxTrack.ActivityAt.UtcDateTime;
 
