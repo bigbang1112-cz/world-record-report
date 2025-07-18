@@ -67,7 +67,7 @@ public class ReportService
         if (!wr.Map.Game.IsTM2020())
         {
             componentBuilder = componentBuilder
-                .WithButton("View", url: wr.GetViewUrl(), style: Discord.ButtonStyle.Primary);
+                .WithButton("View", url: wr.GetViewUrl(), style: Discord.ButtonStyle.Link);
         }
 
         var components = componentBuilder
