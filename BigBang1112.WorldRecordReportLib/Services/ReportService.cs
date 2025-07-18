@@ -225,7 +225,7 @@ public class ReportService
         }
 
         var viewUrl = map.Game.IsTM2()
-            ? $"https://3d.gbx.tools/view/ghost?type=wrr&mapuid={map.MapUid}&time={record.Time}&login={record.PlayerId}&mx=TM2"
+            ? $"https://3d.gbx.tools/view/ghost?type=wrr&mapuid={map.MapUid}&time={record.Time.TotalMilliseconds}&login={record.PlayerId}&mx=TM2"
             : $"https://3d.gbx.tools/view/replay?tmx={map.TmxAuthor?.Site.GetSiteEnum()}&id={GetReplayId(record)}&mapid={map.MxId}";
 
         return $"[{timeStr}](<{viewUrl}>)";
