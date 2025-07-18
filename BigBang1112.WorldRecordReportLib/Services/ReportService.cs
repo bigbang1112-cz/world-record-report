@@ -62,12 +62,20 @@ public class ReportService
             botEmbeds.Add(lbManialinkEmbed);
         }
 
-        var components = new Discord.ComponentBuilder()
+        var componentBuilder = new Discord.ComponentBuilder();
+
+        if (!wr.Map.Game.IsTM2020())
+        {
+            componentBuilder = componentBuilder
+                .WithButton("View", url: wr.GetViewUrl(), style: Discord.ButtonStyle.Primary);
+        }
+
+        var components = componentBuilder
             .WithButton("Details", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Secondary)
             .WithButton("Previous", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}-prev"), Discord.ButtonStyle.Secondary)
             .WithButton("Compare with previous", DiscordBotService.CreateCustomId($"comparewrs-{wr.Guid.ToString().Replace('-', '_')}-prev"), Discord.ButtonStyle.Secondary)
             .WithButton("History", DiscordBotService.CreateCustomId($"historywr-{wr.Map.MapUid}"), Discord.ButtonStyle.Secondary)
-            .WithButton("Map info", DiscordBotService.CreateCustomId($"mapinfo-{wr.Map.MapUid}"), Discord.ButtonStyle.Secondary)
+            //.WithButton("Map info", DiscordBotService.CreateCustomId($"mapinfo-{wr.Map.MapUid}"), Discord.ButtonStyle.Secondary)
             .Build();
 
         await ReportToAllScopedDiscordBotsAsync(report, botEmbeds, components, scope, cancellationToken);
@@ -172,7 +180,7 @@ public class ReportService
 
             var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(UseLongTimestamp(record) ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict[record.Rank.GetValueOrDefault()] = $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}";
+            dict[record.Rank.GetValueOrDefault()] = $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` {GetRecordTimeDiscordString(map, record, isTMUF)} by **{GetDisplayNameMdLink(map, record)}**{timestampBracket}";
         }
 
         foreach (var (currentRecord, previousRecord) in improvedRecords)
@@ -192,7 +200,7 @@ public class ReportService
 
             var timestampBracket = timestamp.HasValue ? $" ({timestamp.Value.ToTimestampTag(UseLongTimestamp(currentRecord) ? Discord.TimestampTagStyles.ShortDateTime : Discord.TimestampTagStyles.ShortTime)})" : "";
 
-            dict[currentRecord.Rank.GetValueOrDefault()] = $"**{map.GetMdLinkHumanized()}**: ` {currentRecord.Rank:00} ` ` {currentRecord.Time.ToString(useHundredths: isTMUF)} ` {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}";
+            dict[currentRecord.Rank.GetValueOrDefault()] = $"**{map.GetMdLinkHumanized()}**: ` {currentRecord.Rank:00} ` {GetRecordTimeDiscordString(map, currentRecord, isTMUF)} {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}";
         }
 
         foreach (var record in changes.RemovedRecords.Where(x => x.Rank <= 10))
@@ -206,6 +214,23 @@ public class ReportService
         }
     }
 
+    private static string GetRecordTimeDiscordString<TPlayerId>(MapModel map, IRecord<TPlayerId> record, bool isTMUF)
+        where TPlayerId : notnull
+    {
+        var timeStr = $"` {record.Time.ToString(useHundredths: isTMUF)} `";
+
+        if (map.Game.IsTM2020())
+        {
+            return timeStr;
+        }
+
+        var viewUrl = map.Game.IsTM2()
+            ? $"https://3d.gbx.tools/view/ghost?type=wrr&mapuid={map.MapUid}&time={record.Time}&login={record.PlayerId}&mx=TM2"
+            : $"https://3d.gbx.tools/view/replay?tmx={map.TmxAuthor?.Site.GetSiteEnum()}&id={GetReplayId(record)}&mapid={map.MxId}";
+
+        return $"[{timeStr}](<{viewUrl}>)";
+    }
+
     private static bool UseLongTimestamp<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull
     {
         return DateTime.UtcNow - GetTimestamp(record) > TimeSpan.FromDays(1);
@@ -216,6 +241,12 @@ public class ReportService
         TmxReplay tmxReplay => tmxReplay.ReplayAt,
         TM2Record tm2Record => tm2Record.Timestamp?.UtcDateTime,
         TM2020Record tm2020Record => tm2020Record.Timestamp,
+        _ => null
+    };
+
+    private static int? GetReplayId<TPlayerId>(IRecord<TPlayerId> record) where TPlayerId : notnull => record switch
+    {
+        TmxReplay tmxReplay => tmxReplay.ReplayId,
         _ => null
     };
 
@@ -415,7 +446,9 @@ public class ReportService
         var isTMUF = map.Game.Id == (int)Game.TMUF || map.Game.Id == (int)Game.TMN;
         var isStunts = map.IsStuntsMode();
 
-        var score = $"` {(isStunts ? wr.Time.ToString() : wr.TimeInt32.ToString(useHundredths: isTMUF))} `";
+        var score = map.Game.IsTM2020()
+            ? $"` {(isStunts ? wr.Time.ToString() : wr.TimeInt32.ToString(useHundredths: isTMUF))} `"
+            : $"[` {(isStunts ? wr.Time.ToString() : wr.TimeInt32.ToString(useHundredths: isTMUF))} `](<{wr.GetViewUrl()}>)";
 
         if (wr.PreviousWorldRecord is not null)
         {

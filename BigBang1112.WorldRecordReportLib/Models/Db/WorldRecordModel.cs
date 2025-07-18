@@ -102,4 +102,16 @@ public class WorldRecordModel : DbModel
 
         return TimeInt32.ToString(useHundredths: Map.Game.IsTMUF() || Map.Game.IsTMN());
     }
+
+    public string GetViewUrl()
+    {
+        if (Map.Game.IsTM2())
+        {
+            return $"https://3d.gbx.tools/view/ghost?type=wrr&mapuid={Map.MapUid}&time={Time}&login={Player?.Name}&mx=TM2";
+        }
+        else
+        {
+            return $"https://3d.gbx.tools/view/replay?tmx={Map.TmxAuthor?.Site.GetSiteEnum()}&id={ReplayId}&mapid={Map.MxId}";
+        }
+    }
 }
