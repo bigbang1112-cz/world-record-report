@@ -47,6 +47,7 @@ public class TmxReplay : IRecord<int>
         {
             TmxSite.United => "united",
             TmxSite.TMNF => "tmnforever",
+            TmxSite.Nations => "nations",
             _ => null
         };
 
