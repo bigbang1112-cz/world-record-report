@@ -40,11 +40,11 @@ public class AcquireNewOfficialCampaignsJob : IJob
     {
         _logger.LogInformation("Acquiring map data about official campaigns...");
 
-        var campaigns = await _tmIo.GetCampaignsAsync(cancellationToken: cancellationToken);
+        var campaignCollection = await _tmIo.GetCampaignsAsync(cancellationToken: cancellationToken);
 
-        _logger.LogInformation("{count} campaigns found.", campaigns.Count);
+        _logger.LogInformation("{count} campaigns found.", campaignCollection.Campaigns.Length);
 
-        if (campaigns.Count == 0)
+        if (campaignCollection.Campaigns.Length == 0)
         {
             return;
         }
@@ -57,15 +57,9 @@ public class AcquireNewOfficialCampaignsJob : IJob
 
         var isOver = false;
 
-        foreach (var campaign in campaigns)
+        foreach (var campaign in campaignCollection.Campaigns)
         {
-            if (campaign is not OfficialCampaignItem officialCampaign)
-            {
-                _logger.LogInformation("End of official campaigns.");
-                break;
-            }
-
-            var campaignModel = await ProcessOfficialCampaignAsync(officialCampaign, game, env, mode, delay, isOver, cancellationToken);
+            var campaignModel = await ProcessOfficialCampaignAsync(campaign, game, env, mode, delay, isOver, cancellationToken);
 
             isOver = true;
 
@@ -91,7 +85,7 @@ public class AcquireNewOfficialCampaignsJob : IJob
         _refreshScheduleService.SetupTM2020CurrentCampaign(maps);
     }
 
-    internal async Task<CampaignModel> ProcessOfficialCampaignAsync(OfficialCampaignItem officialCampaign,
+    internal async Task<CampaignModel> ProcessOfficialCampaignAsync(CampaignItem officialCampaign,
                                                                     GameModel game,
                                                                     EnvModel env,
                                                                     MapModeModel mode,

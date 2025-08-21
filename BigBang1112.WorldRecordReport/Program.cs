@@ -1,20 +1,21 @@
-﻿using BigBang1112;
-using BigBang1112.WorldRecordReportLib.TMWR;
+﻿using System.Globalization;
+using BigBang1112;
+using BigBang1112.DiscordBot.Data;
+using BigBang1112.Services;
+using BigBang1112.WorldRecordReport.DiscordBot;
+using BigBang1112.WorldRecordReportLib;
+using BigBang1112.WorldRecordReportLib.Converters.Json;
 using BigBang1112.WorldRecordReportLib.Data;
 using BigBang1112.WorldRecordReportLib.Extensions;
 using BigBang1112.WorldRecordReportLib.Jobs;
-using BigBang1112.WorldRecordReportLib.Services;
-using Quartz;
 using BigBang1112.WorldRecordReportLib.Repos;
-using BigBang1112.DiscordBot.Data;
-using System.Globalization;
-using BigBang1112.WorldRecordReportLib;
+using BigBang1112.WorldRecordReportLib.Services;
 using BigBang1112.WorldRecordReportLib.Services.Wrappers;
+using BigBang1112.WorldRecordReportLib.TMWR;
 using ManiaAPI.NadeoAPI;
 using ManiaAPI.TrackmaniaAPI;
-using BigBang1112.WorldRecordReport.DiscordBot;
-using BigBang1112.Services;
-using BigBang1112.WorldRecordReportLib.Converters.Json;
+using ManiaAPI.TrackmaniaIO;
+using Quartz;
 using Quartz.AspNetCore;
 
 var cultureInfo = (CultureInfo)CultureInfo.InvariantCulture.Clone();
@@ -69,11 +70,13 @@ builder.Services.AddScoped<IGhostService, GhostService>();
 builder.Services.AddScoped<ReportService>();
 
 builder.Services.AddSingleton(provider => 
-    new NadeoServices(provider.GetRequiredService<IHttpClientFactory>().CreateClient("resilient")));
+    new NadeoServices(provider.GetRequiredService<IHttpClientFactory>().CreateClient("resilient"), new()));
 builder.Services.AddSingleton(provider =>
-    new NadeoLiveServices(provider.GetRequiredService<IHttpClientFactory>().CreateClient("resilient")));
+    new NadeoLiveServices(provider.GetRequiredService<IHttpClientFactory>().CreateClient("resilient"), new()));
 builder.Services.AddSingleton(provider =>
-    new TrackmaniaAPI(provider.GetRequiredService<IHttpClientFactory>().CreateClient("resilient")));
+    new TrackmaniaAPI(provider.GetRequiredService<IHttpClientFactory>().CreateClient("resilient"), new()));
+builder.Services.AddSingleton(provider =>
+    new TrackmaniaIO(provider.GetRequiredService<IHttpClientFactory>().CreateClient("resilient"), "WorldRecordReport/2.6 (Checking campaign changes; Discord=bigbang1112)"));
 builder.Services.AddSingleton<INadeoApiService, NadeoApiService>();
 builder.Services.AddHostedService(x => x.GetRequiredService<INadeoApiService>());
 builder.Services.AddSingleton<ITrackmaniaApiService, TrackmaniaApiService>();
@@ -110,7 +113,10 @@ builder.Services.AddQuartzServer(options =>
 });
 
 builder.Services.AddHttpClient();
-builder.Services.AddHttpClient("resilient").AddStandardResilienceHandler();
+builder.Services.AddHttpClient("resilient-nadeoservices").AddStandardResilienceHandler();
+builder.Services.AddHttpClient("resilient-nadeoliveservices").AddStandardResilienceHandler();
+builder.Services.AddHttpClient("resilient-trackmaniaapi").AddStandardResilienceHandler();
+builder.Services.AddHttpClient("resilient-trackmaniaio").AddStandardResilienceHandler();
 
 var app = builder.Build();
 
