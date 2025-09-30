@@ -63,16 +63,8 @@ public class WrCommand : MapRelatedWithUidCommand
 
         var builder = new ComponentBuilder();
 
-        var viewUrl = wr.GetViewUrl();
-
-        if (map.Game.IsTM2())
+        if (map.Game.IsTM2() || map.Game.IsTM2020())
         {
-            builder = builder.WithButton("View ghost",
-                customId: viewUrl is null ? "view-disabled" : null,
-                style: viewUrl is null ? ButtonStyle.Secondary : ButtonStyle.Link,
-                url: viewUrl,
-                disabled: viewUrl is null);
-
             var downloadUrl = $"https://{_config["BaseAddress"]}/api/v1/ghost/download/{map.MapUid}/{wr.Time}/{wr.GetPlayerLogin()}";
 
             builder = builder.WithButton("Download ghost",
@@ -83,12 +75,6 @@ public class WrCommand : MapRelatedWithUidCommand
         }
         else if (map.Game.IsTMUF() || map.Game.IsTMN())
         {
-            builder = builder.WithButton("View replay",
-                customId: wr.ReplayId is null ? "view-disabled" : null,
-                style: wr.ReplayId is null ? ButtonStyle.Secondary : ButtonStyle.Link,
-                url: wr.ReplayId is not null && map.TmxAuthor is not null ? viewUrl : null,
-                disabled: wr.ReplayId is null);
-
             builder = builder.WithButton("Download replay",
                 customId: wr.ReplayId is null ? "download-disabled" : null,
                 style: wr.ReplayId is null ? ButtonStyle.Secondary : ButtonStyle.Link,
