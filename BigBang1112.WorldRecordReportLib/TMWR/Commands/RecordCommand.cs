@@ -48,47 +48,12 @@ public class RecordCommand : MapRelatedWithUidCommand
     {
         var builder = new ComponentBuilder();
 
-        CreateViewButton(map, builder);
         CreateDownloadButton(map, builder);
 
         builder = builder.WithButton("Checkpoints", CreateCustomId($"{MapUid}-{Rank}-checkpoints"), ButtonStyle.Secondary, disabled: true)
             .WithButton("Inputs", CreateCustomId($"{MapUid}-{Rank}-inputs"), ButtonStyle.Secondary, disabled: true);
 
         return Task.FromResult(builder)!;
-    }
-
-    private void CreateViewButton(MapModel map, ComponentBuilder builder)
-    {
-        if (map.Game.IsTM2020())
-        {
-            return;
-        }
-
-        IRecord? rec = (Game)map.Game.Id switch
-        {
-            Game.TM2 => recordSet?.Records.ElementAtOrDefault((int)Rank - 1),
-            Game.TM2020 => tm2020Leaderboard?.Where(x => !x.Ignored).ElementAtOrDefault((int)Rank - 1),
-            Game.TMUF or Game.TMN => recordSetTmx?.Where(x => x.Rank is not null).ElementAtOrDefault((int)Rank - 1),
-            _ => null
-        };
-
-        if (map.Game.IsTM2())
-        {
-            var viewUrl = $"https://3d.gbx.tools/view/ghost?type=wrr&mapuid={map.MapUid}&time={rec?.Time.TotalMilliseconds}&login={rec?.GetPlayerId()}&mx=TM2";
-
-            builder.WithButton("View ghost", style: ButtonStyle.Link, url: viewUrl);
-
-            return;
-        }
-
-        if (map.Game.IsTMUF() || map.Game.IsTMN())
-        {
-            builder = builder.WithButton("View replay",
-                customId: map.TmxAuthor is null ? "view-disabled" : null,
-                style: map.TmxAuthor is null ? ButtonStyle.Secondary : ButtonStyle.Link,
-                url: map.TmxAuthor is null ? null : $"https://3d.gbx.tools/view/replay?tmx={map.TmxAuthor?.Site.GetSiteEnum()}&id={((TmxReplay?)rec)?.ReplayId}&mapid={map.MxId}",
-                disabled: map.TmxAuthor is null);
-        }
     }
 
     private void CreateDownloadButton(MapModel map, ComponentBuilder builder)

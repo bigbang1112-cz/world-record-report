@@ -64,12 +64,6 @@ public class ReportService
 
         var componentBuilder = new Discord.ComponentBuilder();
 
-        if (!wr.Map.Game.IsTM2020())
-        {
-            componentBuilder = componentBuilder
-                .WithButton("View", url: wr.GetViewUrl(), style: Discord.ButtonStyle.Link);
-        }
-
         var components = componentBuilder
             .WithButton("Details", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}"), Discord.ButtonStyle.Secondary)
             .WithButton("Previous", DiscordBotService.CreateCustomId($"wr-{wr.Guid.ToString().Replace('-', '_')}-prev"), Discord.ButtonStyle.Secondary)
