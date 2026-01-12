@@ -183,7 +183,7 @@ public class RefreshTM2020Service : RefreshService
     // This method has a major issue: it creates double WR in the database when the leaderboard files are deleted
     // Solution: use the RefreshTM2Service way
     private async Task CreateLeaderboardAsync(MapModel mapModel,
-                                              ImmutableArray<Record> records,
+                                              ImmutableList<Record> records,
                                               Dictionary<Guid, LoginModel> loginModels,
                                               IEnumerable<string> ignoredLoginNames,
                                               IEnumerable<Guid> accountIds,
@@ -227,7 +227,7 @@ public class RefreshTM2020Service : RefreshService
     }
 
     private async Task CompareLeaderboardAsync(MapModel map,
-                                               ImmutableArray<Record> records,
+                                               ImmutableList<Record> records,
                                                Dictionary<Guid, LoginModel> loginModels,
                                                IEnumerable<string> ignoredLoginNames,
                                                bool forceUpdate,
@@ -486,7 +486,7 @@ public class RefreshTM2020Service : RefreshService
     }
 
     private async Task<List<TM2020Record>> SaveLeaderboardAsync(MapModel mapModel,
-                                                                ImmutableArray<Record> records,
+                                                                ImmutableList<Record> records,
                                                                 IEnumerable<Guid> accountIds,
                                                                 Dictionary<Guid, LoginModel> loginModels,
                                                                 IEnumerable<string> ignoredLoginNames,
@@ -561,7 +561,7 @@ public class RefreshTM2020Service : RefreshService
         }
     }
 
-    private static IEnumerable<TM2020Record> RecordsToTM2020Records(ImmutableArray<Record> records,
+    private static IEnumerable<TM2020Record> RecordsToTM2020Records(ImmutableList<Record> records,
                                                                     IEnumerable<string> ignoredLoginNames,
                                                                     Dictionary<Guid, LoginModel> loginModels,
                                                                     Dictionary<Guid, MapRecord> recordDetails,

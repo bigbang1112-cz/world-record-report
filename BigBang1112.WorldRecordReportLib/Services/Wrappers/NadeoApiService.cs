@@ -50,11 +50,11 @@ public class NadeoApiService : IHostedService, INadeoApiService
         return await _nadeoServices.GetAccountDisplayNamesAsync(accountIds, cancellationToken);
     }*/
 
-    public async Task<ImmutableArray<MapRecord>> GetMapRecordsAsync(IEnumerable<Guid> accountIds, IEnumerable<Guid> mapIds, CancellationToken cancellationToken = default)
+    public async Task<ImmutableList<MapRecord>> GetMapRecordsAsync(IEnumerable<Guid> accountIds, IEnumerable<Guid> mapIds, CancellationToken cancellationToken = default)
     {
         if (!accountIds.Any() || !mapIds.Any())
         {
-            return ImmutableArray<MapRecord>.Empty;
+            return ImmutableList<MapRecord>.Empty;
         }
 
         _logger.LogInformation("HTTP request: MapRecords (accountIds={accountIds}; mapIds={mapIds})", string.Join(',', accountIds), string.Join(',', mapIds));
@@ -62,11 +62,11 @@ public class NadeoApiService : IHostedService, INadeoApiService
         return await _nadeoServices.GetMapRecordsAsync(accountIds, mapIds, cancellationToken);
     }
 
-    public async Task<ImmutableArray<MapRecord>> GetMapRecordsAsync(IEnumerable<Guid> accountIds, Guid mapId, CancellationToken cancellationToken = default)
+    public async Task<ImmutableList<MapRecord>> GetMapRecordsAsync(IEnumerable<Guid> accountIds, Guid mapId, CancellationToken cancellationToken = default)
     {
         if (!accountIds.Any())
         {
-            return ImmutableArray<MapRecord>.Empty;
+            return ImmutableList<MapRecord>.Empty;
         }
 
         _logger.LogInformation("HTTP request: MapRecords (accountIds={accountIds}; mapId={mapId})", string.Join(',', accountIds), mapId);

@@ -69,7 +69,7 @@ public class RefreshTmxService : RefreshService
                 After = recentTracks?.Results.LastOrDefault()?.TrackId
             });
 
-            _logger.LogInformation("{count} maps found.", recentTracks.Results.Length);
+            _logger.LogInformation("{count} maps found.", recentTracks.Results.Count);
 
             foreach (var tmxTrack in recentTracks.Results)
             {
@@ -114,7 +114,7 @@ public class RefreshTmxService : RefreshService
         {
             var firstRecordSet = await _tmxService.GetReplaysAsync(maniaApiTmxSite, tmxTrack.TrackId);
             
-            if (firstRecordSet.Results.Length == 0)
+            if (firstRecordSet.Results.Count == 0)
             {
                 return false;
             }
@@ -148,7 +148,7 @@ public class RefreshTmxService : RefreshService
 
         var replays = await _tmxService.GetReplaysAsync(maniaApiTmxSite, tmxTrack.TrackId);
 
-        if (replays.Results.Length == 0)
+        if (replays.Results.Count == 0)
         {
             return false;
         }

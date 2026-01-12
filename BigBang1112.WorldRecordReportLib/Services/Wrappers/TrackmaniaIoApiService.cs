@@ -43,7 +43,7 @@ public class TrackmaniaIoApiService : ITrackmaniaIoApiService
         return await _trackmaniaIO.GetLeaderboardAsync(leaderboardUid, mapUid, cancellationToken);
     }
 
-    public async Task<ImmutableArray<WorldRecord>> GetRecentWorldRecordsAsync(string leaderboardUid, CancellationToken cancellationToken = default)
+    public async Task<ImmutableList<WorldRecord>> GetRecentWorldRecordsAsync(string leaderboardUid, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("HTTP request: RecentWorldRecords (leaderboardUid={leaderboardUid})", leaderboardUid);
 

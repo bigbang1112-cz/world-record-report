@@ -42,9 +42,9 @@ public class AcquireNewOfficialCampaignsJob : IJob
 
         var campaignCollection = await _tmIo.GetCampaignsAsync(cancellationToken: cancellationToken);
 
-        _logger.LogInformation("{count} campaigns found.", campaignCollection.Campaigns.Length);
+        _logger.LogInformation("{count} campaigns found.", campaignCollection.Campaigns.Count);
 
-        if (campaignCollection.Campaigns.Length == 0)
+        if (campaignCollection.Campaigns.Count == 0)
         {
             return;
         }
