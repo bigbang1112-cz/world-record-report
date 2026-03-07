@@ -1,7 +1,6 @@
 ﻿using BigBang1112.WorldRecordReportLib.Exceptions;
 using BigBang1112.WorldRecordReportLib.Models;
-using Humanizer.Bytes;
-using Microsoft.Extensions.Caching.Memory;
+using Humanizer;
 using TmEssentials;
 using TmXmlRpc;
 using TmXmlRpc.Requests;
@@ -344,7 +343,7 @@ public class RefreshTM2Service : RefreshService
 
 
         var timestamps = await DownloadMissingGhostsAsync(mapUid, top10Recs, cancellationToken)
-            .ToDictionaryAsync(x => x.Item1, x => x.Item2, cancellationToken);
+            .ToDictionaryAsync(x => x.Item1, x => x.Item2, cancellationToken: cancellationToken);
 
         top10Recs = top10Recs.Select(x => timestamps.TryGetValue(x, out var timestamp) ? x with { Timestamp = timestamp } : x);
 

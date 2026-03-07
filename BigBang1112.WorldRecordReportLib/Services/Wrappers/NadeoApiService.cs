@@ -59,7 +59,7 @@ public class NadeoApiService : IHostedService, INadeoApiService
 
         _logger.LogInformation("HTTP request: MapRecords (accountIds={accountIds}; mapIds={mapIds})", string.Join(',', accountIds), string.Join(',', mapIds));
 
-        return await _nadeoServices.GetMapRecordsAsync(accountIds, mapIds, cancellationToken);
+        return await _nadeoServices.GetMapRecordsAsync(accountIds, mapIds, cancellationToken: cancellationToken);
     }
 
     public async Task<ImmutableList<MapRecord>> GetMapRecordsAsync(IEnumerable<Guid> accountIds, Guid mapId, CancellationToken cancellationToken = default)
@@ -71,7 +71,7 @@ public class NadeoApiService : IHostedService, INadeoApiService
 
         _logger.LogInformation("HTTP request: MapRecords (accountIds={accountIds}; mapId={mapId})", string.Join(',', accountIds), mapId);
 
-        return await _nadeoServices.GetMapRecordsAsync(accountIds, mapId, cancellationToken);
+        return await _nadeoServices.GetMapRecordsAsync(accountIds, mapId, cancellationToken: cancellationToken);
     }
 
     public async ValueTask<bool> RefreshAsync(CancellationToken cancellationToken = default)

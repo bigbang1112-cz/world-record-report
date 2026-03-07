@@ -29,7 +29,7 @@ public class AcquireNewOfficialCampaignsJobTests
         var mockUnitOfWork = new MockWrUnitOfWork();
 
         var mockTmIo = new Mock<ITrackmaniaIoApiService>();
-        mockTmIo.Setup(x => x.GetCampaignsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new CampaignCollection(ImmutableArray.Create<CampaignItem>([
+        mockTmIo.Setup(x => x.GetCampaignsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new CampaignCollection(ImmutableList.Create<CampaignItem>([
         
             new CampaignItem(Id: 22874, "Spring 2022", DateTimeOffset.FromUnixTimeSeconds(1648825200), 25, false, true, true, false, null, null, null, null, null),
             new CampaignItem(Id: 18729, "Winter 2022", DateTimeOffset.FromUnixTimeSeconds(1641052800), 25, false, true, true, false, null, null, null, null, null),
@@ -137,9 +137,9 @@ public class AcquireNewOfficialCampaignsJobTests
         // Assert
     }
 
-    private ImmutableArray<Map> CreatePlaylist(string name)
+    private ImmutableList<Map> CreatePlaylist(string name)
     {
-        return JsonSerializer.Deserialize<ImmutableArray<Map>>(File.ReadAllText($"Data/MockPlaylist{name}.json"), options);
+        return JsonSerializer.Deserialize<ImmutableList<Map>>(File.ReadAllText($"Data/MockPlaylist{name}.json"), options)!;
     }
 
     // test AcquireNewOfficialCampaignsAsync_WhenThereAreNewCampaignsAndThereIsAnError
