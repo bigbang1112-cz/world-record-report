@@ -245,7 +245,7 @@ public class RefreshTmxService : RefreshService
             return true;
         }
 
-        var removalsFound = await ProcessTrackActivityAsync(tmxSite, tmxTrack, map, subScope);
+        var removalsFound = await ProcessTrackActivityAsync(tmxSite, tmxTrack, map, subScope, fullScan);
 
         // Mark the activity as handled only once everything above succeeded,
         // otherwise a failure would make the next run skip this activity for good
@@ -264,7 +264,7 @@ public class RefreshTmxService : RefreshService
     }
 
     /// <returns>True if removed world records were found.</returns>
-    private async Task<bool> ProcessTrackActivityAsync(TmxSite tmxSite, TrackItem tmxTrack, MapModel map, string subScope)
+    private async Task<bool> ProcessTrackActivityAsync(TmxSite tmxSite, TrackItem tmxTrack, MapModel map, string subScope, bool fullScan)
     {
         var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
 
@@ -290,9 +290,7 @@ public class RefreshTmxService : RefreshService
 
         if (prevRecordSet is not null && !map.IsStuntsMode()) // TODO: stunts changes
         {
-            // check for leaderboard changes
-            // ...
-            await ReportChangesInRecordsAsync(map, recordSet, prevRecordSet, subScope, tmxSite);
+            await ReportChangesInRecordsAsync(map, recordSet, prevRecordSet, subScope, tmxSite, fullScan);
         }
 
         // create a .json.gz file from replays.Results
@@ -436,7 +434,7 @@ public class RefreshTmxService : RefreshService
         return $"{(tmxSite == TmxSite.Nations ? ScopeTMNESWCOfficialWR : ScopeOfficialWR)}:{subScope}";
     }
 
-    private async ValueTask ReportChangesInRecordsAsync(MapModel map, IEnumerable<TmxReplay> records, IEnumerable<TmxReplay> prevRecords, string subScope, TmxSite tmxSite)
+    private async ValueTask ReportChangesInRecordsAsync(MapModel map, IEnumerable<TmxReplay> records, IEnumerable<TmxReplay> prevRecords, string subScope, TmxSite tmxSite, bool fullScan)
     {
         var changes = LeaderboardComparer.Compare(records.Where(x => x.Rank.HasValue), prevRecords.Where(x => x.Rank.HasValue));
 
@@ -458,6 +456,12 @@ public class RefreshTmxService : RefreshService
         if (rich is null)
         {
             return;
+        }
+
+        if (!fullScan && rich.RemovedRecords.Any(x => x.Rank <= ReportService.MaxReportedRemovalRank))
+        {
+            _logger.LogInformation("Removed leaderboard record found on {mapname}, requesting a full TMX scan.", map.DeformattedName);
+            _fullScanRequest.Request();
         }
 
         await _reportService.ReportDifferencesAsync(rich, map, $"{(tmxSite == TmxSite.Nations ? ScopeTMNESWCOfficialChanges : ScopeOfficialChanges)}:{subScope}", maxRank: 10);

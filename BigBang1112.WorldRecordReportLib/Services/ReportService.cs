@@ -21,6 +21,7 @@ public class ReportService
     private readonly ILogger<ReportService> _logger;
 
     public const string LogoIconUrl = "https://bigbang1112.cz/assets/images/logo_small.png";
+    internal const int MaxReportedRemovalRank = 10;
 
     public ReportService(IWrUnitOfWork wrUnitOfWork,
                          IDiscordBotUnitOfWork discordBotUnitOfWork,
@@ -197,7 +198,7 @@ public class ReportService
             dict[currentRecord.Rank.GetValueOrDefault()] = $"**{map.GetMdLinkHumanized()}**: ` {currentRecord.Rank:00} ` {GetRecordTimeDiscordString(map, currentRecord, isTMUF)} {bracket} by **{GetDisplayNameMdLink(map, currentRecord)}**{timestampBracket}";
         }
 
-        foreach (var record in changes.RemovedRecords.Where(x => x.Rank <= 10))
+        foreach (var record in changes.RemovedRecords.Where(x => x.Rank <= MaxReportedRemovalRank))
         {
             dict[record.Rank.GetValueOrDefault()] = $"**{map.GetMdLinkHumanized()}**: ` {record.Rank:00} ` ` {record.Time.ToString(useHundredths: isTMUF)} ` by **{GetDisplayNameMdLink(map, record)}** was **removed**";
         }
