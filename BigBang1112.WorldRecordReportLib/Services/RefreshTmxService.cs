@@ -6,6 +6,7 @@ using BigBang1112.WorldRecordReportLib.Models.Db;
 using BigBang1112.WorldRecordReportLib.Models.ReportScopes;
 using ManiaAPI.TMX;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using TmxSite = BigBang1112.WorldRecordReportLib.Enums.TmxSite;
@@ -22,22 +23,22 @@ public class RefreshTmxService : RefreshService
     private readonly ITmxService _tmxService;
     private readonly IWrUnitOfWork _wrUnitOfWork;
     private readonly RecordStorageService _recordStorageService;
-    private readonly IDiscordWebhookService _discordWebhookService;
     private readonly ReportService _reportService;
+    private readonly TmxFailedTrackQueue _failedTracks;
     private readonly ILogger<RefreshTmxService> _logger;
 
     public RefreshTmxService(ITmxService tmxService,
                              IWrUnitOfWork wrUnitOfWork,
                              RecordStorageService recordStorageService,
-                             IDiscordWebhookService discordWebhookService,
                              ReportService reportService,
+                             TmxFailedTrackQueue failedTracks,
                              ILogger<RefreshTmxService> logger) : base(logger)
     {
         _tmxService = tmxService;
         _wrUnitOfWork = wrUnitOfWork;
         _recordStorageService = recordStorageService;
-        _discordWebhookService = discordWebhookService;
         _reportService = reportService;
+        _failedTracks = failedTracks;
         _logger = logger;
     }
 
@@ -53,6 +54,8 @@ public class RefreshTmxService : RefreshService
     public async Task UpdateWorldRecordsAsync(TmxSite tmxSite, LeaderboardType leaderboardType, string subScope)
     {
         var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
+
+        var failedAgain = await RetryFailedTracksAsync(tmxSite, subScope);
 
         var endOfNewActivities = false;
 
@@ -73,7 +76,30 @@ public class RefreshTmxService : RefreshService
 
             foreach (var tmxTrack in recentTracks.Results)
             {
-                endOfNewActivities = await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope);
+                // Its retry already failed in this run, don't hit it twice
+                if (failedAgain.Contains(tmxTrack.TrackId))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    endOfNewActivities = await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope);
+                    _failedTracks.Remove(tmxSite, subScope, tmxTrack.TrackId);
+                }
+                catch (Exception ex)
+                {
+                    RegisterTrackFailure(ex, tmxSite, subScope, tmxTrack);
+
+                    // DB context may be left in a broken state, end the run
+                    if (ex is DbUpdateException)
+                    {
+                        throw;
+                    }
+
+                    // A single broken track should not block the remaining ones
+                    continue;
+                }
 
                 if (endOfNewActivities)
                 {
@@ -82,6 +108,59 @@ public class RefreshTmxService : RefreshService
             }
         }
         while (!endOfNewActivities && recentTracks.HasMoreItems);
+    }
+
+    /// <summary>
+    /// Retries tracks that failed in previous runs. The scan below stops at the first already-handled track,
+    /// so it would otherwise never reach them again.
+    /// </summary>
+    /// <returns>IDs of tracks that failed again.</returns>
+    private async Task<HashSet<long>> RetryFailedTracksAsync(TmxSite tmxSite, string subScope)
+    {
+        var failedAgain = new HashSet<long>();
+
+        foreach (var failed in _failedTracks.GetAll(tmxSite, subScope))
+        {
+            var tmxTrack = failed.Track;
+
+            _logger.LogInformation("Retrying TMX track {trackId} (attempt {attempt}/{max})...",
+                tmxTrack.TrackId, failed.Attempts + 1, TmxFailedTrackQueue.MaxAttempts);
+
+            try
+            {
+                await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope);
+                _failedTracks.Remove(tmxSite, subScope, tmxTrack.TrackId);
+            }
+            catch (Exception ex)
+            {
+                failedAgain.Add(tmxTrack.TrackId);
+
+                RegisterTrackFailure(ex, tmxSite, subScope, tmxTrack);
+
+                if (ex is DbUpdateException)
+                {
+                    throw;
+                }
+            }
+        }
+
+        return failedAgain;
+    }
+
+    private void RegisterTrackFailure(Exception ex, TmxSite tmxSite, string subScope, TrackItem tmxTrack)
+    {
+        var attempts = _failedTracks.RegisterFailure(tmxSite, subScope, tmxTrack);
+
+        if (attempts >= TmxFailedTrackQueue.MaxAttempts)
+        {
+            _logger.LogError(ex, "Failed to check TMX track {trackId} for new records ({attempts}/{max}), giving up. Its current activity will not be checked again.",
+                tmxTrack.TrackId, attempts, TmxFailedTrackQueue.MaxAttempts);
+        }
+        else
+        {
+            _logger.LogError(ex, "Failed to check TMX track {trackId} for new records ({attempts}/{max}), retrying next run.",
+                tmxTrack.TrackId, attempts, TmxFailedTrackQueue.MaxAttempts);
+        }
     }
 
     private static ManiaAPI.TMX.TmxSite TmxSiteToManiaApiTmxSite(TmxSite site) => site switch
@@ -132,6 +211,21 @@ public class RefreshTmxService : RefreshService
             return true;
         }
 
+        await ProcessTrackActivityAsync(tmxSite, tmxTrack, map, subScope);
+
+        // Mark the activity as handled only once everything above succeeded,
+        // otherwise a failure would make the next run skip this activity for good
+        map.LastActivityOn = tmxTrack.ActivityAt.UtcDateTime;
+
+        await _wrUnitOfWork.SaveAsync();
+
+        return false;
+    }
+
+    private async Task ProcessTrackActivityAsync(TmxSite tmxSite, TrackItem tmxTrack, MapModel map, string subScope)
+    {
+        var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
+
         var freshUpdate = false;
 
         /*if (map.LastActivityOn is null)
@@ -140,17 +234,13 @@ public class RefreshTmxService : RefreshService
             freshUpdate = true;
         }*/
 
-        map.LastActivityOn = tmxTrack.ActivityAt.UtcDateTime;
-
-        await _wrUnitOfWork.SaveAsync();
-
         await Task.Delay(500);
 
         var replays = await _tmxService.GetReplaysAsync(maniaApiTmxSite, tmxTrack.TrackId);
 
         if (replays.Results.Count == 0)
         {
-            return false;
+            return;
         }
 
         var recordSet = replays.Results.Adapt<TmxReplay[]>();
@@ -173,7 +263,13 @@ public class RefreshTmxService : RefreshService
 
         var isStunts = map.IsStuntsMode();
 
-        var wrsOnTmx = _tmxService.GetWrHistory(tmxTrack.UpdatedAt, replays, isStunts).ToArray();
+        // Unranked replays were driven on an older version of the track, they must not count as world records
+        var wrsOnTmx = _tmxService.GetWrHistory(tmxTrack.UpdatedAt, replays, isStunts, rankedOnly: true).ToArray();
+
+        if (wrsOnTmx.Length == 0)
+        {
+            return;
+        }
 
         var wrOnTmx = wrsOnTmx[^1];
 
@@ -182,12 +278,12 @@ public class RefreshTmxService : RefreshService
         {
             if (isStunts && wrOnTmx.ReplayScore <= currentWr.Time)
             {
-                return false;
+                return;
             }
 
             if (!isStunts && wrOnTmx.ReplayTime.TotalMilliseconds >= currentWr.Time)
             {
-                return false;
+                return;
             }
         }
 
@@ -231,8 +327,6 @@ public class RefreshTmxService : RefreshService
 
             previousWr = wrModel;
         }
-
-        return false;
     }
 
     private async ValueTask ReportChangesInRecordsAsync(MapModel map, IEnumerable<TmxReplay> records, IEnumerable<TmxReplay> prevRecords, string subScope, TmxSite tmxSite)
@@ -356,22 +450,13 @@ public class RefreshTmxService : RefreshService
 
             wr.Ignored = IgnoredMode.Ignored;
 
-            var report = await _wrUnitOfWork.Reports.GetByWorldRecordAsync(wr);
+            // Deletes both webhook and bot messages; does nothing for unreported WRs (e.g. older than 14 days)
+            await _reportService.RemoveWorldRecordReportAsync(wr);
 
-            if (report is null)
-            {
-                continue;
-            }
-
-            foreach (var msg in report.DiscordWebhookMessages)
-            {
-                await _discordWebhookService.DeleteMessageAsync(msg);
-            }
+            await _wrUnitOfWork.SaveAsync();
 
             if (!onlyOneUser)
             {
-                await _wrUnitOfWork.SaveAsync();
-
                 var otherWrsByThisUser = await _wrUnitOfWork.WorldRecords.GetByTmxPlayerAsync(wr.TmxPlayer);
 
                 if (otherWrsByThisUser.Any())
@@ -379,8 +464,6 @@ public class RefreshTmxService : RefreshService
                     await CleanupWorldRecordsAsync(otherWrsByThisUser, true);
                 }
             }
-
-            await _wrUnitOfWork.SaveAsync();
         }
     }
 }

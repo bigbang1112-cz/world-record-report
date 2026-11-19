@@ -18,11 +18,15 @@ public class TmxService : ITmxService
         return await tmx.GetReplaysAsync(new() { TrackId = tmxId, Best = true }, cancellationToken);
     }
 
-    public IEnumerable<ReplayItem> GetWrHistory(DateTimeOffset trackAt, ItemCollection<ReplayItem> replays, bool isStunts = false)
+    public IEnumerable<ReplayItem> GetWrHistory(DateTimeOffset trackAt, ItemCollection<ReplayItem> replays, bool isStunts = false, bool rankedOnly = false)
     {
         var tempTime = default(int?);
 
-        foreach (var replay in replays.Results.OrderBy(x => x.ReplayAt))
+        var validReplays = rankedOnly
+            ? replays.Results.Where(x => x.Position.HasValue)
+            : replays.Results;
+
+        foreach (var replay in validReplays.OrderBy(x => x.ReplayAt))
         {
             if (tempTime is null)
             {

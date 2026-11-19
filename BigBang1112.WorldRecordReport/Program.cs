@@ -65,6 +65,7 @@ builder.Services.AddScoped<RefreshTM2020Service>();
 builder.Services.AddScoped<WrAuthService>();
 builder.Services.AddScoped<ITmxService, TmxService>();
 builder.Services.AddScoped<RefreshTmxService>();
+builder.Services.AddSingleton<TmxFailedTrackQueue>();
 
 builder.Services.AddScoped<IGhostService, GhostService>();
 builder.Services.AddScoped<ReportService>();
