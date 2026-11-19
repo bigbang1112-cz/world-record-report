@@ -484,7 +484,7 @@ public class ReportService
 
         var previousWr = removedWrs.First();
         var map = previousWr.Map;
-        var time = $"` {previousWr.TimeInt32} `";
+        var time = $"` {previousWr.GetTimeFormattedToGame()} `";
 
         var nickname = AddLoginInCase(previousWr, map, $"**{previousWr.GetPlayerNicknameMdLink()}**");
 
@@ -502,7 +502,7 @@ public class ReportService
 
         if (currentWr is not null)
         {
-            var prevTime = $"` {currentWr.TimeInt32} `";
+            var prevTime = $"` {currentWr.GetTimeFormattedToGame()} `";
             var prevNickname = $"**{currentWr.GetPlayerNicknameMdLink()}**";
 
             prevNickname = AddLoginInCase(currentWr, map, prevNickname);

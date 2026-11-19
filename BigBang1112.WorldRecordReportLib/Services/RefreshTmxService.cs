@@ -25,6 +25,7 @@ public class RefreshTmxService : RefreshService
     private readonly RecordStorageService _recordStorageService;
     private readonly ReportService _reportService;
     private readonly TmxFailedTrackQueue _failedTracks;
+    private readonly TmxFullScanRequest _fullScanRequest;
     private readonly ILogger<RefreshTmxService> _logger;
 
     public RefreshTmxService(ITmxService tmxService,
@@ -32,6 +33,7 @@ public class RefreshTmxService : RefreshService
                              RecordStorageService recordStorageService,
                              ReportService reportService,
                              TmxFailedTrackQueue failedTracks,
+                             TmxFullScanRequest fullScanRequest,
                              ILogger<RefreshTmxService> logger) : base(logger)
     {
         _tmxService = tmxService;
@@ -39,21 +41,35 @@ public class RefreshTmxService : RefreshService
         _recordStorageService = recordStorageService;
         _reportService = reportService;
         _failedTracks = failedTracks;
+        _fullScanRequest = fullScanRequest;
         _logger = logger;
     }
 
     public async Task CleanupRemovedWorldRecordsAsync()
     {
+        // The cleanup only detects removals. The full scan they trigger handles them on all tracks,
+        // including announcing the world record that replaces the removed one
         var lastTmxWrs = await _wrUnitOfWork.WorldRecords.GetLatestByGameAsync(Game.TMUF, count: 25);
-        await CleanupWorldRecordsAsync(lastTmxWrs, false);
+
+        if (await RequestFullScanIfRemovedAsync(lastTmxWrs))
+        {
+            return;
+        }
 
         var lastTmxTMNESWCWrs = await _wrUnitOfWork.WorldRecords.GetLatestByGameAsync(Game.TMN, count: 25);
-        await CleanupWorldRecordsAsync(lastTmxTMNESWCWrs, false);
+
+        await RequestFullScanIfRemovedAsync(lastTmxTMNESWCWrs);
     }
 
-    public async Task UpdateWorldRecordsAsync(TmxSite tmxSite, LeaderboardType leaderboardType, string subScope)
+    /// <param name="fullScan">Check all tracks instead of stopping at the first one with no new activity.</param>
+    public async Task UpdateWorldRecordsAsync(TmxSite tmxSite, LeaderboardType leaderboardType, string subScope, bool fullScan = false)
     {
         var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
+
+        if (fullScan)
+        {
+            _logger.LogInformation("Full scan of {site} {leaderboardType} tracks...", tmxSite, leaderboardType);
+        }
 
         var failedAgain = await RetryFailedTracksAsync(tmxSite, subScope);
 
@@ -74,6 +90,12 @@ public class RefreshTmxService : RefreshService
 
             _logger.LogInformation("{count} maps found.", recentTracks.Results.Count);
 
+            // Without results there is no cursor for the next page, it would start over from the first one
+            if (recentTracks.Results.Count == 0)
+            {
+                break;
+            }
+
             foreach (var tmxTrack in recentTracks.Results)
             {
                 // Its retry already failed in this run, don't hit it twice
@@ -84,7 +106,11 @@ public class RefreshTmxService : RefreshService
 
                 try
                 {
-                    endOfNewActivities = await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope);
+                    var endReached = await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope, fullScan);
+
+                    // A full scan goes through all tracks
+                    endOfNewActivities = endReached && !fullScan;
+
                     _failedTracks.Remove(tmxSite, subScope, tmxTrack.TrackId);
                 }
                 catch (Exception ex)
@@ -128,7 +154,7 @@ public class RefreshTmxService : RefreshService
 
             try
             {
-                await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope);
+                await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope, fullScan: false);
                 _failedTracks.Remove(tmxSite, subScope, tmxTrack.TrackId);
             }
             catch (Exception ex)
@@ -177,8 +203,9 @@ public class RefreshTmxService : RefreshService
     /// <param name="tmxSite"></param>
     /// <param name="tmxTrack"></param>
     /// <param name="leaderboardType"></param>
+    /// <param name="fullScan">Process the track even without new activity.</param>
     /// <returns>True if the end of activities was reached.</returns>
-    private async Task<bool> CheckTrackForNewRecordsAsync(TmxSite tmxSite, TrackItem tmxTrack, string subScope)
+    private async Task<bool> CheckTrackForNewRecordsAsync(TmxSite tmxSite, TrackItem tmxTrack, string subScope, bool fullScan)
     {
         var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
         
@@ -206,12 +233,15 @@ public class RefreshTmxService : RefreshService
             return false;
         }
 
-        if (map.LastActivityOn is not null && tmxTrack.ActivityAt.Ticks - (tmxTrack.ActivityAt.Ticks % TimeSpan.TicksPerSecond) <= map.LastActivityOn.Value.Ticks)
+        var activityHandled = map.LastActivityOn is not null
+            && tmxTrack.ActivityAt.Ticks - (tmxTrack.ActivityAt.Ticks % TimeSpan.TicksPerSecond) <= map.LastActivityOn.Value.Ticks;
+
+        if (activityHandled && !fullScan)
         {
             return true;
         }
 
-        await ProcessTrackActivityAsync(tmxSite, tmxTrack, map, subScope);
+        var removalsFound = await ProcessTrackActivityAsync(tmxSite, tmxTrack, map, subScope);
 
         // Mark the activity as handled only once everything above succeeded,
         // otherwise a failure would make the next run skip this activity for good
@@ -219,10 +249,18 @@ public class RefreshTmxService : RefreshService
 
         await _wrUnitOfWork.SaveAsync();
 
+        if (removalsFound && !fullScan)
+        {
+            // The removal (typically of a cheater's replays) can affect other tracks without any new activity on them
+            _logger.LogInformation("Removed world record found during a regular refresh, requesting a full TMX scan.");
+            _fullScanRequest.Request();
+        }
+
         return false;
     }
 
-    private async Task ProcessTrackActivityAsync(TmxSite tmxSite, TrackItem tmxTrack, MapModel map, string subScope)
+    /// <returns>True if removed world records were found.</returns>
+    private async Task<bool> ProcessTrackActivityAsync(TmxSite tmxSite, TrackItem tmxTrack, MapModel map, string subScope)
     {
         var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
 
@@ -240,7 +278,7 @@ public class RefreshTmxService : RefreshService
 
         if (replays.Results.Count == 0)
         {
-            return;
+            return false;
         }
 
         var recordSet = replays.Results.Adapt<TmxReplay[]>();
@@ -256,19 +294,27 @@ public class RefreshTmxService : RefreshService
         // create a .json.gz file from replays.Results
         await _recordStorageService.SaveTmxLeaderboardAsync(recordSet, tmxSite, map.MapUid);
 
-        var currentWr = map.WorldRecords
-            .Where(x => x.Ignored == IgnoredMode.NotIgnored)
-            .OrderByDescending(x => x.DrivenOn)
-            .FirstOrDefault();
+        var currentWr = GetCurrentWorldRecord(map);
 
         var isStunts = map.IsStuntsMode();
 
         // Unranked replays were driven on an older version of the track, they must not count as world records
         var wrsOnTmx = _tmxService.GetWrHistory(tmxTrack.UpdatedAt, replays, isStunts, rankedOnly: true).ToArray();
 
+        // A stored WR without an equal or better replay on TMX was removed, same as in TM2
+        var removedWrs = isStunts // TODO: stunts removals
+            ? []
+            : IgnoreRemovedWorldRecords(map, currentWr, tmxTrack, replays);
+
+        if (removedWrs.Count > 0)
+        {
+            await ProcessRemovedWorldRecordsAsync(tmxSite, map, removedWrs, wrsOnTmx.LastOrDefault(), subScope);
+            return true;
+        }
+
         if (wrsOnTmx.Length == 0)
         {
-            return;
+            return false;
         }
 
         var wrOnTmx = wrsOnTmx[^1];
@@ -278,12 +324,12 @@ public class RefreshTmxService : RefreshService
         {
             if (isStunts && wrOnTmx.ReplayScore <= currentWr.Time)
             {
-                return;
+                return false;
             }
 
             if (!isStunts && wrOnTmx.ReplayTime.TotalMilliseconds >= currentWr.Time)
             {
-                return;
+                return false;
             }
         }
 
@@ -327,6 +373,63 @@ public class RefreshTmxService : RefreshService
 
             previousWr = wrModel;
         }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Same as TM2: if the current TMX world record is a stored one that survived the removal, the reports of the removed ones
+    /// are deleted. Otherwise the TMX world record is added and announced in a single "Removed world record" report.
+    /// </summary>
+    /// <param name="removedWrs">Already ignored, the most recent one first.</param>
+    /// <param name="wrOnTmx">Best ranked replay on TMX, null if there is none.</param>
+    private async Task ProcessRemovedWorldRecordsAsync(TmxSite tmxSite,
+                                                       MapModel map,
+                                                       List<WorldRecordModel> removedWrs,
+                                                       ReplayItem? wrOnTmx,
+                                                       string subScope)
+    {
+        var survivingWr = GetCurrentWorldRecord(map);
+
+        var newTime = wrOnTmx?.ReplayTime.TotalMilliseconds;
+
+        // No new world record: either it is the surviving stored one, the surviving one is only backed by an unranked replay,
+        // or there are no valid ranked replays at all
+        if (newTime is null or <= 0 || (survivingWr is not null && newTime >= survivingWr.Time))
+        {
+            _logger.LogInformation("Removed world record/s on {mapname}, no new world record replaces them.", map.DeformattedName);
+
+            foreach (var removedWr in removedWrs)
+            {
+                // Deletes both webhook and bot messages; does nothing for unreported WRs (e.g. older than 14 days)
+                await _reportService.RemoveWorldRecordReportAsync(removedWr);
+            }
+
+            await _wrUnitOfWork.SaveAsync();
+
+            return;
+        }
+
+        var newWr = await AddWorldRecordAsync(tmxSite,
+                                              map,
+                                              survivingWr,
+                                              newTime.Value,
+                                              wrOnTmx!.User,
+                                              wrOnTmx.ReplayAt.UtcDateTime,
+                                              wrOnTmx.ReplayId);
+
+        _logger.LogInformation("Removed world record/s on {mapname}, new world record: {time} by {player}",
+            map.DeformattedName, newWr.TimeInt32, newWr.GetPlayerNickname());
+
+        // Always announced, even if the new world record was driven long ago, as the removal is the news
+        await _reportService.ReportRemovedWorldRecordsAsync(newWr, removedWrs, GetWorldRecordScope(tmxSite, subScope));
+
+        await _wrUnitOfWork.SaveAsync();
+    }
+
+    private static string GetWorldRecordScope(TmxSite tmxSite, string subScope)
+    {
+        return $"{(tmxSite == TmxSite.Nations ? ScopeTMNESWCOfficialWR : ScopeOfficialWR)}:{subScope}";
     }
 
     private async ValueTask ReportChangesInRecordsAsync(MapModel map, IEnumerable<TmxReplay> records, IEnumerable<TmxReplay> prevRecords, string subScope, TmxSite tmxSite)
@@ -368,16 +471,26 @@ public class RefreshTmxService : RefreshService
     {
         _logger.LogInformation("New world record!");
 
-        var difference = default(int?);
+        var wrModel = await AddWorldRecordAsync(tmxSite, map, currentWr, newTimeOrScore, user, replayAt, replayId);
 
-        if (currentWr is not null)
+        if (!freshUpdate && DateTime.UtcNow - replayAt < TimeSpan.FromDays(14))
         {
-            difference = newTimeOrScore - currentWr.Time;
+            await _reportService.ReportWorldRecordAsync(wrModel, GetWorldRecordScope(tmxSite, subScope));
         }
 
-        /*var wrModel = await AddNewWorldRecordAsync(db, tmxSite, map, newWr, previousWr,
-            time.ToMilliseconds(), cancellationToken);*/
+        await _wrUnitOfWork.SaveAsync();
 
+        return wrModel;
+    }
+
+    private async Task<WorldRecordModel> AddWorldRecordAsync(TmxSite tmxSite,
+                                                             MapModel map,
+                                                             WorldRecordModel? previousWr,
+                                                             int newTimeOrScore,
+                                                             User user,
+                                                             DateTime replayAt,
+                                                             int replayId)
+    {
         var tmxLogin = await _wrUnitOfWork.TmxLogins.GetOrAddAsync(user.UserId, tmxSite);
 
         tmxLogin.Nickname = user.Name;
@@ -392,23 +505,20 @@ public class RefreshTmxService : RefreshService
             PublishedOn = replayAt,
             ReplayUrl = null,
             Time = newTimeOrScore,
-            PreviousWorldRecord = currentWr,
+            PreviousWorldRecord = previousWr,
             ReplayId = replayId
         };
 
         await _wrUnitOfWork.WorldRecords.AddAsync(wrModel);
 
-        if (!freshUpdate && DateTime.UtcNow - replayAt < TimeSpan.FromDays(14))
-        {
-            await _reportService.ReportWorldRecordAsync(wrModel, $"{(tmxSite == TmxSite.Nations ? ScopeTMNESWCOfficialWR : ScopeOfficialWR)}:{subScope}");
-        }
-
-        await _wrUnitOfWork.SaveAsync();
-
         return wrModel;
     }
 
-    internal async Task CleanupWorldRecordsAsync(IEnumerable<WorldRecordModel> lastTmxWrs, bool onlyOneUser)
+    /// <summary>
+    /// Requests a full scan once a removed world record is found. The scan then handles removals on all tracks.
+    /// </summary>
+    /// <returns>True if a full scan was requested.</returns>
+    internal async Task<bool> RequestFullScanIfRemovedAsync(IEnumerable<WorldRecordModel> lastTmxWrs)
     {
         foreach (var wr in lastTmxWrs)
         {
@@ -426,44 +536,78 @@ public class RefreshTmxService : RefreshService
                 throw new Exception();
             }
 
-            var tmxId = map.MxId.Value;
-            var siteEnum = site.GetSiteEnum();
-
-            var replays = await _tmxService.GetReplaysAsync(siteEnum, tmxId);
-
             if (map.Mode?.Id == (int)MapMode.Stunts)
             {
                 // TODO
                 continue;
             }
 
-            var tmxWrs = _tmxService.GetWrHistory(map.UpdatedOn, replays).Reverse();
-            var tmxWr = tmxWrs.FirstOrDefault();
+            var replays = await _tmxService.GetReplaysAsync(site.GetSiteEnum(), map.MxId.Value);
 
-            if (tmxWr is not null && tmxWr.ReplayTime.TotalMilliseconds <= wr.Time)
+            if (!IsRemovedFromTmx(wr, replays, map.UpdatedOn))
             {
                 continue;
             }
 
-            // The record was removed and there are no more records
-            // or the TMX record is slower than WR in the database
-
-            wr.Ignored = IgnoredMode.Ignored;
-
-            // Deletes both webhook and bot messages; does nothing for unreported WRs (e.g. older than 14 days)
-            await _reportService.RemoveWorldRecordReportAsync(wr);
-
-            await _wrUnitOfWork.SaveAsync();
-
-            if (!onlyOneUser)
+            if (_fullScanRequest.Request(wr.Guid))
             {
-                var otherWrsByThisUser = await _wrUnitOfWork.WorldRecords.GetByTmxPlayerAsync(wr.TmxPlayer);
+                _logger.LogInformation("Removed world record detected on {mapname}: {time} by {player}, requesting a full TMX scan.",
+                    map.DeformattedName, wr.TimeInt32, wr.GetPlayerNickname());
 
-                if (otherWrsByThisUser.Any())
-                {
-                    await CleanupWorldRecordsAsync(otherWrsByThisUser, true);
-                }
+                // One removal is enough, the full scan checks all tracks
+                return true;
             }
+
+            _logger.LogWarning("Removed world record on {mapname}: {time} by {player} already triggered a full TMX scan, not requesting another one.",
+                map.DeformattedName, wr.TimeInt32, wr.GetPlayerNickname());
         }
+
+        return false;
+    }
+
+    /// <summary>
+    /// A world record is considered removed if no replay on TMX is at least as fast.
+    /// Unranked replays count too, so a track update (which unranks all existing replays) is not mistaken for a removal.
+    /// An empty response is not considered a removal, as it can also be a TMX glitch.
+    /// </summary>
+    private bool IsRemovedFromTmx(WorldRecordModel wr, ItemCollection<ReplayItem> replays, DateTimeOffset trackAt)
+    {
+        var fastestOnTmx = _tmxService.GetWrHistory(trackAt, replays).LastOrDefault();
+
+        return fastestOnTmx is not null && fastestOnTmx.ReplayTime.TotalMilliseconds > wr.Time;
+    }
+
+    /// <summary>
+    /// Ignores all stored world records that are no longer on TMX, starting from the current one.
+    /// Their reports are not touched yet, that depends on whether a new world record replaces them.
+    /// </summary>
+    /// <returns>Removed world records, the most recent one first.</returns>
+    private List<WorldRecordModel> IgnoreRemovedWorldRecords(MapModel map,
+                                                             WorldRecordModel? currentWr,
+                                                             TrackItem tmxTrack,
+                                                             ItemCollection<ReplayItem> replays)
+    {
+        var removedWrs = new List<WorldRecordModel>();
+
+        while (currentWr is not null && IsRemovedFromTmx(currentWr, replays, tmxTrack.UpdatedAt))
+        {
+            _logger.LogInformation("Removed WR on {mapname}: {time} by {player}",
+                map.DeformattedName, currentWr.TimeInt32, currentWr.GetPlayerNickname());
+
+            currentWr.Ignored = IgnoredMode.Ignored;
+            removedWrs.Add(currentWr);
+
+            currentWr = GetCurrentWorldRecord(map);
+        }
+
+        return removedWrs;
+    }
+
+    private static WorldRecordModel? GetCurrentWorldRecord(MapModel map)
+    {
+        return map.WorldRecords
+            .Where(x => x.Ignored == IgnoredMode.NotIgnored)
+            .OrderByDescending(x => x.DrivenOn)
+            .FirstOrDefault();
     }
 }
