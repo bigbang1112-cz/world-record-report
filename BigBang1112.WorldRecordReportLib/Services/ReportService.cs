@@ -342,14 +342,31 @@ public class ReportService
                 continue;
             }
 
-            await _discordWebhookService.SendMessageAsync(webhook, snowflake => new DiscordWebhookMessageModel
+            // A single broken webhook must not fail the whole report. The caller would otherwise retry it
+            // and send it again to the webhooks that already received it.
+            try
             {
-                MessageId = snowflake,
-                Report = report,
-                SentOn = DateTime.UtcNow,
-                ModifiedOn = DateTime.UtcNow,
-                Webhook = webhook
-            }, embeds: embeds, cancellationToken: cancellationToken);
+                await _discordWebhookService.SendMessageAsync(webhook, snowflake => new DiscordWebhookMessageModel
+                {
+                    MessageId = snowflake,
+                    Report = report,
+                    SentOn = DateTime.UtcNow,
+                    ModifiedOn = DateTime.UtcNow,
+                    Webhook = webhook
+                }, embeds: embeds, cancellationToken: cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Discord.Net.HttpException ex)
+            {
+                _logger.LogWarning(ex, "Failed to send the report to webhook {webhookGuid} ({webhookName}) due to Discord API.", webhook.Guid, webhook.DisplayName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send the report to webhook {webhookGuid} ({webhookName}).", webhook.Guid, webhook.DisplayName);
+            }
         }
     }
 

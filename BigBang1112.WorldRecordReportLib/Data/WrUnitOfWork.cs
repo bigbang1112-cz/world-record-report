@@ -24,8 +24,12 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
     public IDiscordWebhookMessageRepo DiscordWebhookMessages { get; }
     public IAssociatedAccountRepo AssociatedAccounts { get; }
 
+    private readonly WrContext _context;
+
     public WrUnitOfWork(WrContext context, ILogger<WrUnitOfWork> logger) : base(context, logger)
     {
+        _context = context;
+
         Games = new GameRepo(context);
         Campaigns = new CampaignRepo(context);
         Maps = new MapRepo(context);
@@ -44,5 +48,10 @@ public class WrUnitOfWork : UnitOfWork, IWrUnitOfWork
         TitlePacks = new TitlePackRepo(context);
         DiscordWebhookMessages = new DiscordWebhookMessageRepo(context);
         AssociatedAccounts = new AssociatedAccountRepo(context);
+    }
+
+    public void DiscardChanges()
+    {
+        _context.ChangeTracker.Clear();
     }
 }

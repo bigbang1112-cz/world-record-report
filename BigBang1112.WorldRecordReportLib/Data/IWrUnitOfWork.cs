@@ -22,4 +22,10 @@ public interface IWrUnitOfWork : IUnitOfWork
     ITitlePackRepo TitlePacks { get; }
     IDiscordWebhookMessageRepo DiscordWebhookMessages { get; }
     IAssociatedAccountRepo AssociatedAccounts { get; }
+
+    /// <summary>
+    /// Discards all pending changes, so a failed operation is not saved by the next <see cref="IUnitOfWork.SaveAsync"/>.
+    /// All entities loaded so far become detached and have to be loaded again.
+    /// </summary>
+    void DiscardChanges();
 }

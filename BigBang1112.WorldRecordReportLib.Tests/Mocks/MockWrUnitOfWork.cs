@@ -25,4 +25,8 @@ public class MockWrUnitOfWork : MockUnitOfWork, IWrUnitOfWork
     public ITitlePackRepo TitlePacks => throw new NotImplementedException();
     public IDiscordWebhookMessageRepo DiscordWebhookMessages => throw new NotImplementedException();
     public IAssociatedAccountRepo AssociatedAccounts => throw new NotImplementedException();
+
+    public void DiscardChanges()
+    {
+    }
 }

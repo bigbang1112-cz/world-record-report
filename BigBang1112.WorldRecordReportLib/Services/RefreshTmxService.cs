@@ -115,7 +115,7 @@ public class RefreshTmxService : RefreshService
                 }
                 catch (Exception ex)
                 {
-                    RegisterTrackFailure(ex, tmxSite, subScope, tmxTrack);
+                    HandleTrackFailure(ex, tmxSite, subScope, tmxTrack);
 
                     // DB context may be left in a broken state, end the run
                     if (ex is DbUpdateException)
@@ -161,7 +161,7 @@ public class RefreshTmxService : RefreshService
             {
                 failedAgain.Add(tmxTrack.TrackId);
 
-                RegisterTrackFailure(ex, tmxSite, subScope, tmxTrack);
+                HandleTrackFailure(ex, tmxSite, subScope, tmxTrack);
 
                 if (ex is DbUpdateException)
                 {
@@ -173,8 +173,12 @@ public class RefreshTmxService : RefreshService
         return failedAgain;
     }
 
-    private void RegisterTrackFailure(Exception ex, TmxSite tmxSite, string subScope, TrackItem tmxTrack)
+    private void HandleTrackFailure(Exception ex, TmxSite tmxSite, string subScope, TrackItem tmxTrack)
     {
+        // The failed track may have left changes pending (e.g. an ignored world record, a new world record or its report).
+        // They must not be saved by the next track, otherwise the retry would see the track as already processed.
+        _wrUnitOfWork.DiscardChanges();
+
         var attempts = _failedTracks.RegisterFailure(tmxSite, subScope, tmxTrack);
 
         if (attempts >= TmxFailedTrackQueue.MaxAttempts)
