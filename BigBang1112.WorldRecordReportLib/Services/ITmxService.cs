@@ -6,6 +6,7 @@ public interface ITmxService
 {
     Task<ItemCollection<ReplayItem>> GetReplaysAsync(TmxSite site, long tmxId, CancellationToken cancellationToken = default);
     Task<ItemCollection<TrackItem>> SearchAsync(TmxSite site, TMX.SearchTracksParameters trackSearchFilters, CancellationToken cancellationToken = default);
+    Task<string> GetTrackAuthorLoginAsync(TmxSite site, long trackId, CancellationToken cancellationToken = default);
     IEnumerable<ReplayItem> GetWrHistory(DateTimeOffset trackAt, ItemCollection<ReplayItem> replays, bool isStunts = false, bool rankedOnly = false);
 
     async Task<ItemCollection<ReplayItem>> GetReplaysAsync(TmxSiteModel site, long tmxId, CancellationToken cancellationToken = default)

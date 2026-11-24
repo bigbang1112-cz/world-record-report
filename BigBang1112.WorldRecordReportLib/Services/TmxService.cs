@@ -1,5 +1,8 @@
 ﻿using ManiaAPI.TMX;
 
+using GBX.NET;
+using GBX.NET.Engines.Game;
+
 namespace BigBang1112.WorldRecordReportLib.Services;
 
 public class TmxService : ITmxService
@@ -53,5 +56,17 @@ public class TmxService : ITmxService
         var http = _httpFactory.CreateClient("resilient");
         var tmx = new TMX(http, site);
         return await tmx.SearchTracksAsync(trackSearchFilters, cancellationToken);
+    }
+
+    public async Task<string> GetTrackAuthorLoginAsync(TmxSite site, long trackId, CancellationToken cancellationToken = default)
+    {
+        var tmx = new TMX(_httpFactory.CreateClient("resilient"), site);
+        using var response = await tmx.GetTrackGbxResponseAsync(trackId, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        var map = Gbx.ParseHeaderNode<CGameCtnChallenge>(stream);
+        return !string.IsNullOrWhiteSpace(map.AuthorLogin)
+            ? map.AuthorLogin
+            : throw new InvalidDataException($"TMX track {trackId} has no author login in its GBX header.");
     }
 }

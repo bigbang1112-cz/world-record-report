@@ -28,14 +28,15 @@ public class TmxFailedTrackQueue
     /// Counts a failed attempt. The track is dropped from the queue once it reaches <see cref="MaxAttempts"/>.
     /// </summary>
     /// <returns>Number of failed attempts so far, including this one.</returns>
-    public int RegisterFailure(TmxSite site, string subScope, TrackItem track)
+    public int RegisterFailure(TmxSite site, string subScope, TrackItem track, bool addMissingClassicTrack = false)
     {
         var key = (site, subScope, (long)track.TrackId);
 
         // Keep the latest track item so the retry uses the freshest activity date
         var failed = _tracks.AddOrUpdate(key,
-            _ => new FailedTmxTrack(track, Attempts: 1),
-            (_, existing) => new FailedTmxTrack(track, existing.Attempts + 1));
+            _ => new FailedTmxTrack(track, Attempts: 1, addMissingClassicTrack),
+            (_, existing) => new FailedTmxTrack(track, existing.Attempts + 1,
+                addMissingClassicTrack || existing.AddMissingClassicTrack));
 
         if (failed.Attempts >= MaxAttempts)
         {
@@ -51,4 +52,4 @@ public class TmxFailedTrackQueue
     }
 }
 
-public sealed record FailedTmxTrack(TrackItem Track, int Attempts);
+public sealed record FailedTmxTrack(TrackItem Track, int Attempts, bool AddMissingClassicTrack = false);

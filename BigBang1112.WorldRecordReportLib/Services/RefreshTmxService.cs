@@ -8,6 +8,7 @@ using ManiaAPI.TMX;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using TmEssentials;
 
 using TmxSite = BigBang1112.WorldRecordReportLib.Enums.TmxSite;
 
@@ -106,7 +107,8 @@ public class RefreshTmxService : RefreshService
 
                 try
                 {
-                    var endReached = await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope, fullScan);
+                    var endReached = await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope, fullScan,
+                        addMissingClassicTrack: fullScan && leaderboardType == LeaderboardType.Classic);
 
                     // A full scan goes through all tracks
                     endOfNewActivities = endReached && !fullScan;
@@ -115,7 +117,8 @@ public class RefreshTmxService : RefreshService
                 }
                 catch (Exception ex)
                 {
-                    HandleTrackFailure(ex, tmxSite, subScope, tmxTrack);
+                    HandleTrackFailure(ex, tmxSite, subScope, tmxTrack,
+                        addMissingClassicTrack: fullScan && leaderboardType == LeaderboardType.Classic);
 
                     // DB context may be left in a broken state, end the run
                     if (ex is DbUpdateException)
@@ -154,14 +157,15 @@ public class RefreshTmxService : RefreshService
 
             try
             {
-                await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope, fullScan: false);
+                await CheckTrackForNewRecordsAsync(tmxSite, tmxTrack, subScope, fullScan: false,
+                    addMissingClassicTrack: failed.AddMissingClassicTrack);
                 _failedTracks.Remove(tmxSite, subScope, tmxTrack.TrackId);
             }
             catch (Exception ex)
             {
                 failedAgain.Add(tmxTrack.TrackId);
 
-                HandleTrackFailure(ex, tmxSite, subScope, tmxTrack);
+                HandleTrackFailure(ex, tmxSite, subScope, tmxTrack, failed.AddMissingClassicTrack);
 
                 if (ex is DbUpdateException)
                 {
@@ -173,13 +177,14 @@ public class RefreshTmxService : RefreshService
         return failedAgain;
     }
 
-    private void HandleTrackFailure(Exception ex, TmxSite tmxSite, string subScope, TrackItem tmxTrack)
+    private void HandleTrackFailure(Exception ex, TmxSite tmxSite, string subScope, TrackItem tmxTrack,
+        bool addMissingClassicTrack = false)
     {
         // The failed track may have left changes pending (e.g. an ignored world record, a new world record or its report).
         // They must not be saved by the next track, otherwise the retry would see the track as already processed.
         _wrUnitOfWork.DiscardChanges();
 
-        var attempts = _failedTracks.RegisterFailure(tmxSite, subScope, tmxTrack);
+        var attempts = _failedTracks.RegisterFailure(tmxSite, subScope, tmxTrack, addMissingClassicTrack);
 
         if (attempts >= TmxFailedTrackQueue.MaxAttempts)
         {
@@ -206,14 +211,20 @@ public class RefreshTmxService : RefreshService
     /// </summary>
     /// <param name="tmxSite"></param>
     /// <param name="tmxTrack"></param>
-    /// <param name="leaderboardType"></param>
     /// <param name="fullScan">Process the track even without new activity.</param>
+    /// <param name="addMissingClassicTrack">Import a missing Classic map discovered by a full scan.</param>
     /// <returns>True if the end of activities was reached.</returns>
-    private async Task<bool> CheckTrackForNewRecordsAsync(TmxSite tmxSite, TrackItem tmxTrack, string subScope, bool fullScan)
+    private async Task<bool> CheckTrackForNewRecordsAsync(TmxSite tmxSite, TrackItem tmxTrack, string subScope, bool fullScan,
+        bool addMissingClassicTrack = false)
     {
         var maniaApiTmxSite = TmxSiteToManiaApiTmxSite(tmxSite);
         
         var map = await _wrUnitOfWork.Maps.GetByMxIdAsync(tmxTrack.TrackId, tmxSite);
+
+        if (map is null && addMissingClassicTrack)
+        {
+            map = await AddClassicTrackAsync(tmxSite, tmxTrack);
+        }
 
         if (map is null)
         {
@@ -261,6 +272,56 @@ public class RefreshTmxService : RefreshService
         }
 
         return false;
+    }
+
+    private async Task<MapModel> AddClassicTrackAsync(TmxSite site, TrackItem track)
+    {
+        var environment = track.Environment switch
+        {
+            ManiaAPI.TMX.Environment.Desert => Env.Desert,
+            ManiaAPI.TMX.Environment.Snow => Env.Snow,
+            ManiaAPI.TMX.Environment.Rally => Env.Rally,
+            ManiaAPI.TMX.Environment.Island => Env.Island,
+            ManiaAPI.TMX.Environment.Bay => Env.Bay,
+            ManiaAPI.TMX.Environment.Coast => Env.Coast,
+            ManiaAPI.TMX.Environment.Stadium => Env.Stadium,
+            _ => throw new InvalidDataException($"Unknown environment on TMX track {track.TrackId}.")
+        };
+
+        if (string.IsNullOrWhiteSpace(track.UId))
+        {
+            throw new InvalidDataException($"TMX track {track.TrackId} has no map UID.");
+        }
+
+        var game = site == TmxSite.Nations ? Game.TMN : Game.TMUF;
+        var authorLogin = await _tmxService.GetTrackAuthorLoginAsync(TmxSiteToManiaApiTmxSite(site), track.TrackId);
+        var author = await _wrUnitOfWork.Logins.GetByNameAsync(game, authorLogin)
+            ?? await _wrUnitOfWork.Logins.GetOrAddAsync(game, authorLogin, authorLogin);
+        var tmxAuthor = await _wrUnitOfWork.TmxLogins.GetOrAddAsync(track.Uploader.UserId, site);
+        tmxAuthor.Nickname = track.Uploader.Name;
+        tmxAuthor.LastSeenOn = DateTime.UtcNow;
+
+        var map = new MapModel
+        {
+            MapUid = track.UId,
+            MxId = checked((int)track.TrackId),
+            Name = track.TrackName,
+            DeformattedName = TextFormatter.Deformat(track.TrackName),
+            Game = await _wrUnitOfWork.Games.GetAsync(game),
+            Environment = await _wrUnitOfWork.Envs.GetAsync(environment),
+            Author = author,
+            TmxAuthor = tmxAuthor,
+            Mode = await _wrUnitOfWork.MapModes.GetAsync(track.PrimaryType == TrackType.Stunts ? MapMode.Stunts : MapMode.Race),
+            AddedOn = DateTime.UtcNow,
+            UpdatedOn = DateTime.UtcNow,
+            WorldRecords = []
+        };
+
+        await _wrUnitOfWork.Maps.AddAsync(map);
+        // Persist even if the track has no replays or only needs its initial leaderboard snapshot.
+        await _wrUnitOfWork.SaveAsync();
+        _logger.LogInformation("Added missing Classic track {trackId}: {mapname} ({site}).", track.TrackId, map.DeformattedName, site);
+        return map;
     }
 
     /// <returns>True if removed world records were found.</returns>
